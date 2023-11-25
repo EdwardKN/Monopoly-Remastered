@@ -38,7 +38,7 @@ function update(){
     currentMenu?.draw();
 
     hoverList.forEach((e,i) => {
-        c.drawText(e,mouse.x,mouse.y+35*(i+1),20,"center","black",{color:"white",blur:5});
+        c.drawText(e,mouse.x,mouse.y+35*(i+1)- 10,20,"center","black",{color:"white",blur:5});
     })
     hoverList = [];
     
@@ -522,7 +522,7 @@ class Auction{
         this.add10 = new Button({x:canvas.width/2-256 + 28 + splitPoints(3,220,54,1),y:canvas.height/2 + 10,w:54,h:54},images.buttons["auction+10"],function(){self.addMoney(10)});
         this.add100 = new Button({x:canvas.width/2-256 + 28 + splitPoints(3,220,54,2),y:canvas.height/2 + 10,w:54,h:54},images.buttons["auction+100"],function(){self.addMoney(100)});
         this.leaveButton = new Button({x:canvas.width/2-256 + 28,y:canvas.height/2 + 80,w:220,h:40},images.buttons.exitauction,function(){self.leaveAuction()});
-    }
+    };
     addMoney(amount){
         this.auctionMoney+=amount;
         this.nextPlayer();
