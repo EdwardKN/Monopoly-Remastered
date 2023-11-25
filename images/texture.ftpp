@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "version": "0.6.7"
+  },
+  "savePath": "C:\\Users\\Johan Hallin\\Monopoly\\Monopoly\\images",
+  "images": [
+    {
+      "name": "flag.png",
+      "path": "C:/Users/Johan Hallin/Monopoly/Monopoly/images/buttons/flag.png",
+      "folder": ""
+    },
+    {
+      "name": "okej.png",
+      "path": "C:/Users/Johan Hallin/Monopoly/Monopoly/images/buttons/okej.png",
+      "folder": ""
+    }
+  ],
+  "folders": [
+    "C:/Users/Johan Hallin/Monopoly/Monopoly/images/Cards",
+    "C:/Users/Johan Hallin/Monopoly/Monopoly/images/buildings",
+    "C:/Users/Johan Hallin/Monopoly/Monopoly/images/buttons",
+    "C:/Users/Johan Hallin/Monopoly/Monopoly/images/community card and chance card",
+    "C:/Users/Johan Hallin/Monopoly/Monopoly/images/corners",
+    "C:/Users/Johan Hallin/Monopoly/Monopoly/images/dices",
+    "C:/Users/Johan Hallin/Monopoly/Monopoly/images/menus",
+    "C:/Users/Johan Hallin/Monopoly/Monopoly/images/plates",
+    "C:/Users/Johan Hallin/Monopoly/Monopoly/images/playercolorbuttons",
+    "C:/Users/Johan Hallin/Monopoly/Monopoly/images/players",
+    "C:/Users/Johan Hallin/Monopoly/Monopoly/images/static"
+  ],
+  "packOptions": {
+    "textureName": "texture",
+    "textureFormat": "png",
+    "removeFileExtension": false,
+    "prependFolderName": true,
+    "base64Export": false,
+    "tinify": false,
+    "tinifyKey": "",
+    "scale": 1,
+    "filter": "none",
+    "exporter": "JSON (array)",
+    "fileName": "pack-result",
+    "savePath": "C:\\Users\\Johan Hallin\\Monopoly\\Monopoly\\images",
+    "width": 4096,
+    "height": 4096,
+    "fixedSize": false,
+    "powerOfTwo": false,
+    "padding": 1,
+    "extrude": 0,
+    "allowRotation": false,
+    "allowTrim": false,
+    "trimMode": "trim",
+    "alphaThreshold": "0",
+    "detectIdentical": true,
+    "packer": "MaxRectsBin",
+    "packerMethod": "BottomLeftRule"
+  }
+}

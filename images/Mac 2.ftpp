@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "version": "0.6.7"
+  },
+  "savePath": "/Users/edwardklinghammer/dev/monopoly/Monopoly/images",
+  "images": [],
+  "folders": [
+    "/Users/edwardklinghammer/dev/monopoly/Monopoly/images/Cards",
+    "/Users/edwardklinghammer/dev/monopoly/Monopoly/images/buildings",
+    "/Users/edwardklinghammer/dev/monopoly/Monopoly/images/buttons",
+    "/Users/edwardklinghammer/dev/monopoly/Monopoly/images/community card and chance card",
+    "/Users/edwardklinghammer/dev/monopoly/Monopoly/images/corners",
+    "/Users/edwardklinghammer/dev/monopoly/Monopoly/images/dices",
+    "/Users/edwardklinghammer/dev/monopoly/Monopoly/images/menus",
+    "/Users/edwardklinghammer/dev/monopoly/Monopoly/images/plates",
+    "/Users/edwardklinghammer/dev/monopoly/Monopoly/images/playercolorbuttons",
+    "/Users/edwardklinghammer/dev/monopoly/Monopoly/images/players",
+    "/Users/edwardklinghammer/dev/monopoly/Monopoly/images/static"
+  ],
+  "packOptions": {
+    "textureName": "texture",
+    "textureFormat": "png",
+    "removeFileExtension": false,
+    "prependFolderName": true,
+    "base64Export": false,
+    "tinify": false,
+    "tinifyKey": "",
+    "scale": 1,
+    "filter": "none",
+    "exporter": "JSON (array)",
+    "fileName": "pack-result",
+    "savePath": "/Users/edwardklinghammer/dev/monopoly/Monopoly/images",
+    "width": 4096,
+    "height": 4096,
+    "fixedSize": false,
+    "powerOfTwo": false,
+    "padding": 0,
+    "extrude": 1,
+    "allowRotation": false,
+    "allowTrim": true,
+    "trimMode": "trim",
+    "alphaThreshold": "0",
+    "detectIdentical": true,
+    "packer": "OptimalPacker",
+    "packerMethod": "Automatic"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "version": "0.6.7"
+  },
+  "savePath": "D:\\monopol\\images",
+  "images": [],
+  "folders": [
+    "D:/monopol/images/Cards",
+    "D:/monopol/images/buildings",
+    "D:/monopol/images/buttons",
+    "D:/monopol/images/community card and chance card",
+    "D:/monopol/images/corners",
+    "D:/monopol/images/dices",
+    "D:/monopol/images/menus",
+    "D:/monopol/images/plates",
+    "D:/monopol/images/playercolorbuttons",
+    "D:/monopol/images/players",
+    "D:/monopol/images/static"
+  ],
+  "packOptions": {
+    "textureName": "texture",
+    "textureFormat": "png",
+    "removeFileExtension": false,
+    "prependFolderName": true,
+    "base64Export": false,
+    "tinify": false,
+    "tinifyKey": "",
+    "scale": 1,
+    "filter": "none",
+    "exporter": "JSON (array)",
+    "fileName": "pack-result",
+    "savePath": "D:\\monopol\\images",
+    "width": 4096,
+    "height": 4096,
+    "fixedSize": false,
+    "powerOfTwo": false,
+    "padding": 1,
+    "extrude": 0,
+    "allowRotation": false,
+    "allowTrim": false,
+    "trimMode": "trim",
+    "alphaThreshold": "0",
+    "detectIdentical": true,
+    "packer": "OptimalPacker",
+    "packerMethod": "Automatic"
+  }
+}
