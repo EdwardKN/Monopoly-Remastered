@@ -4,16 +4,27 @@ var currentMenu;
 var turn = 0;
 var hoverList = [];
 
+let colorsToPick = [0,1,2,3,4,5,6,7];
+
 async function init() {
     fixCanvas();
     await loadImages(images);
     
     board = new Board();
-    players.push(new Player(randomIntFromRange(0,7)));
-    players.push(new Player(randomIntFromRange(0,7)));
+    addRandomPlayer();
+    addRandomPlayer();
+    addRandomPlayer();
+    addRandomPlayer();
+
     board.calculateNameFontSize();
     update();
 };
+
+function addRandomPlayer(){
+    let random = randomIntFromRange(0,colorsToPick.length-1);
+    players.push(new Player(colorsToPick[random]));
+    colorsToPick.splice(random,1);
+}
 
 function update(){
     requestAnimationFrame(update);
@@ -152,7 +163,7 @@ class Board{
         this.boardPieces.forEach(e => e.draw());
 
         this.boardPieces.forEach(e => {if(e.owner && e.constructor.name == "BuyableProperty") e.drawHouses()})
-        this.boardPieces.forEach(e => {if(e.hover){hoverList.push(e.info.name)}});
+        this.boardPieces.forEach(e => {if(e.hover){hoverList.push(e.info.name + (e.owner !== undefined ? "(" + e.owner.name + ")" : ""))}});
 
         c.drawText("Just nu:" + players[turn].name,canvas.width/2,30,this.nameFontSize,"center")
 
@@ -436,15 +447,33 @@ class Station extends BuyableProperty{
         if(this.owner == undefined){
             this.openCard();
         }else if(this.owner != players[turn]){
+            this.level = (this.owner.ownedPlaces.filter(e => e.constructor.name == "Station").length)-1;
             this.payRent();
         }
     }
 }
 class Utility extends BuyableProperty{
-    step(){
+    step(steps){
         if(this.owner == undefined){
             this.openCard();
+        }else if(this.owner != players[turn]){
+            let amount = this.owner.ownedPlaces.filter(e => e.constructor.name == "Utility").length;
+            if(steps == undefined){
+                let self = this;
+                board.dices.roll(function(dice1,dice2){
+                    self.pay(dice1+dice2,amount);
+                    board.dices.hidden = true;
+                })
+            }else{
+                this.pay(steps,amount)
+            }
+
         }
+    }
+    pay(steps,amount){
+        let rent = steps * (amount == 1 ? 4 : 10);
+        this.owner.money += rent;
+        players[turn].money -= rent;
     }
 }
 class Community extends BoardPiece{
@@ -469,6 +498,120 @@ class SuperTax extends BoardPiece{
         currentMenu = new CardDraw("special", 3,function(){
             players[turn].money -= 100;
         })
+    }
+}
+
+class Auction{
+    constructor(cardId){
+        let self = this;
+        this.boardPiece = board.boardPieces[cardId];
+        this.startButton = new Button({x:canvas.width/2-256 + 28,y:canvas.height/2 + 80,w:220,h:40},images.buttons.startauction,function(){self.startAuction()})
+        this.auctionMoney = 0;
+        this.turn = turn;
+        this.playerlist = [...players];
+        this.calculateNameFontSize();
+        if((this.playerlist[this.turn].money < this.auctionMoney+2) || this.playerlist[this.turn].money < this.boardPiece.info.price/2){
+            this.leaveAuction();
+        };
+    }
+
+    startAuction(){
+        let self = this;
+        this.started = true;
+        this.add2 = new Button({x:canvas.width/2-256 + 28 + splitPoints(3,220,54,0),y:canvas.height/2 + 10,w:54,h:54},images.buttons["auction+2"],function(){self.addMoney(2)});
+        this.add10 = new Button({x:canvas.width/2-256 + 28 + splitPoints(3,220,54,1),y:canvas.height/2 + 10,w:54,h:54},images.buttons["auction+10"],function(){self.addMoney(10)});
+        this.add100 = new Button({x:canvas.width/2-256 + 28 + splitPoints(3,220,54,2),y:canvas.height/2 + 10,w:54,h:54},images.buttons["auction+100"],function(){self.addMoney(100)});
+        this.leaveButton = new Button({x:canvas.width/2-256 + 28,y:canvas.height/2 + 80,w:220,h:40},images.buttons.exitauction,function(){self.leaveAuction()});
+    }
+    addMoney(amount){
+        this.auctionMoney+=amount;
+        this.nextPlayer();
+    };
+    leaveAuction(){
+        this.playerlist.splice(this.turn,1);
+        this.nextPlayer();
+        if(this.playerlist.length == 1){
+            this.winAuction(this.playerlist[0]);
+        };
+        
+    };
+    nextPlayer(){
+        this.turn = (this.turn+1)%this.playerlist.length;
+        if((this.playerlist[this.turn].money < this.auctionMoney+2) || this.playerlist[this.turn].money < this.boardPiece.info.price/2){
+            this.leaveAuction();
+        };
+    }
+    winAuction(winner){
+        let playerIndex = players.indexOf(winner);
+
+        if(this.auctionMoney > this.boardPiece.info.price/2){
+            players[playerIndex].money -= this.auctionMoney;
+            this.boardPiece.owner = players[playerIndex];
+            players[playerIndex].ownedPlaces.push(this.boardPiece);
+        };
+        currentMenu = undefined;
+    };
+
+    calculateNameFontSize(){
+        let textsize = measureText({ font: "verdanai", text: this.playerlist[turn].name})
+        this.nameFontSize = (1 / textsize.width) * 25000 > 30 ? 30 : (1 / textsize.width) * 25000
+    }
+    draw(){
+        c.drawImageFromSpriteSheet(images.cards[this.boardPiece.info.card],{x:canvas.width/2 - 10,y:canvas.height/2-162})
+        c.drawImageFromSpriteSheet(images.menus.auctionmenubackground,{x:canvas.width/2-256 + 10,y:canvas.height/2-162})
+        if(!this.started){
+            this.startButton.update();
+        }else{
+            this.add100.disabled = (this.playerlist[this.turn].money < this.auctionMoney+100)
+            this.add10.disabled = (this.playerlist[this.turn].money < this.auctionMoney+10)
+            this.add2.update();
+            this.add10.update();
+            this.add100.update();
+            this.leaveButton.update();
+        }
+
+        c.drawText(this.playerlist[this.turn].name,canvas.width/2-118,canvas.height/2- 50,this.nameFontSize,"center")
+
+        c.drawText(this.auctionMoney + "kr",canvas.width/2-118,canvas.height/2,30,"center", !this.started ? "black" : (this.auctionMoney < this.boardPiece.info.price/2) ? "red" : "green")
+    }
+    
+
+}
+
+class Trade{
+    constructor(player1,player2){
+        this.player1 = player1;
+        this.player2 = player2;
+
+        this.closeButton = new Button({x:canvas.width/2 +455 - 22,y:canvas.height/2 - 256 + 4,w:18,h:18,invertedHitbox:{
+            x:canvas.width/2 - 455, 
+            y: canvas.height/2 - 256,
+            w:910,
+            h:512
+        },disableHover:true},images.buttons.exitCard,this.closeTrade)
+
+        this.player1MoneySlider = new Slider({x:canvas.width/2 -455 +30,y:100,w:400,h:20,from:0,to:this.player1.money,steps:10,unit:"kr"})
+        this.player2MoneySlider = new Slider({x:canvas.width/2 +455 -430 ,y:100,w:400,h:20,from:0,to:this.player1.money,steps:10,unit:"kr"})
+
+        this.player1Accept = new Button({x:canvas.width/2 - 455 + 205 - 75,y:460,w:150,h:50,selectButton:true},images.buttons.accept);
+        this.player2Accept = new Button({x:canvas.width/2 - 455 + 900 - 455/2 - 75,y:460,w:150,h:50,selectButton:true},images.buttons.accept);
+    }
+    draw(){
+        c.drawImageFromSpriteSheet(images.menus.tradingmenu,{x:canvas.width/2 - 455, y: canvas.height/2 - 256})
+
+        c.drawText(this.player1.name,canvas.width/2 - 455/2,70,30,"center")
+
+        c.drawText(this.player2.name,canvas.width/2 - 455 + 900 - 455/2,70,30,"center")
+
+        this.closeButton.update();
+        this.player1MoneySlider.update();
+        this.player2MoneySlider.update();
+
+        this.player1Accept.update();
+        this.player2Accept.update();
+    }   
+    closeTrade(){
+        currentMenu = undefined;
     }
 }
 
@@ -516,7 +659,7 @@ class CardDraw{
         }else if(this.card.gotoClosest){
             let self = this;
             let closest = findClosest(players[turn].pos,board.boardPieces.filter(e => e.constructor.name == self.card.gotoClosest).map(e => e.n))
-            players[turn].teleportTo(closest * Math.sign(closest-players[turn].pos));
+            players[turn].teleportTo(closest * Math.sign(closest-players[turn].pos),true);
         }else if(this.card.properyPrice){
             let self = this;
             players[turn].ownedPlaces.forEach(place =>{
@@ -547,7 +690,7 @@ class PropertyCard{
 
         this.hasUpgradeButtons = !(board.boardPieces[this.n] instanceof Station || board.boardPieces[this.n] instanceof Utility);
 
-        this.auctionButton = new Button({x:canvas.width/2 - 128+11 + splitPoints(2,234,97,0),y:canvas.height/2 + 100,w:97,h:40},images.buttons.auction)
+        this.auctionButton = new Button({x:canvas.width/2 - 128+11 + splitPoints(2,234,97,0),y:canvas.height/2 + 100,w:97,h:40},images.buttons.auction,function(){currentMenu = new Auction(self.n)});
         this.buyButton = new Button({x:canvas.width/2 - 128+11 + splitPoints(2,234,97,1),y:canvas.height/2 + 100,w:97,h:40},images.buttons.buythislawn,function(){self.buyThis();});
 
         if(!this.hasUpgradeButtons){
@@ -581,14 +724,25 @@ class PropertyCard{
                 y:canvas.height/2 - 162
             });
         }
-        this.closeButton.update();
-
+        
 
 
         if(players[turn].pos === this.n && board.boardPieces[this.n].owner === undefined && !players[turn].hasBought){
+
+            let self = this;
+            this.buyButton.disabled = (players[turn].money < board.boardPieces[this.n].info.price);
+            this.auctionButton.disabled = (players.filter(e => e.money >= board.boardPieces[self.n].info.price/2).length < 2);
+            
+
+            if(this.buyButton.disabled && this.auctionButton.disabled){
+                this.closeButton.update();
+            }
+
             this.buyButton.update();
             this.auctionButton.update();
+
         }else if(board.boardPieces[this.n].owner == players[turn]){
+            this.closeButton.update();
             this.mortgageButton.disabled = (board.boardPieces[this.n].mortgaged ? !(players[turn].money >= (board.boardPieces[this.n].info.price/2)*1.1) : false)
             this.sellButton.update();
             this.mortgageButton.update();
@@ -598,6 +752,8 @@ class PropertyCard{
                 this.downgradeButton.update();
                 this.upgradeButton.update();
             }
+        }else{
+            this.closeButton.update();
         }
     }
     closeCard(){
@@ -607,12 +763,12 @@ class PropertyCard{
 
 class Player{
     constructor(color){
+        this.color = color;
         this.pos = 0;
         this.money = 1400;
         this.ownedPlaces = [];
-        this.name = "dfgdgsdgffffsdhfds";
+        this.name = playerInfo[this.color].color;
         this.prisonCards = 0;
-        this.color = color;
         this.info = playerInfo[this.color];
         this.inPrison = false;
         this.rolls = 0;
@@ -660,7 +816,7 @@ class Player{
     draw(){
         let coord = to_screen_coordinate(this.drawX,this.drawY);    
         this.hover = (detectCollision(coord.x,coord.y,24,48,mouse.x,mouse.y,1,1) && !currentMenu && board.dices.hidden && !board.playerIsWalking);
-        if(this.hover){hoverList.push(this.name + ((players[turn] !== this) ? "(Trade)" : "(Du)"))}
+        if(this.hover){hoverList.push(this.name + ((players[turn] !== this) ? "(Föreslå bytesförslag)" : "(Du)"))}
         if(this.hover && mouse.down && (players[turn] !== this)){
             this.moneyShowerThing.button.onClick();
             mouse.down = false;
@@ -674,7 +830,7 @@ class Player{
         this.moneyShowerThing.update();
     }
 
-    teleportTo(newPos){
+    teleportTo(newPos,noSteps){
         newPos = newPos%40;
         let direction = 1;
         if (newPos < 0) {
@@ -682,15 +838,16 @@ class Player{
         };
         let self = this;
         
-        this.animateSteps(Math.abs(newPos),direction,function(){
+        this.animateSteps(Math.abs(newPos),direction,function(steps){
             if(board.boardPieces[self.pos]?.step){
-                board.boardPieces[self.pos].step();
+                board.boardPieces[self.pos].step((noSteps ? undefined : steps));
             }
         });
     }
     animateSteps(newPos,direction,onStep){
         board.playerIsWalking = true;
         let self = this;
+        let steps = newPos-self.pos;
 
         let timer = setInterval(() =>{
             self.pos += direction;
@@ -703,7 +860,7 @@ class Player{
                 clearInterval(timer)
                 board.dices.hidden = true;
                 board.playerIsWalking = false;
-                onStep();
+                onStep(steps);
             };
         },250)
     }
@@ -754,8 +911,10 @@ class Money{
         this.drawX = (this.side ? canvas.width-354 : 0)
         this.drawY = (this.index < 2 ? 0 : this.index < 4 ? canvas.height-54 : this.index < 6 ? 54 : canvas.height-54*2)
 
-        this.button = new Button({x:this.drawX,y:this.drawY,w:354,h:54,mirrored:!this.side,hoverText:"Trade",disableDisabledTexture:true},images.buttons.playerborder,function(){
-
+        let self = this;
+        
+        this.button = new Button({x:this.drawX,y:this.drawY,w:354,h:54,mirrored:!this.side,hoverText:"Föreslå bytesförslag",disableDisabledTexture:true},images.buttons.playerborder,function(){
+            currentMenu = new Trade(players[turn],self.player)
         })
     }
     calculateNameFontSize(){

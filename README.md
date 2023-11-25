@@ -3,10 +3,10 @@
 En komplett omskrivning av orginalet
 
 Funktionalitet
-- [ ] Auktioner
-- [ ] Trading
+- [x] Auktioner
+- [x] Trading
 - [ ] Korrekt köpning av hus/hotell
-- [ ] Korrekt betalning vid stationer och vatten/elledningsverk
+- [x] Korrekt betalning vid stationer och vatten/elledningsverk
 - [ ] Antialiasing
 - [ ] Fullscreen
 - [ ] Ljud

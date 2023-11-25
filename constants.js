@@ -105,7 +105,13 @@ var images = {
         "statbutton",
         "antilising",
         "fullscreen",
-        "music"
+        "music",
+        "startauction",
+        "auction+2",
+        "auction+10",
+        "auction+100",
+        "exitauction",
+        "accept"
     ],
     "community card and chance card":[
         "emptychancecard",
@@ -146,7 +152,9 @@ var images = {
     ],
     menus:[
         "prisonmenu",
-        "exitmenu"
+        "exitmenu",
+        "auctionmenubackground",
+        "tradingmenu"
     ],
     buildings:[
         "hotel",
@@ -370,6 +378,7 @@ const pieces = [
     {
         name: "Södra stationen",
         price: 200,
+        rent:[25, 50, 100, 200],
         type: "station",
         img: "train",
         mortgaged: "trainmortgaged",
@@ -463,6 +472,7 @@ const pieces = [
     {
         name: "Östra Stationen",
         price: 200,
+        rent:[25, 50, 100, 200],
         type: "station",
         img: "train",
         mortgaged: "trainmortgaged",
@@ -552,6 +562,7 @@ const pieces = [
     {
         name: "Centralstationen",
         price: 200,
+        rent:[25, 50, 100, 200],
         type: "station",
         img: "train",
         mortgaged: "trainmortgaged",
@@ -645,6 +656,7 @@ const pieces = [
     {
         name: "Norra stationen",
         price: 200,
+        rent:[25, 50, 100, 200],
         type: "station",
         img: "train",
         mortgaged: "trainmortgaged",

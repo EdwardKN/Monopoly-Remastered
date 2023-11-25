@@ -35,10 +35,12 @@ var mouse = {
 
 renderCanvas.addEventListener("mousedown", function (e) {
     mouse.down = true;
+    mouse.up = false;
     mouse.which = e.which;
 });
 renderCanvas.addEventListener("mouseup", function (e) {
     mouse.down = false;
+    mouse.up = true;
 });
 
 function fixCanvas() {
@@ -57,6 +59,62 @@ function fixCanvas() {
 
 var buttons = [];
 
+class Slider{
+    constructor(settings,onChange){
+        this.x = settings?.x;
+        this.y = settings?.y;
+        this.w = settings?.w;
+        this.h = settings?.h;
+        this.from = settings?.from;
+        this.to = settings?.to;
+        this.steps = (settings?.steps == undefined) ? 1 : settings?.steps;
+        this.textSize = (settings?.textSize == undefined) ? this.h : settings?.textSize;
+        this.unit = (settings?.unit == undefined) ? "" : settings?.unit;
+        this.beginningText = (settings?.beginningText == undefined) ? "" : settings?.beginningText;
+        this.onChange = (onChange == undefined ? function(){} : onChange);
+        
+        this.percentage = 0;
+        this.value = 0;
+        this.last = this.value;
+        this.follow = false;
+        buttons.push(this)
+    }
+    update(){
+        if (this.value !== this.last) {
+            this.last = this.value;
+            this.onChange();
+        };
+        this.hover = detectCollision(this.x, this.y, this.w, this.h, mouse.x, mouse.y, 1, 1); 
+        if(mouse.down && this.hover){
+            mouse.down = false;
+            this.follow = true;
+        };
+        if(mouse.up){
+            this.follow = false;
+        };
+
+        if(this.follow){
+            this.percentage = Math.max(Math.min((mouse.x - 2 - (this.x)) / (this.w - 4), 1), 0);
+            this.value = Math.round((((this.to - this.from) * this.percentage) + this.from) / this.steps) * this.steps;
+        };
+        this.draw();
+
+
+    }
+    draw(){
+        c.fillStyle = "white";
+        c.fillRect(this.x,this.y,this.w,this.h);
+        c.strokeStyle ="black";
+        c.lineWidth = 4;
+        c.strokeRect(this.x,this.y,this.w,this.h);
+
+        c.fillStyle = "black";
+        c.fillRect(this.x + (this.percentage)*(this.w-4),this.y, 4,this.h);
+
+        c.drawText(this.beginningText + this.value + this.unit,this.x + this.w/2,this.y-2+this.textSize,this.textSize,"center")
+    }
+}
+
 class Button {
     constructor(settings, image, onClick,onRightClick) {
         this.x = settings?.x;
@@ -74,6 +132,8 @@ class Button {
         this.mirrored = settings?.mirrored;
         this.hoverText = (settings?.hoverText == undefined ? "" : settings.hoverText)
         this.disableDisabledTexture = settings?.disableDisabledTexture;
+        this.selectButton = settings?.selectButton;
+        this.selected = false;
 
         if (!this.onRightClick) {
             this.onRightClick = function () { }
@@ -96,6 +156,7 @@ class Button {
         if ((this.hover || this.invertedHover) && mouse.down && !this.disabled) {
             mouse.down = false;
             this.onClick();
+            this.selected = !this.selected;
         }
         if (this.hover && mouse.rightDown && !this.disabled) {
             this.onRightClick();
@@ -107,6 +168,7 @@ class Button {
     draw() {
         let cropAdder = (this.hover && !this.disableHover) ? this.w : 0;
         cropAdder = (this.disabled) ? (this.disableDisabledTexture ? 0 : this.w*2) : cropAdder;
+        cropAdder += (this.selectButton == undefined ? 0 : (this.selected ? this.w*2 : 0));
         c.drawRotatedImageFromSpriteSheet(this.image,{
             x:this.x,
             y:this.y,
