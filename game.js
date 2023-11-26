@@ -123,6 +123,9 @@ class Board{
         }
         board.calculateNameFontSize();
     }
+    getColorGroup(group){
+        return this.boardPieces.filter(e => e?.info?.group == group);
+    }
     init(){
         for (let n = 0; n < 40; n++) {
             if (n % 10 === 0) {
@@ -602,13 +605,17 @@ class Trade{
         this.player1Properties = [];
 
         this.player1.ownedPlaces.forEach((place,i,amount) => {
-            this.player1Properties.push({place:place,button:new Button({x:35 + splitPoints(2,440,186,(i%2)),y:130 + splitPoints(Math.ceil(amount.length/2),330,21,Math.floor(i/2)),w:186,h:21,textSize:15,text:place.info.name,color:place.info.color,selectButton:true},images.buttons.tradingcityname,function(){self.player1Accept.selected = false;self.player2Accept.selected = false;})})
+            if(place.level == 0 || place.info.type == "station"){
+                this.player1Properties.push({place:place,button:new Button({x:35 + splitPoints(2,440,186,(i%2)),y:130 + splitPoints(Math.ceil(amount.length/2),330,21,Math.floor(i/2)),w:186,h:21,textSize:15,text:place.info.name,color:place.info.color,selectButton:true},images.buttons.tradingcityname,function(){self.player1Accept.selected = false;self.player2Accept.selected = false;})})
+            }
         })
 
         this.player2Properties = [];
 
         this.player2.ownedPlaces.forEach((place,i,amount) => {
-            this.player2Properties.push({place:place,button:new Button({x:450 + 35 + splitPoints(2,440,186,(i%2)),y:130 + splitPoints(Math.ceil(amount.length/2),330,21,Math.floor(i/2)),w:186,h:21,textSize:15,text:place.info.name,color:place.info.color,selectButton:true},images.buttons.tradingcityname,function(){self.player1Accept.selected = false;self.player2Accept.selected = false;})})
+            if(place.level == 0 || place.info.type == "station"){
+                this.player2Properties.push({place:place,button:new Button({x:450 + 35 + splitPoints(2,440,186,(i%2)),y:130 + splitPoints(Math.ceil(amount.length/2),330,21,Math.floor(i/2)),w:186,h:21,textSize:15,text:place.info.name,color:place.info.color,selectButton:true},images.buttons.tradingcityname,function(){self.player1Accept.selected = false;self.player2Accept.selected = false;})})
+            }
         })
     }
     draw(){
@@ -747,19 +754,58 @@ class PropertyCard{
         }else{
             this.sellButton = new Button({x:canvas.width/2 - 128+11 + splitPoints(4,234,40,0),y:canvas.height/2 + 100,w:40,h:40,hoverText:"Sälj"},images.buttons.sellbutton,function(){self.sellThis()})
             this.mortgageButton = new Button({x:canvas.width/2 - 128+11 + splitPoints(4,234,40,1),y:canvas.height/2 + 100,w:40,h:40,hoverText:"Inteckna"},images.buttons.mortgage,function(){board.boardPieces[self.n].mortgage()})
-            this.downgradeButton = new Button({x:canvas.width/2 - 128+11 + splitPoints(4,234,40,2),y:canvas.height/2 + 100,w:40,h:40,hoverText:"Sälj Hus"},images.buttons.arrowdown,function(){board.boardPieces[self.n].downgrade()})
-            this.upgradeButton = new Button({x:canvas.width/2 - 128+11 + splitPoints(4,234,40,3),y:canvas.height/2 + 100,w:40,h:40,hoverText:"Köp Hus"},images.buttons.arrowup,function(){board.boardPieces[self.n].upgrade()})
+            this.downgradeButton = new Button({x:canvas.width/2 - 128+11 + splitPoints(4,234,40,2),y:canvas.height/2 + 100,w:40,h:40,hoverText:"Sälj Hus"},images.buttons.arrowdown,function(){board.boardPieces[self.indexToDowngrade].downgrade()})
+            this.upgradeButton = new Button({x:canvas.width/2 - 128+11 + splitPoints(4,234,40,3),y:canvas.height/2 + 100,w:40,h:40,hoverText:"Köp Hus"},images.buttons.arrowup,function(){board.boardPieces[self.indexToUpgrade].upgrade()})
         }
 
     };
     buyThis(){
         board.boardPieces[this.n].buy()
-        players[turn].hasBought = true;
+        //players[turn].hasBought = true;
         this.closeCard();
     }
     sellThis(){
         board.boardPieces[this.n].sell()
         this.closeCard();
+    }
+    
+    calculateUpgrade(){
+        let colorGroup = board.getColorGroup(board.boardPieces[this.n].info.group);
+
+        if(colorGroup.length == colorGroup.filter(e => e.owner == players[turn]).length){
+            if(players[turn].money < board.boardPieces[this.n].info.housePrice){
+                return false;
+            }else{
+                let lowest = colorGroup.sort((a, b) => a.level - b.level)[0].level;
+                if(lowest == 5){
+                    return false;
+                }
+                if(board.boardPieces[this.n].level == lowest){
+                    return this.n;
+                }
+                let propertyWithLowestLevel = colorGroup.filter(e => e.level == lowest);
+                return propertyWithLowestLevel.sort((a,b) => b.n - a.n)[0].n;
+            }
+        }else{
+            return false;
+        }
+    }
+    calculateDowngrade(){
+        let colorGroup = board.getColorGroup(board.boardPieces[this.n].info.group);
+        if(colorGroup.length == colorGroup.filter(e => e.owner == players[turn]).length){
+            let highest = colorGroup.sort((a, b) => b.level - a.level)[0].level;
+            if(highest == 0){
+                return false;
+            };
+            if(board.boardPieces[this.n].level == highest){
+                return this.n;
+            };
+            let propertyWithHighestLevel = colorGroup.filter(e => e.level == highest);
+            return propertyWithHighestLevel.sort((a,b) => a.n - b.n)[0].n;
+        }else{
+            return false;
+        }
+
     }
     draw(){
         c.drawRotatedImageFromSpriteSheet(images.cards[pieces[this.n].card],{
@@ -795,8 +841,10 @@ class PropertyCard{
             this.sellButton.update();
             this.mortgageButton.update();
             if(this.hasUpgradeButtons){
-                this.upgradeButton.disabled = (players[turn].money < board.boardPieces[this.n].info.housePrice || board.boardPieces[this.n].level > 4);
-                this.downgradeButton.disabled = (board.boardPieces[this.n].level == 0);
+                this.indexToUpgrade = this.calculateUpgrade();
+                this.indexToDowngrade = this.calculateDowngrade();
+                this.upgradeButton.disabled = (players[turn].money < board.boardPieces[this.n].info.housePrice || !this.indexToUpgrade);
+                this.downgradeButton.disabled = !this.indexToDowngrade;
                 this.downgradeButton.update();
                 this.upgradeButton.update();
             }
