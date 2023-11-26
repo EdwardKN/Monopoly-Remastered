@@ -2,20 +2,20 @@
   "meta": {
     "version": "0.6.7"
   },
-  "savePath": "D:\\monopol\\images",
+  "savePath": "D:\\monopol 2\\images",
   "images": [],
   "folders": [
-    "D:/monopol/images/Cards",
-    "D:/monopol/images/buildings",
-    "D:/monopol/images/buttons",
-    "D:/monopol/images/community card and chance card",
-    "D:/monopol/images/corners",
-    "D:/monopol/images/dices",
-    "D:/monopol/images/menus",
-    "D:/monopol/images/plates",
-    "D:/monopol/images/playercolorbuttons",
-    "D:/monopol/images/players",
-    "D:/monopol/images/static"
+    "D:/monopol 2/images/Cards",
+    "D:/monopol 2/images/buildings",
+    "D:/monopol 2/images/buttons",
+    "D:/monopol 2/images/community card and chance card",
+    "D:/monopol 2/images/corners",
+    "D:/monopol 2/images/dices",
+    "D:/monopol 2/images/menus",
+    "D:/monopol 2/images/plates",
+    "D:/monopol 2/images/playercolorbuttons",
+    "D:/monopol 2/images/players",
+    "D:/monopol 2/images/static"
   ],
   "packOptions": {
     "textureName": "texture",
@@ -29,7 +29,7 @@
     "filter": "none",
     "exporter": "JSON (array)",
     "fileName": "pack-result",
-    "savePath": "D:\\monopol\\images",
+    "savePath": "D:\\monopol 2\\images",
     "width": 4096,
     "height": 4096,
     "fixedSize": false,

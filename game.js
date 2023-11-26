@@ -10,6 +10,7 @@ async function init() {
     fixCanvas();
     await loadImages(images);
     
+    /*
     board = new Board();
     addRandomPlayer();
     addRandomPlayer();
@@ -17,6 +18,8 @@ async function init() {
     addRandomPlayer();
 
     board.calculateNameFontSize();
+    */
+   currentMenu = new MainMenu();
     update();
 };
 
@@ -33,7 +36,7 @@ function update(){
     renderC.clearRect(0, 0, renderCanvas.width, renderCanvas.height)
     c.clearRect(0, 0, canvas.width, canvas.height);
 
-    board.update();
+    board?.update();
     players.forEach(e => e.draw());
     currentMenu?.draw();
 
@@ -55,7 +58,7 @@ function update(){
         }
         e.hover = false;
     });
-    board.boardPieces.forEach(e => {
+    board?.boardPieces.forEach(e => {
         if(e.hover){
             tmp = true;
         };
@@ -72,6 +75,123 @@ function update(){
         renderCanvas.style.cursor = "pointer"
     } else {
         renderCanvas.style.cursor = "auto"
+    }
+}
+class MainMenu{
+    constructor(){
+        this.localButton = new Button({x:35,y:180,w:195,h:52},images.buttons.local,function(){currentMenu = new LobbyMenu()});
+        this.loadButton = new Button({x:35,y:260,w:195,h:52},images.buttons.load);
+        this.onlineButton = new Button({x:35,y:340,w:195,h:52},images.buttons.online);
+        this.creditsButton = new Button({x:35,y:420,w:195,h:52},images.buttons.credits);
+    }
+    draw(){
+        c.drawImageFromSpriteSheet(images.menus.mainmenu)
+
+        this.localButton.update();
+        this.loadButton.update();
+        this.onlineButton.update();
+        this.creditsButton.update();
+    }
+}
+class LobbyMenu{
+    constructor(){
+        this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new MainMenu()});
+        this.startButton = new Button({x:10 + 100,y:canvas.height-70,w:194,h:60},images.buttons.start,function(){});
+
+        this.currentMenu = undefined;
+
+        this.players = [];
+        this.selectedColors = [];
+        this.initPlayers();
+    }
+    initPlayers(){
+        let self = this;
+        for(let i = 0; i<8; i++){
+            this.players.push(
+                {
+                    textInput: new TextInput({x:10,y:80 + 48*i,w:300,h:40}),
+                    colorButton: new Button({x:320,y:82+48*i,w:40,h:40, selectButton:true,disableSelectTexture:true},images.playercolorbuttons.unselected,function(once){
+                        self.players.forEach((e,index) => {
+                            if(index != i){e.colorButton.selected = false;}else{
+                                self.players.forEach((b) => {
+                                    b.textInput.w = 300;
+                                })
+                                if(index >= 4){
+                                    self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30-40,-62+48*(i+1),e,self.selectedColors) : undefined;
+                                   
+                                    if(self.currentMenu){
+                                        self.players[index-1].textInput.w = 230;
+                                        self.players[index-2].textInput.w = 230;
+                                    }
+                                }else{
+                                    self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30-40,82+48*(i+1),e,self.selectedColors) : undefined;
+                                    
+                                    if(self.currentMenu){
+                                        self.players[index+1].textInput.w = 230;
+                                        self.players[index+2].textInput.w = 230;
+                                    }
+                                }
+                            }
+                        }); 
+                    }),
+                    selectedColor:-1
+                }
+            );
+
+        }
+    }
+    draw(){
+        let self = this;
+        c.drawImageFromSpriteSheet(images.menus.lobbymenu)
+        this.backButton.update();
+        this.startButton.update();
+        this.selectedColors = this.players.map(e => e.selectedColor).filter(e => e != -1);
+        this.players.forEach(player =>{
+            player.textInput.draw();
+            player.colorButton.image = images.playercolorbuttons[(player.selectedColor == -1 ? "unselected" : "playercolorbutton" + (player.selectedColor == 0 ? "" : player.selectedColor+1))]
+            if(self.currentMenu?.hover){
+                player.colorButton.draw();
+            }else{
+                player.colorButton.update();
+            }
+        })
+        this.currentMenu?.draw();
+    }   
+}
+
+class ColorSelector{
+    constructor(x,y,player,selectedColors){
+        this.x = x;
+        this.y = y;
+        this.w = 180,
+        this.h = 90;
+        this.colorButtons = [];
+        this.hover = false;     
+        this.selectedColors = selectedColors;
+
+        this.initColors();   
+        this.player = player;
+    }
+    initColors(){
+        let self = this;
+        for(let i = 0; i<8; i++){
+            this.colorButtons.push(new Button({x:this.x + splitPoints(4,180,40,i%4),y:this.y + splitPoints(2,90,40,Math.floor(i/4)),w:40,h:40, selectButton:true,disableSelectTexture:true},images.playercolorbuttons["playercolorbutton" + (i == 0 ? "" : i+1)],function(){
+                self.colorButtons.forEach((e,index) => {
+                    if(index != i){e.selected = false}else{
+                        self.player.selectedColor = i;
+                    };
+                })
+            }))
+            this.colorButtons[i].disabled = this.selectedColors?.length > 0 && (this.selectedColors?.indexOf(i) != -1)
+            
+        }
+        
+    }
+    draw(){
+        this.hover = detectCollision(this.x,this.y,this.w,this.h,mouse.x,mouse.y,1,1)
+        c.fillStyle = "black";
+        c.fillRect(this.x,this.y,this.w,this.h)
+        this.colorButtons.forEach(e => e.update());
     }
 }
 

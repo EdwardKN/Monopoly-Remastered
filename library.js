@@ -114,6 +114,47 @@ class Slider{
         c.drawText(this.beginningText + this.value + this.unit,this.x + this.w/2,this.y-2+this.textSize,this.textSize,"center")
     }
 }
+class TextInput{
+    constructor(settings,onChange){
+        this.x = settings?.x;
+        this.y = settings?.y;
+        this.w = settings?.w;
+        this.h = settings?.h;
+        this.textSize = (settings?.textSize == undefined) ? this.h : settings?.textSize;
+        this.onChange = (onChange == undefined ? function(){} : onChange);
+
+        this.maxLength = settings?.maxLength == undefined ? 100 : settings.maxLength;
+        this.placeHolder = settings?.placeHolder;
+
+        this.htmlElement = document.createElement("input");
+
+        this.htmlElement.addEventListener("mousemove", e => {
+            mouse.x = 10000;
+            mouse.y = 10000;
+        })
+
+        document.body.appendChild(this.htmlElement)
+        this.oldvalue = this.htmlElement.value;
+
+        this.htmlElement.style.position = "absolute"
+
+        this.htmlElement.style.padding = "0px"
+        this.htmlElement.style.zIndex = 100;
+        this.htmlElement.style.display = "inline"
+        this.htmlElement.style.fontFamily = "Verdanai"
+        this.htmlElement.placeholder = this.placeHolder != undefined ? this.placeHolder : ""
+    }
+    draw(){
+        this.htmlElement.style.left = this.x * scale + (window.innerWidth - renderCanvas.width) / 2 + "px";
+        this.htmlElement.style.top = this.y * scale+ (window.innerHeight - renderCanvas.height) / 2 + "px";
+        this.htmlElement.style.width = this.w * scale + "px";
+        this.htmlElement.style.height = this.h * scale + "px";
+
+        this.htmlElement.style.fontSize = this.textSize + "px"
+        this.htmlElement.maxLength = this.maxLength;
+        this.htmlElement.style.border = 5 * scale / 2 + "px solid black "
+    }
+}
 
 class Button {
     constructor(settings, image, onClick,onRightClick) {
@@ -133,6 +174,7 @@ class Button {
         this.hoverText = (settings?.hoverText == undefined ? "" : settings.hoverText)
         this.disableDisabledTexture = settings?.disableDisabledTexture;
         this.selectButton = settings?.selectButton;
+        this.disableSelectTexture = settings?.disableSelectTexture;
         this.selected = false;
         this.text = settings?.text;
         this.textSize = settings?.textSize;
@@ -158,8 +200,8 @@ class Button {
         }
         if ((this.hover || this.invertedHover) && mouse.down && !this.disabled) {
             mouse.down = false;
-            this.onClick();
             this.selected = !this.selected;
+            this.onClick();
         }
         if (this.hover && mouse.rightDown && !this.disabled) {
             this.onRightClick();
@@ -171,7 +213,7 @@ class Button {
     draw() {
         let cropAdder = (this.hover && !this.disableHover) ? this.w : 0;
         cropAdder = (this.disabled) ? (this.disableDisabledTexture ? 0 : this.w*2) : cropAdder;
-        cropAdder += (this.selectButton == undefined ? 0 : (this.selected ? this.w*2 : 0));
+        cropAdder += ((this.selectButton == undefined )? 0 : (this.selected ? (this.disableSelectTexture ? this.w : this.w*2) : 0));
         c.drawRotatedImageFromSpriteSheet(this.image,{
             x:this.x,
             y:this.y,

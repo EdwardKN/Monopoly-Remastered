@@ -112,7 +112,13 @@ var images = {
         "auction+100",
         "exitauction",
         "accept",
-        "tradingcityname"
+        "tradingcityname",
+        "local",
+        "load",
+        "online",
+        "credits",
+        "back",
+        "start"
     ],
     "community card and chance card":[
         "emptychancecard",
@@ -155,11 +161,25 @@ var images = {
         "prisonmenu",
         "exitmenu",
         "auctionmenubackground",
-        "tradingmenu"
+        "tradingmenu",
+        "mainmenu",
+        "lobbymenu"
     ],
     buildings:[
         "hotel",
         "house"
+    ],
+    playercolorbuttons:[
+        "playercolorbutton",
+        "playercolorbutton2",
+        "playercolorbutton3",
+        "playercolorbutton4",
+        "playercolorbutton5",
+        "playercolorbutton6",
+        "playercolorbutton7",
+        "playercolorbutton8",
+        "unselected",
+
     ]
 
 }
