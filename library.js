@@ -58,6 +58,7 @@ function fixCanvas() {
 };
 
 var buttons = [];
+var textInputs = [];
 
 class Slider{
     constructor(settings,onChange){
@@ -140,11 +141,13 @@ class TextInput{
 
         this.htmlElement.style.padding = "0px"
         this.htmlElement.style.zIndex = 100;
-        this.htmlElement.style.display = "inline"
         this.htmlElement.style.fontFamily = "Verdanai"
         this.htmlElement.placeholder = this.placeHolder != undefined ? this.placeHolder : ""
+
+        textInputs.push(this);
     }
     draw(){
+        this.htmlElement.style.display = "inline"
         this.htmlElement.style.left = this.x * scale + (window.innerWidth - renderCanvas.width) / 2 + "px";
         this.htmlElement.style.top = this.y * scale+ (window.innerHeight - renderCanvas.height) / 2 + "px";
         this.htmlElement.style.width = this.w * scale + "px";

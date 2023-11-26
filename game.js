@@ -31,11 +31,14 @@ function addRandomPlayer(){
 
 function update(){
     requestAnimationFrame(update);
-
     
     renderC.clearRect(0, 0, renderCanvas.width, renderCanvas.height)
     c.clearRect(0, 0, canvas.width, canvas.height);
 
+    textInputs.forEach(e =>{
+        e.htmlElement.style.display = "none"
+    })
+    
     board?.update();
     players.forEach(e => e.draw());
     currentMenu?.draw();
@@ -70,6 +73,7 @@ function update(){
         };
         e.hover = false;
     });
+    
 
     if (tmp === true) {
         renderCanvas.style.cursor = "pointer"
