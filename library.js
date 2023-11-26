@@ -97,6 +97,10 @@ class Slider{
         if(this.follow){
             this.percentage = Math.max(Math.min((mouse.x - 2 - (this.x)) / (this.w - 4), 1), 0);
             this.value = Math.round((((this.to - this.from) * this.percentage) + this.from) / this.steps) * this.steps;
+            if(this.value > this.to){
+                this.value = this.to;
+            };
+
         };
         this.draw();
 
@@ -772,3 +776,7 @@ var findClosest = function (x, arr) {
     var min = Math.min.apply(Math, indexArr)
     return arr[indexArr.indexOf(min)]
   }
+
+  function hasDuplicates(array) {
+    return (new Set(array)).size !== array.length;
+}
