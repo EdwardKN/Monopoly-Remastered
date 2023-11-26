@@ -10,22 +10,28 @@ async function init() {
     fixCanvas();
     await loadImages(images);
     
-    /*
-    board = new Board();
-    addRandomPlayer();
-    addRandomPlayer();
-    addRandomPlayer();
-    addRandomPlayer();
-
-    board.calculateNameFontSize();
-    */
    currentMenu = new MainMenu();
     update();
 };
 
-function addRandomPlayer(){
+function startGame(playersToStartGameWith){
+    board = new Board();
+
+    playersToStartGameWith.forEach(player => {
+        if(player.color != -1){
+            players.push(new Player(player.color,player.name));
+        }else{
+            addRandomPlayer(player.name);
+        }
+    })
+
+    board.calculateNameFontSize();
+
+}
+
+function addRandomPlayer(name){
     let random = randomIntFromRange(0,colorsToPick.length-1);
-    players.push(new Player(colorsToPick[random]));
+    players.push(new Player(colorsToPick[random],name));
     colorsToPick.splice(random,1);
 }
 
@@ -99,8 +105,20 @@ class MainMenu{
 }
 class LobbyMenu{
     constructor(){
+        let self = this;
+
         this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new MainMenu()});
-        this.startButton = new Button({x:10 + 100,y:canvas.height-70,w:194,h:60},images.buttons.start,function(){});
+        this.startButton = new Button({x:10 + 100,y:canvas.height-70,w:194,h:60},images.buttons.start,function(){
+            let tmp = [];
+            self.players.filter(e => e.textInput.value.length > 3).forEach(e => {
+                tmp.push({
+                    name: e.textInput.value,
+                    color: e.selectedColor
+                })
+            })
+            startGame(tmp);
+            currentMenu = undefined;
+        });
 
         this.currentMenu = undefined;
 
@@ -114,7 +132,7 @@ class LobbyMenu{
             this.players.push(
                 {
                     textInput: new TextInput({x:10,y:80 + 48*i,w:300,h:40}),
-                    colorButton: new Button({x:320,y:82+48*i,w:40,h:40, selectButton:true,disableSelectTexture:true},images.playercolorbuttons.unselected,function(once){
+                    colorButton: new Button({x:320,y:82+48*i,w:40,h:40, selectButton:true,disableSelectTexture:true},images.playercolorbuttons.unselected,function(){
                         self.players.forEach((e,index) => {
                             if(index != i){e.colorButton.selected = false;}else{
                                 self.players.forEach((b) => {
@@ -138,17 +156,16 @@ class LobbyMenu{
                             }
                         }); 
                     }),
-                    selectedColor:-1
+                    selectedColor:-1,
+                    botButton:new Button({x:370,y:82+48*i,w:40,h:40, selectButton:true},images.buttons.bot)
                 }
             );
-
         }
     }
     draw(){
         let self = this;
-        c.drawImageFromSpriteSheet(images.menus.lobbymenu)
+        c.drawImageFromSpriteSheet(images.menus.lobbymenu);
         this.backButton.update();
-        this.startButton.update();
         this.selectedColors = this.players.map(e => e.selectedColor).filter(e => e != -1);
         this.players.forEach(player =>{
             player.textInput.draw();
@@ -158,8 +175,14 @@ class LobbyMenu{
             }else{
                 player.colorButton.update();
             }
+            player.botButton.update();
         })
         this.currentMenu?.draw();
+
+        let readyPlayers = this.players.filter(e => e.textInput.value.length > 3);
+        
+        this.startButton.disabled = readyPlayers.length < 2
+        this.startButton.update();
     }   
 }
 
@@ -203,10 +226,17 @@ class SmallMenu{
     constructor(){
         this.leaveButton = new Button({x:canvas.width/2 - 120 + splitPoints(5,240,40,1), y:canvas.height/2 + 25, w:40, h:40, hoverText: "Stäng ruta",invertedHitbox:{x:canvas.width/2 - 128, y: canvas.height/2 - 128,w:256,h:256}},images.buttons.no,function(){currentMenu = undefined});
         this.statButton = new Button({x:canvas.width/2 - 120 + splitPoints(5,240,40,2), y:canvas.height/2 + 25, w:40, h:40, hoverText: "Visa Statistik"},images.buttons.statbutton);
-        this.exitButton = new Button({x:canvas.width/2 - 120 + splitPoints(5,240,40,3), y:canvas.height/2 + 25, w:40, h:40, hoverText: "Återvänd till Huvudmenyn"},images.buttons.yes);
+        this.exitButton = new Button({x:canvas.width/2 - 120 + splitPoints(5,240,40,3), y:canvas.height/2 + 25, w:40, h:40, hoverText: "Återvänd till Huvudmenyn"},images.buttons.yes,function(){
+            board = undefined;
+            players = [];
+            currentMenu = new MainMenu();
+
+        });
         this.antiAliasingButton = new Button({x:canvas.width/2 - 120 + splitPoints(5,240,40,0), y:canvas.height/2 + 75, w:40, h:40, hoverText: "Antialiasing"},images.buttons.antilising);
         this.fullScreenButton = new Button({x:canvas.width/2 - 120 + splitPoints(5,240,40,1), y:canvas.height/2 + 75, w:40, h:40, hoverText: "Fullskärm"},images.buttons.fullscreen);
         this.muteButton = new Button({x:canvas.width/2 - 120 + splitPoints(5,240,40,4), y:canvas.height/2 + 75, w:40, h:40, hoverText: "Tysta ljudet"},images.buttons.music);
+
+        this.volumeSlider = new Slider({x:canvas.width/2 - 120 + splitPoints(5,240,40,2), y:canvas.height/2 + 75, w:80, h:40,from:0,to:100,textSize:25,unit:"%"})
     }
     draw(){
         c.drawImageFromSpriteSheet(images.menus.exitmenu,{x:canvas.width/2 - 128, y: canvas.height/2 - 128})
@@ -216,6 +246,7 @@ class SmallMenu{
         this.antiAliasingButton.update();
         this.fullScreenButton.update();
         this.muteButton.update();
+        this.volumeSlider.update();
     }
 }
 
@@ -982,12 +1013,12 @@ class PropertyCard{
 }
 
 class Player{
-    constructor(color){
+    constructor(color,name){
         this.color = color;
         this.pos = 0;
         this.money = 1400;
         this.ownedPlaces = [];
-        this.name = playerInfo[this.color].color;
+        this.name = name;
         this.prisonCards = 0;
         this.info = playerInfo[this.color];
         this.inPrison = false;

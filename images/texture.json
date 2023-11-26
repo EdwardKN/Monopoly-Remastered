@@ -1226,7 +1226,7 @@
       }
     },
     {
-      "filename": "cards/bluecard1.png",
+      "filename": "cards/pinkcard1.png",
       "frame": {
         "x": 3085,
         "y": 2245,
@@ -1251,7 +1251,7 @@
       }
     },
     {
-      "filename": "cards/browncard2.png",
+      "filename": "cards/browncard1.png",
       "frame": {
         "x": 3085,
         "y": 2571,
@@ -1276,7 +1276,7 @@
       }
     },
     {
-      "filename": "cards/centralstation.png",
+      "filename": "cards/browncard2.png",
       "frame": {
         "x": 3085,
         "y": 2897,
@@ -1301,7 +1301,7 @@
       }
     },
     {
-      "filename": "cards/eaststation.png",
+      "filename": "cards/centralstation.png",
       "frame": {
         "x": 3372,
         "y": 1,
@@ -1326,7 +1326,7 @@
       }
     },
     {
-      "filename": "cards/electricitycard.png",
+      "filename": "cards/eaststation.png",
       "frame": {
         "x": 3401,
         "y": 327,
@@ -1351,7 +1351,7 @@
       }
     },
     {
-      "filename": "cards/yellowcard3.png",
+      "filename": "cards/electricitycard.png",
       "frame": {
         "x": 3401,
         "y": 653,
@@ -1376,7 +1376,7 @@
       }
     },
     {
-      "filename": "cards/yellowcard2.png",
+      "filename": "cards/emptytraincardtemplate.png",
       "frame": {
         "x": 3401,
         "y": 979,
@@ -1401,7 +1401,7 @@
       }
     },
     {
-      "filename": "cards/emptytraincardtemplate.png",
+      "filename": "cards/greencard1.png",
       "frame": {
         "x": 3343,
         "y": 1859,
@@ -1426,7 +1426,7 @@
       }
     },
     {
-      "filename": "cards/greencard1.png",
+      "filename": "cards/greencard2.png",
       "frame": {
         "x": 3415,
         "y": 1305,
@@ -1451,7 +1451,7 @@
       }
     },
     {
-      "filename": "cards/yellowcard1.png",
+      "filename": "cards/greencard3.png",
       "frame": {
         "x": 3343,
         "y": 2185,
@@ -1476,7 +1476,7 @@
       }
     },
     {
-      "filename": "cards/waterworkscard.png",
+      "filename": "cards/lightbluecard1.png",
       "frame": {
         "x": 3343,
         "y": 2511,
@@ -1501,7 +1501,7 @@
       }
     },
     {
-      "filename": "cards/greencard2.png",
+      "filename": "cards/lightbluecard2.png",
       "frame": {
         "x": 3343,
         "y": 2837,
@@ -1526,7 +1526,7 @@
       }
     },
     {
-      "filename": "cards/greencard3.png",
+      "filename": "cards/lightbluecard3.png",
       "frame": {
         "x": 3343,
         "y": 3163,
@@ -1551,7 +1551,7 @@
       }
     },
     {
-      "filename": "cards/lightbluecard1.png",
+      "filename": "cards/mortgageoverlay.png",
       "frame": {
         "x": 3085,
         "y": 3223,
@@ -1576,7 +1576,7 @@
       }
     },
     {
-      "filename": "cards/southstation.png",
+      "filename": "cards/northstation.png",
       "frame": {
         "x": 1,
         "y": 3213,
@@ -1601,7 +1601,7 @@
       }
     },
     {
-      "filename": "cards/lightbluecard2.png",
+      "filename": "cards/orangecard1.png",
       "frame": {
         "x": 259,
         "y": 3213,
@@ -1626,7 +1626,7 @@
       }
     },
     {
-      "filename": "cards/redcard3.png",
+      "filename": "cards/orangecard2.png",
       "frame": {
         "x": 517,
         "y": 3213,
@@ -1651,7 +1651,7 @@
       }
     },
     {
-      "filename": "cards/lightbluecard3.png",
+      "filename": "cards/orangecard3.png",
       "frame": {
         "x": 775,
         "y": 3213,
@@ -1676,7 +1676,7 @@
       }
     },
     {
-      "filename": "menus/auctionmenubackground.png",
+      "filename": "cards/bluecard2.png",
       "frame": {
         "x": 1033,
         "y": 3213,
@@ -1701,7 +1701,7 @@
       }
     },
     {
-      "filename": "cards/redcard2.png",
+      "filename": "cards/pinkcard2.png",
       "frame": {
         "x": 1291,
         "y": 3339,
@@ -1726,7 +1726,7 @@
       }
     },
     {
-      "filename": "cards/redcard1.png",
+      "filename": "cards/bluecard1.png",
       "frame": {
         "x": 1549,
         "y": 3339,
@@ -1751,7 +1751,7 @@
       }
     },
     {
-      "filename": "cards/browncard1.png",
+      "filename": "cards/redcard1.png",
       "frame": {
         "x": 1807,
         "y": 3339,
@@ -1776,7 +1776,7 @@
       }
     },
     {
-      "filename": "cards/pinkcard3.png",
+      "filename": "cards/redcard2.png",
       "frame": {
         "x": 2065,
         "y": 3339,
@@ -1801,7 +1801,7 @@
       }
     },
     {
-      "filename": "cards/pinkcard2.png",
+      "filename": "cards/redcard3.png",
       "frame": {
         "x": 2323,
         "y": 3453,
@@ -1826,7 +1826,7 @@
       }
     },
     {
-      "filename": "cards/mortgageoverlay.png",
+      "filename": "cards/southstation.png",
       "frame": {
         "x": 2581,
         "y": 3453,
@@ -1851,7 +1851,7 @@
       }
     },
     {
-      "filename": "cards/northstation.png",
+      "filename": "cards/waterworkscard.png",
       "frame": {
         "x": 3630,
         "y": 1,
@@ -1876,7 +1876,7 @@
       }
     },
     {
-      "filename": "cards/orangecard1.png",
+      "filename": "cards/yellowcard1.png",
       "frame": {
         "x": 3659,
         "y": 327,
@@ -1901,7 +1901,7 @@
       }
     },
     {
-      "filename": "cards/orangecard2.png",
+      "filename": "cards/yellowcard2.png",
       "frame": {
         "x": 3659,
         "y": 653,
@@ -1926,7 +1926,7 @@
       }
     },
     {
-      "filename": "cards/pinkcard1.png",
+      "filename": "cards/yellowcard3.png",
       "frame": {
         "x": 3659,
         "y": 979,
@@ -1951,7 +1951,7 @@
       }
     },
     {
-      "filename": "cards/orangecard3.png",
+      "filename": "cards/pinkcard3.png",
       "frame": {
         "x": 3673,
         "y": 1305,
@@ -1976,7 +1976,7 @@
       }
     },
     {
-      "filename": "cards/bluecard2.png",
+      "filename": "menus/auctionmenubackground.png",
       "frame": {
         "x": 3601,
         "y": 1631,
@@ -2101,7 +2101,7 @@
       }
     },
     {
-      "filename": "buttons/rolldice.png",
+      "filename": "buttons/nextplayer.png",
       "frame": {
         "x": 1,
         "y": 3601,
@@ -2126,7 +2126,7 @@
       }
     },
     {
-      "filename": "buttons/nextplayer.png",
+      "filename": "buttons/rolldice.png",
       "frame": {
         "x": 2839,
         "y": 3747,
@@ -2151,7 +2151,7 @@
       }
     },
     {
-      "filename": "buttons/worstpiece.png",
+      "filename": "buttons/bestpiece.png",
       "frame": {
         "x": 1,
         "y": 3779,
@@ -2176,7 +2176,7 @@
       }
     },
     {
-      "filename": "buttons/moneyearned.png",
+      "filename": "buttons/worstpiece.png",
       "frame": {
         "x": 763,
         "y": 3779,
@@ -2201,7 +2201,7 @@
       }
     },
     {
-      "filename": "buttons/bestpiece.png",
+      "filename": "buttons/moneyearned.png",
       "frame": {
         "x": 1525,
         "y": 3744,
@@ -2226,7 +2226,7 @@
       }
     },
     {
-      "filename": "buttons/networth.png",
+      "filename": "buttons/moneylost.png",
       "frame": {
         "x": 1525,
         "y": 3801,
@@ -2251,7 +2251,7 @@
       }
     },
     {
-      "filename": "buttons/moneylost.png",
+      "filename": "buttons/networth.png",
       "frame": {
         "x": 1,
         "y": 3836,
@@ -2576,7 +2576,7 @@
       }
     },
     {
-      "filename": "players/greenowned.png",
+      "filename": "plates/chance.png",
       "frame": {
         "x": 3314,
         "y": 3863,
@@ -2601,7 +2601,7 @@
       }
     },
     {
-      "filename": "players/blueowned.png",
+      "filename": "plates/watermortgaged.png",
       "frame": {
         "x": 2839,
         "y": 3603,
@@ -2626,7 +2626,7 @@
       }
     },
     {
-      "filename": "plates/chance.png",
+      "filename": "players/purpleowned.png",
       "frame": {
         "x": 2839,
         "y": 3653,
@@ -2651,7 +2651,7 @@
       }
     },
     {
-      "filename": "players/yellowowned.png",
+      "filename": "players/redowned.png",
       "frame": {
         "x": 2712,
         "y": 3897,
@@ -2676,7 +2676,7 @@
       }
     },
     {
-      "filename": "plates/yellow.png",
+      "filename": "plates/water.png",
       "frame": {
         "x": 2125,
         "y": 3912,
@@ -2701,7 +2701,7 @@
       }
     },
     {
-      "filename": "plates/watermortgaged.png",
+      "filename": "plates/trainmortgaged.png",
       "frame": {
         "x": 3098,
         "y": 3913,
@@ -2726,7 +2726,7 @@
       }
     },
     {
-      "filename": "plates/water.png",
+      "filename": "plates/train.png",
       "frame": {
         "x": 3484,
         "y": 3913,
@@ -2751,7 +2751,7 @@
       }
     },
     {
-      "filename": "plates/trainmortgaged.png",
+      "filename": "players/pinkowned.png",
       "frame": {
         "x": 1,
         "y": 3893,
@@ -2776,7 +2776,7 @@
       }
     },
     {
-      "filename": "plates/train.png",
+      "filename": "players/yellowowned.png",
       "frame": {
         "x": 387,
         "y": 3898,
@@ -2801,7 +2801,7 @@
       }
     },
     {
-      "filename": "plates/supertax.png",
+      "filename": "players/ownedslot.png",
       "frame": {
         "x": 773,
         "y": 3898,
@@ -2826,7 +2826,7 @@
       }
     },
     {
-      "filename": "players/redowned.png",
+      "filename": "players/orangeowned.png",
       "frame": {
         "x": 1159,
         "y": 3914,
@@ -2851,7 +2851,7 @@
       }
     },
     {
-      "filename": "plates/pink.png",
+      "filename": "plates/supertax.png",
       "frame": {
         "x": 1545,
         "y": 3914,
@@ -2876,7 +2876,7 @@
       }
     },
     {
-      "filename": "plates/orange.png",
+      "filename": "plates/red.png",
       "frame": {
         "x": 1,
         "y": 3943,
@@ -2901,7 +2901,7 @@
       }
     },
     {
-      "filename": "plates/mortgaged.png",
+      "filename": "plates/pink.png",
       "frame": {
         "x": 2511,
         "y": 3947,
@@ -2926,7 +2926,7 @@
       }
     },
     {
-      "filename": "plates/light_blue.png",
+      "filename": "plates/orange.png",
       "frame": {
         "x": 1931,
         "y": 3962,
@@ -2951,7 +2951,7 @@
       }
     },
     {
-      "filename": "plates/incometax.png",
+      "filename": "plates/mortgaged.png",
       "frame": {
         "x": 387,
         "y": 3948,
@@ -2976,7 +2976,7 @@
       }
     },
     {
-      "filename": "plates/green.png",
+      "filename": "plates/light_blue.png",
       "frame": {
         "x": 773,
         "y": 3948,
@@ -3001,7 +3001,7 @@
       }
     },
     {
-      "filename": "plates/emptyPart.png",
+      "filename": "plates/incometax.png",
       "frame": {
         "x": 1159,
         "y": 3964,
@@ -3026,7 +3026,7 @@
       }
     },
     {
-      "filename": "plates/electricmortgaged.png",
+      "filename": "plates/green.png",
       "frame": {
         "x": 1545,
         "y": 3964,
@@ -3051,7 +3051,7 @@
       }
     },
     {
-      "filename": "plates/electric.png",
+      "filename": "plates/emptyPart.png",
       "frame": {
         "x": 2897,
         "y": 3963,
@@ -3076,7 +3076,7 @@
       }
     },
     {
-      "filename": "players/purpleowned.png",
+      "filename": "plates/electricmortgaged.png",
       "frame": {
         "x": 3283,
         "y": 3963,
@@ -3101,7 +3101,7 @@
       }
     },
     {
-      "filename": "players/pinkowned.png",
+      "filename": "plates/electric.png",
       "frame": {
         "x": 1,
         "y": 3993,
@@ -3126,7 +3126,7 @@
       }
     },
     {
-      "filename": "players/ownedslot.png",
+      "filename": "players/lightblueowned.png",
       "frame": {
         "x": 2317,
         "y": 3997,
@@ -3201,7 +3201,7 @@
       }
     },
     {
-      "filename": "plates/brown.png",
+      "filename": "players/greenowned.png",
       "frame": {
         "x": 773,
         "y": 3998,
@@ -3226,7 +3226,7 @@
       }
     },
     {
-      "filename": "players/orangeowned.png",
+      "filename": "plates/brown.png",
       "frame": {
         "x": 1159,
         "y": 4014,
@@ -3251,7 +3251,7 @@
       }
     },
     {
-      "filename": "plates/blue.png",
+      "filename": "players/blueowned.png",
       "frame": {
         "x": 1545,
         "y": 4014,
@@ -3276,7 +3276,7 @@
       }
     },
     {
-      "filename": "players/lightblueowned.png",
+      "filename": "plates/blue.png",
       "frame": {
         "x": 2703,
         "y": 4013,
@@ -3301,7 +3301,7 @@
       }
     },
     {
-      "filename": "plates/red.png",
+      "filename": "plates/yellow.png",
       "frame": {
         "x": 3089,
         "y": 4013,
@@ -3576,7 +3576,7 @@
       }
     },
     {
-      "filename": "buttons/auction+10.png",
+      "filename": "buttons/auction+100.png",
       "frame": {
         "x": 3706,
         "y": 3809,
@@ -3626,7 +3626,7 @@
       }
     },
     {
-      "filename": "buttons/auction+100.png",
+      "filename": "buttons/auction+10.png",
       "frame": {
         "x": 2323,
         "y": 3395,
@@ -3651,7 +3651,7 @@
       }
     },
     {
-      "filename": "buttons/prisonpay.png",
+      "filename": "buttons/prisongetoutofjail.png",
       "frame": {
         "x": 2003,
         "y": 3707,
@@ -3676,7 +3676,7 @@
       }
     },
     {
-      "filename": "buttons/prisongetoutofjail.png",
+      "filename": "buttons/prisonpay.png",
       "frame": {
         "x": 3669,
         "y": 3963,
@@ -3701,7 +3701,7 @@
       }
     },
     {
-      "filename": "corners/gotoprison.png",
+      "filename": "corners/parking.png",
       "frame": {
         "x": 1143,
         "y": 3593,
@@ -3726,7 +3726,7 @@
       }
     },
     {
-      "filename": "corners/go.png",
+      "filename": "corners/gotoprison.png",
       "frame": {
         "x": 2439,
         "y": 2163,
@@ -3751,7 +3751,7 @@
       }
     },
     {
-      "filename": "corners/parking.png",
+      "filename": "corners/go.png",
       "frame": {
         "x": 2439,
         "y": 2229,
@@ -3776,7 +3776,7 @@
       }
     },
     {
-      "filename": "playercolorbuttons/playercolorbutton3.png",
+      "filename": "playercolorbuttons/playercolorbutton2.png",
       "frame": {
         "x": 2901,
         "y": 1859,
@@ -3826,7 +3826,7 @@
       }
     },
     {
-      "filename": "buttons/antilising.png",
+      "filename": "buttons/fullscreen.png",
       "frame": {
         "x": 3700,
         "y": 3865,
@@ -3851,7 +3851,7 @@
       }
     },
     {
-      "filename": "playercolorbuttons/playercolorbutton.png",
+      "filename": "buttons/menu.png",
       "frame": {
         "x": 1291,
         "y": 3213,
@@ -3876,7 +3876,7 @@
       }
     },
     {
-      "filename": "buttons/menu.png",
+      "filename": "playercolorbuttons/playercolorbutton.png",
       "frame": {
         "x": 1291,
         "y": 3255,
@@ -3901,7 +3901,7 @@
       }
     },
     {
-      "filename": "buttons/fullscreen.png",
+      "filename": "buttons/antilising.png",
       "frame": {
         "x": 1291,
         "y": 3297,
@@ -3926,7 +3926,7 @@
       }
     },
     {
-      "filename": "playercolorbuttons/playercolorbutton4.png",
+      "filename": "playercolorbuttons/playercolorbutton3.png",
       "frame": {
         "x": 3415,
         "y": 1631,
@@ -3951,7 +3951,7 @@
       }
     },
     {
-      "filename": "playercolorbuttons/playercolorbutton5.png",
+      "filename": "playercolorbuttons/playercolorbutton4.png",
       "frame": {
         "x": 3415,
         "y": 1673,
@@ -3976,7 +3976,7 @@
       }
     },
     {
-      "filename": "playercolorbuttons/playercolorbutton6.png",
+      "filename": "playercolorbuttons/playercolorbutton5.png",
       "frame": {
         "x": 3415,
         "y": 1715,
@@ -4001,7 +4001,7 @@
       }
     },
     {
-      "filename": "playercolorbuttons/playercolorbutton7.png",
+      "filename": "playercolorbuttons/playercolorbutton6.png",
       "frame": {
         "x": 3415,
         "y": 1757,
@@ -4026,7 +4026,7 @@
       }
     },
     {
-      "filename": "playercolorbuttons/playercolorbutton8.png",
+      "filename": "playercolorbuttons/playercolorbutton7.png",
       "frame": {
         "x": 3415,
         "y": 1799,
@@ -4051,7 +4051,7 @@
       }
     },
     {
-      "filename": "playercolorbuttons/unselected.png",
+      "filename": "playercolorbuttons/playercolorbutton8.png",
       "frame": {
         "x": 3601,
         "y": 2041,
@@ -4076,7 +4076,7 @@
       }
     },
     {
-      "filename": "buttons/bot.png",
+      "filename": "playercolorbuttons/unselected.png",
       "frame": {
         "x": 3763,
         "y": 2041,
@@ -4101,7 +4101,7 @@
       }
     },
     {
-      "filename": "playercolorbuttons/playercolorbutton2.png",
+      "filename": "buttons/bot.png",
       "frame": {
         "x": 3601,
         "y": 2083,
@@ -4176,7 +4176,7 @@
       }
     },
     {
-      "filename": "buttons/music.png",
+      "filename": "buttons/sellbutton.png",
       "frame": {
         "x": 2759,
         "y": 1343,
@@ -4226,7 +4226,7 @@
       }
     },
     {
-      "filename": "buttons/statbutton.png",
+      "filename": "buttons/minus.png",
       "frame": {
         "x": 2759,
         "y": 1427,
@@ -4251,7 +4251,7 @@
       }
     },
     {
-      "filename": "buttons/sellbutton.png",
+      "filename": "buttons/arrowdown.png",
       "frame": {
         "x": 3273,
         "y": 1083,
@@ -4276,7 +4276,7 @@
       }
     },
     {
-      "filename": "buttons/minus.png",
+      "filename": "buttons/mortgage.png",
       "frame": {
         "x": 3273,
         "y": 1125,
@@ -4301,7 +4301,7 @@
       }
     },
     {
-      "filename": "buttons/arrowup.png",
+      "filename": "buttons/music.png",
       "frame": {
         "x": 3273,
         "y": 1167,
@@ -4326,7 +4326,7 @@
       }
     },
     {
-      "filename": "buttons/mortgage.png",
+      "filename": "buttons/statbutton.png",
       "frame": {
         "x": 3273,
         "y": 1209,
@@ -4351,7 +4351,7 @@
       }
     },
     {
-      "filename": "buttons/arrowdown.png",
+      "filename": "buttons/arrowup.png",
       "frame": {
         "x": 3273,
         "y": 1251,
@@ -4376,7 +4376,7 @@
       }
     },
     {
-      "filename": "buttons/no.png",
+      "filename": "buttons/yes.png",
       "frame": {
         "x": 3281,
         "y": 1033,
@@ -4401,7 +4401,7 @@
       }
     },
     {
-      "filename": "buttons/yes.png",
+      "filename": "buttons/no.png",
       "frame": {
         "x": 3273,
         "y": 1293,
@@ -4451,7 +4451,7 @@
       }
     },
     {
-      "filename": "players/player3.png",
+      "filename": "players/player8.png",
       "frame": {
         "x": 3363,
         "y": 1033,
@@ -4476,7 +4476,7 @@
       }
     },
     {
-      "filename": "players/player4.png",
+      "filename": "players/player3.png",
       "frame": {
         "x": 3355,
         "y": 1293,
@@ -4576,7 +4576,7 @@
       }
     },
     {
-      "filename": "players/player8.png",
+      "filename": "players/player4.png",
       "frame": {
         "x": 2287,
         "y": 3715,
@@ -4601,10 +4601,35 @@
       }
     },
     {
-      "filename": "players/player.png",
+      "filename": "players/player2.png",
       "frame": {
         "x": 2251,
         "y": 3665,
+        "w": 24,
+        "h": 48
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 48
+      },
+      "sourceSize": {
+        "w": 24,
+        "h": 48
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "players/player.png",
+      "frame": {
+        "x": 1845,
+        "y": 2181,
         "w": 24,
         "h": 48
       },
@@ -4651,32 +4676,7 @@
       }
     },
     {
-      "filename": "players/player2.png",
-      "frame": {
-        "x": 1845,
-        "y": 2181,
-        "w": 24,
-        "h": 48
-      },
-      "rotated": false,
-      "trimmed": false,
-      "spriteSourceSize": {
-        "x": 0,
-        "y": 0,
-        "w": 24,
-        "h": 48
-      },
-      "sourceSize": {
-        "w": 24,
-        "h": 48
-      },
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      }
-    },
-    {
-      "filename": "buttons/exitCardTrans.png",
+      "filename": "buttons/exitCard.png",
       "frame": {
         "x": 1899,
         "y": 2281,
@@ -4701,7 +4701,7 @@
       }
     },
     {
-      "filename": "buttons/exitCard.png",
+      "filename": "buttons/exitCardTrans.png",
       "frame": {
         "x": 3381,
         "y": 1293,

@@ -118,7 +118,8 @@ var images = {
         "online",
         "credits",
         "back",
-        "start"
+        "start",
+        "bot"
     ],
     "community card and chance card":[
         "emptychancecard",

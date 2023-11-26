@@ -112,7 +112,7 @@ class Slider{
         c.fillStyle = "black";
         c.fillRect(this.x + (this.percentage)*(this.w-4),this.y, 4,this.h);
 
-        c.drawText(this.beginningText + this.value + this.unit,this.x + this.w/2,this.y-2+this.textSize,this.textSize,"center")
+        c.drawText(this.beginningText + this.value + this.unit,this.x + this.w/2,this.y+this.h - (this.h-this.textSize)/2 - 2,this.textSize,"center")
     }
 }
 class TextInput{
@@ -156,6 +156,8 @@ class TextInput{
         this.htmlElement.style.fontSize = this.textSize + "px"
         this.htmlElement.maxLength = this.maxLength;
         this.htmlElement.style.border = 5 * scale / 2 + "px solid black "
+        
+        this.value = this.htmlElement.value;
     }
 }
 
@@ -216,7 +218,7 @@ class Button {
     draw() {
         let cropAdder = (this.hover && !this.disableHover) ? this.w : 0;
         cropAdder = (this.disabled) ? (this.disableDisabledTexture ? 0 : this.w*2) : cropAdder;
-        cropAdder += ((this.selectButton == undefined )? 0 : (this.selected ? (this.disableSelectTexture ? this.w : this.w*2) : 0));
+        cropAdder += ((this.selectButton == undefined )? 0 : (this.selected ? ((this.disableSelectTexture == undefined) ? this.w*2 : this.w) : 0));
         c.drawRotatedImageFromSpriteSheet(this.image,{
             x:this.x,
             y:this.y,
