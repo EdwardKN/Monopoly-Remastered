@@ -184,10 +184,11 @@ class LobbyMenu{
             player.colorButton.image = images.playercolorbuttons[(player.selectedColor == -1 ? "unselected" : "playercolorbutton" + (player.selectedColor == 0 ? "" : player.selectedColor+1))]
             if(self.currentMenu?.hover){
                 player.colorButton.draw();
+                player.botButton.draw();
             }else{
                 player.colorButton.update();
+                player.botButton.update();
             }
-            player.botButton.update();
         })
         this.currentMenu?.draw();
 
@@ -214,10 +215,14 @@ class ColorSelector{
     initColors(){
         let self = this;
         for(let i = 0; i<8; i++){
-            this.colorButtons.push(new Button({x:this.x + splitPoints(4,180,40,i%4),y:this.y + splitPoints(2,90,40,Math.floor(i/4)),w:40,h:40, selectButton:true,disableSelectTexture:true},images.playercolorbuttons["playercolorbutton" + (i == 0 ? "" : i+1)],function(){
+            this.colorButtons.push(new Button({x:this.x + splitPoints(4,180,40,i%4),y:this.y + splitPoints(2,90,40,Math.floor(i/4)),w:40,h:40, selectButton:true},images.playercolorbuttons["playercolorbutton" + (i == 0 ? "" : i+1)],function(){
                 self.colorButtons.forEach((e,index) => {
                     if(index != i){e.selected = false}else{
-                        self.player.selectedColor = i;
+                        if(e.selected){
+                            self.player.selectedColor = i;
+                        }else{
+                            self.player.selectedColor = -1;
+                        }
                     };
                 })
             }))
