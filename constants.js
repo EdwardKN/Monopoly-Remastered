@@ -111,7 +111,8 @@ var images = {
         "auction+10",
         "auction+100",
         "exitauction",
-        "accept"
+        "accept",
+        "tradingcityname"
     ],
     "community card and chance card":[
         "emptychancecard",

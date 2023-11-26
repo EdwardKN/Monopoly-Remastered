@@ -134,6 +134,9 @@ class Button {
         this.disableDisabledTexture = settings?.disableDisabledTexture;
         this.selectButton = settings?.selectButton;
         this.selected = false;
+        this.text = settings?.text;
+        this.textSize = settings?.textSize;
+        this.color = settings?.color;
 
         if (!this.onRightClick) {
             this.onRightClick = function () { }
@@ -181,6 +184,7 @@ class Button {
         if(this.hover && !this.disabled){
             hoverList.push(this.hoverText);
         }
+        c.drawText(this.text,this.x + this.w/2, this.y+this.textSize, this.textSize,"center",this.color)
     };
 }
 

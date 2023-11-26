@@ -593,8 +593,23 @@ class Trade{
         this.player1MoneySlider = new Slider({x:canvas.width/2 -455 +30,y:100,w:400,h:20,from:0,to:this.player1.money,steps:10,unit:"kr"})
         this.player2MoneySlider = new Slider({x:canvas.width/2 +455 -430 ,y:100,w:400,h:20,from:0,to:this.player1.money,steps:10,unit:"kr"})
 
-        this.player1Accept = new Button({x:canvas.width/2 - 455 + 205 - 75,y:460,w:150,h:50,selectButton:true},images.buttons.accept);
-        this.player2Accept = new Button({x:canvas.width/2 - 455 + 900 - 455/2 - 75,y:460,w:150,h:50,selectButton:true},images.buttons.accept);
+        this.player1Accept = new Button({x:canvas.width/2 - 455 + 205 - 55,y:460,w:150,h:50,selectButton:true},images.buttons.accept);
+        this.player2Accept = new Button({x:canvas.width/2 - 455 + 900 - 455/2 - 55,y:460,w:150,h:50,selectButton:true},images.buttons.accept);
+        this.initProperties();
+    }
+    initProperties(){
+        let self = this;
+        this.player1Properties = [];
+
+        this.player1.ownedPlaces.forEach((place,i,amount) => {
+            this.player1Properties.push({place:place,button:new Button({x:35 + splitPoints(2,440,186,(i%2)),y:130 + splitPoints(Math.ceil(amount.length/2),330,21,Math.floor(i/2)),w:186,h:21,textSize:15,text:place.info.name,color:place.info.color,selectButton:true},images.buttons.tradingcityname,function(){self.player1Accept.selected = false;self.player2Accept.selected = false;})})
+        })
+
+        this.player2Properties = [];
+
+        this.player2.ownedPlaces.forEach((place,i,amount) => {
+            this.player2Properties.push({place:place,button:new Button({x:450 + 35 + splitPoints(2,440,186,(i%2)),y:130 + splitPoints(Math.ceil(amount.length/2),330,21,Math.floor(i/2)),w:186,h:21,textSize:15,text:place.info.name,color:place.info.color,selectButton:true},images.buttons.tradingcityname,function(){self.player1Accept.selected = false;self.player2Accept.selected = false;})})
+        })
     }
     draw(){
         c.drawImageFromSpriteSheet(images.menus.tradingmenu,{x:canvas.width/2 - 455, y: canvas.height/2 - 256})
@@ -607,9 +622,42 @@ class Trade{
         this.player1MoneySlider.update();
         this.player2MoneySlider.update();
 
+        this.player1Properties.forEach(e => e.button.update())
+        this.player2Properties.forEach(e => e.button.update())
+
         this.player1Accept.update();
         this.player2Accept.update();
+
+        if(this.player1Accept.selected && this.player2Accept.selected){
+            this.acceptTrade();
+        }
+
     }   
+    acceptTrade(){
+        let self = this;
+        this.player1.money += this.player2MoneySlider.value;
+        this.player2.money -= this.player2MoneySlider.value;
+
+        this.player1.money -= this.player1MoneySlider.value;
+        this.player2.money += this.player1MoneySlider.value;
+
+        this.player1Properties.forEach(property => {
+            if(property.button.selected){
+                self.player1.ownedPlaces.splice(self.player1.ownedPlaces.indexOf(property.place),1);
+                self.player2.ownedPlaces.push(property.place);
+                property.place.owner = self.player2;
+            }
+        })
+        this.player2Properties.forEach(property => {
+            if(property.button.selected){
+                self.player2.ownedPlaces.splice(self.player2.ownedPlaces.indexOf(property.place),1);
+                self.player1.ownedPlaces.push(property.place);
+                property.place.owner = self.player1;
+            }
+        })
+
+        this.closeTrade();
+    }
     closeTrade(){
         currentMenu = undefined;
     }
