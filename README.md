@@ -10,7 +10,7 @@ Funktionalitet
 - [ ] Antialiasing
 - [ ] Fullscreen
 - [ ] Ljud
-- [ ] Huvudmeny
+- [x] Huvudmeny
 - [ ] Lobbymeny
 - [ ] Onlinemeny
 - [ ] OnlineLäge
