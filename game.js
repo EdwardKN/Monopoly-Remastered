@@ -110,7 +110,7 @@ class LobbyMenu{
         this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new MainMenu()});
         this.startButton = new Button({x:10 + 100,y:canvas.height-70,w:194,h:60},images.buttons.start,function(){
             let tmp = [];
-            self.players.filter(e => e.textInput.value.length > 3).forEach(e => {
+            self.players.filter(e => e.textInput.value.length > 1).forEach(e => {
                 tmp.push({
                     name: e.textInput.value,
                     color: e.selectedColor
@@ -179,7 +179,7 @@ class LobbyMenu{
         })
         this.currentMenu?.draw();
 
-        let readyPlayers = this.players.filter(e => e.textInput.value.length > 3);
+        let readyPlayers = this.players.filter(e => e.textInput.value.length > 1);
         
         this.startButton.disabled = readyPlayers.length < 2
         this.startButton.update();
@@ -830,8 +830,6 @@ class CardDraw{
         this.type = type;
         if(this.type !== "special"){
             this.cardId = randomIntFromRange(0,(this.type == "community") ? 12 : 13)
-
-            this.cardId = 8;
 
             this.card = ((this.type == "community") ? communitycards[this.cardId] : chanceCards[this.cardId])
         }else{
