@@ -119,7 +119,9 @@ var images = {
         "credits",
         "back",
         "start",
-        "bot"
+        "bot",
+        "joingame",
+        "hostgame"
     ],
     "community card and chance card":[
         "emptychancecard",
