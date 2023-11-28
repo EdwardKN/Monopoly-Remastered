@@ -263,8 +263,8 @@ class LoadGames{
             c.strokeStyle = "black"
             c.strokeRect(0,canvas.height/4-2,canvas.width/2+2,canvas.height/2+4)
             c.drawImage(this.image,0,canvas.height/4);
-            c.drawText("Spelversion: " + latestSaveVersion, 10, 430,30,"left", latestSaveVersion == this.games[this.gameButtons.indexOf(this.selected)].saveVersion ? "green" : "red")
-            c.drawText("Sparfilsversion: " + this.games[this.gameButtons.indexOf(this.selected)].saveVersion, 10, 460,30,"left", latestSaveVersion == this.games[this.gameButtons.indexOf(this.selected)].saveVersion ? "green" : "red")
+            c.drawText("Spelversion: " + latestSaveVersion, 10, 440,20,"left", latestSaveVersion == this.games[this.gameButtons.indexOf(this.selected)].saveVersion ? "green" : "red")
+            c.drawText("Sparfilsversion: " + this.games[this.gameButtons.indexOf(this.selected)].saveVersion, 10, 460,20,"left", latestSaveVersion == this.games[this.gameButtons.indexOf(this.selected)].saveVersion ? "green" : "red")
         }
         this.startButton.disabled = !this.selected
         this.deleteButton.disabled = !this.selected
@@ -275,9 +275,9 @@ class LoadGames{
 class PublicGames{
     constructor(){
         this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new MainMenu()});
-        this.joinID = new TextInput({x:340,y:10,w:150,h:60,maxLength:6,textSize:45,placeHolder:"ID"})
-        this.joinButton = new Button({x:500,y:10,w:195,h:52,disableDisabledTexture:true},images.buttons.joingame,function(){currentMenu = new OnlineLobby(false)});
-        this.hostButton = new Button({x:750,y:10,w:195,h:52},images.buttons.hostgame,function(){currentMenu = new OnlineLobby(true)});
+        this.joinID = new TextInput({x:340,y:10,w:200,h:60,maxLength:6,textSize:45,placeHolder:"ID"})
+        this.joinButton = new Button({x:550,y:14,w:195,h:52,disableDisabledTexture:true},images.buttons.joingame,function(){currentMenu = new OnlineLobby(false)});
+        this.hostButton = new Button({x:750,y:14,w:195,h:52},images.buttons.hostgame,function(){currentMenu = new OnlineLobby(true)});
 
     }
     draw(){
@@ -327,7 +327,7 @@ class LobbyMenu{
         for(let i = 0; i<8; i++){
             this.players.push(
                 {
-                    textInput: new TextInput({x:10,y:80 + 48*i,w:300,h:40, maxLength:15,textSize:40}),
+                    textInput: new TextInput({x:10,y:80 + 48*i,w:300,h:45, maxLength:15,textSize:40}),
                     colorButton: new Button({x:320,y:82+48*i,w:40,h:40, selectButton:true,disableSelectTexture:true},images.playercolorbuttons.unselected,function(){
                         self.players.forEach((e,index) => {
                             if(index != i){e.colorButton.selected = false;}else{
