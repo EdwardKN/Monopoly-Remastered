@@ -157,7 +157,7 @@ class TextInput{
         this.htmlElement.style.width = this.w * scale + "px";
         this.htmlElement.style.height = this.h * scale + "px";
 
-        this.htmlElement.style.fontSize = this.textSize + "px"
+        this.htmlElement.style.fontSize = this.textSize*scale + "px"
         this.htmlElement.maxLength = this.maxLength;
         this.htmlElement.style.border = 5 * scale / 2 + "px solid black "
         

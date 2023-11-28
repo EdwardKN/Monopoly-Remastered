@@ -90,25 +90,40 @@ function update(){
 class MainMenu{
     constructor(){
         this.localButton = new Button({x:35,y:160,w:195,h:52},images.buttons.local,function(){currentMenu = new LobbyMenu()});
-        this.loadButton = new Button({x:35,y:230,w:195,h:52},images.buttons.load);
-        this.hostButton = new Button({x:35,y:300,w:195,h:52},images.buttons.hostgame,function(){currentMenu = new OnlineLobby(true)});
-        this.joinButton = new Button({x:35,y:370,w:195,h:52},images.buttons.joingame,function(){currentMenu = new OnlineLobby(false)});
-        this.creditsButton = new Button({x:35,y:440,w:195,h:52},images.buttons.credits);
+        this.loadButton = new Button({x:35,y:240,w:195,h:52},images.buttons.load);
+        this.onlineButton = new Button({x:35,y:320,w:195,h:52},images.buttons.online,function(){currentMenu = new PublicGames()});
+        this.creditsButton = new Button({x:35,y:400,w:195,h:52},images.buttons.credits);
     }
     draw(){
         c.drawImageFromSpriteSheet(images.menus.mainmenu)
 
         this.localButton.update();
         this.loadButton.update();
-        this.hostButton.update();
-        this.joinButton.update();
+        this.onlineButton.update();
         this.creditsButton.update();
+    }
+}
+class PublicGames{
+    constructor(){
+        this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new MainMenu()});
+        this.joinID = new TextInput({x:340,y:10,w:150,h:60,maxLength:6,textSize:45,placeHolder:"ID"})
+        this.joinButton = new Button({x:500,y:10,w:195,h:52,disableDisabledTexture:true},images.buttons.joingame,function(){currentMenu = new OnlineLobby(false)});
+        this.hostButton = new Button({x:750,y:10,w:195,h:52},images.buttons.hostgame,function(){currentMenu = new OnlineLobby(true)});
+
+    }
+    draw(){
+        c.drawImageFromSpriteSheet(images.menus.lobbymenu);
+        this.joinButton.disabled = this.joinID.value?.length < 6;
+        this.backButton.update();
+        this.joinID.draw();
+        this.joinButton.update();
+        this.hostButton.update();
     }
 }
 class OnlineLobby{
     constructor(host){
         this.hosting = host;
-        this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new MainMenu()});
+        this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new PublicGames()});
     }
     draw(){
         c.drawImageFromSpriteSheet(images.menus.lobbymenu);
