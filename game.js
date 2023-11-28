@@ -234,15 +234,22 @@ class ColorSelector{
                 self.colorButtons.forEach((e,index) => {
                     if(index != i){e.selected = false}else{
                         if(e.selected){
+                            if(self.player.selectedColor != -1){
+                                self.selectedColors.splice(self.selectedColors.indexOf(self.player.selectedColor))
+                            }
                             self.player.selectedColor = i;
+                            self.selectedColors.push(i);
                         }else{
+                            self.selectedColors.splice(self.selectedColors.indexOf(self.player.selectedColor))
                             self.player.selectedColor = -1;
                         }
                     };
                 })
+                self.colorButtons.forEach((e,index) => {
+                    e.disabled = self.player?.selectedColor != index && self.selectedColors?.length > 0 && (self.selectedColors?.indexOf(index) != -1)
+                })
             }))
-            this.colorButtons[i].disabled = this.selectedColors?.length > 0 && (this.selectedColors?.indexOf(i) != -1)
-            
+            this.colorButtons[i].disabled = self.player?.selectedColor != -1 && this.selectedColors?.length > 0 && (this.selectedColors?.indexOf(i) != -1)
         }
         
     }
