@@ -1,3 +1,5 @@
+const latestSaveVersion = 1;
+
 var images = {
     plates:[
         "brown",
@@ -121,7 +123,9 @@ var images = {
         "start",
         "bot",
         "joingame",
-        "hostgame"
+        "hostgame",
+        "setting",
+        "saveselect"
     ],
     "community card and chance card":[
         "emptychancecard",

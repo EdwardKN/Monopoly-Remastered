@@ -780,3 +780,32 @@ var findClosest = function (x, arr) {
   function hasDuplicates(array) {
     return (new Set(array)).size !== array.length;
 }
+
+function getInstanceByName(name, ...args) {
+    const Class = eval(name);
+    return Class
+}
+
+Date.prototype.today = function () {
+    return ((this.getDate() < 10) ? "0" : "") + this.getDate() + "/" + (((this.getMonth() + 1) < 10) ? "0" : "") + (this.getMonth() + 1) + "/" + this.getFullYear();
+}
+Date.prototype.timeNow = function () {
+    return ((this.getHours() < 10) ? "0" : "") + this.getHours() + ":" + ((this.getMinutes() < 10) ? "0" : "") + this.getMinutes() + ":" + ((this.getSeconds() < 10) ? "0" : "") + this.getSeconds();
+}
+
+function getClassContructorParams(obj){
+    let match = obj.toString().match(/constructor\((.+)\)/)
+    
+    if(match && match[1]){
+      return match[1].split(",");
+    }
+    
+    // If no match
+    return []  
+  }
+
+  function applyToConstructor(constructor, argArray) {
+    var args = [null].concat(argArray);
+    var factoryFunction = constructor.bind.apply(constructor, args);
+    return new factoryFunction();
+}
