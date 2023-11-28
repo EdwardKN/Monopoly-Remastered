@@ -46,7 +46,6 @@ function update(){
     })
     
     board?.update();
-    players.forEach(e => e.draw());
     currentMenu?.draw();
 
     hoverList.forEach((e,i) => {
@@ -379,6 +378,13 @@ class Board{
             }else{
                 this.nextPlayerButton.update();
             }
+        }
+
+        for(let i = 20; i >= 0; i--){
+            board.boardPieces[i].playersOnBoardPiece.forEach(e => e.draw());
+        }
+        for(let i = 21; i < 40; i++){
+            board.boardPieces[i].playersOnBoardPiece.forEach(e => e.draw());
         }
 
     }
@@ -920,7 +926,7 @@ class CardDraw{
         }else if(this.card.type == "gotoprison"){
             players[turn].goToPrison();
         }else if(this.card.steps){
-            players[turn].teleport((players[turn].pos + this.card.steps) * Math.sign(this.card.steps))
+            players[turn].teleportTo((players[turn].pos + this.card.steps) * Math.sign(this.card.steps))
         }else if(this.card.gotoClosest){
             let self = this;
             let closest = findClosest(players[turn].pos,board.boardPieces.filter(e => e.constructor.name == self.card.gotoClosest).map(e => e.n))
@@ -1087,6 +1093,7 @@ class Player{
         this.moneyShowerThing = new Money(this);
 
         this.calculateDrawPos();
+        board.boardPieces[0].playersOnBoardPiece.push(this);
     }
     calculateDrawPos(){
         let self = this;
@@ -1156,8 +1163,10 @@ class Player{
         let steps = newPos-self.pos;
 
         let timer = setInterval(() =>{
+            board.boardPieces[self.pos].playersOnBoardPiece.splice(board.boardPieces[self.pos].playersOnBoardPiece.indexOf(self),1);
             self.pos += direction;
             self.pos = self.pos%40;
+            board.boardPieces[self.pos].playersOnBoardPiece.push(self);
             self.calculateDrawPos();
             if(self.pos == 0 && !self.inPrison){
                 self.money += 200;
