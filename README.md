@@ -8,9 +8,9 @@ Funktionalitet
 - [x] Korrekt köpning av hus/hotell
 - [x] Korrekt betalning vid stationer och vatten/elledningsverk
 - [x] Sparning
-- [ ] Negativa Pengar
-- [ ] Antialiasing
-- [ ] Fullscreen
+- [x] Negativa Pengar
+- [x] Antialiasing
+- [x] Fullscreen
 - [ ] Ljud
 - [x] Huvudmeny
 - [ ] Onlinemeny

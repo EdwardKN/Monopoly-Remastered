@@ -10,9 +10,21 @@ async function init() {
     fixCanvas();
     await loadImages(images);
 
+    renderC.imageSmoothingEnabled = false;
+
     currentMenu = new MainMenu();
     update();
 };
+
+function exitGame() {
+    setTimeout(e => {
+        saveGame();
+        board = undefined;
+        players = [];
+        currentMenu = new MainMenu();
+        window.onbeforeunload = undefined;
+    }, 100)
+}
 
 function startGame(playersToStartGameWith) {
     window.onbeforeunload = saveGame;
@@ -59,7 +71,6 @@ async function saveGame() {
     } else {
         game.id = board.id;
     }
-    console.log(board.id)
 
     let tmpGame = JSON.prune(game);
     let tmp = false;
@@ -92,6 +103,10 @@ function loadGame(gameToload) {
 
     playersToLoad.forEach((player, index) => {
         players.push(new Player(player.color, player.name));
+    });
+    board.boardPieces[0].playersOnBoardPiece.splice(0, 8);
+
+    playersToLoad.forEach((player, index) => {
         board.boardPieces[(player.pos == 40 ? 10 : player.pos)].playersOnBoardPiece.push(players[index]);
         Object.entries(player).forEach(e => {
             if (typeof e[1] != "object") {
@@ -105,7 +120,7 @@ function loadGame(gameToload) {
             board.boardPieces[place.n].mortgaged = place.mortgaged;
         })
     });
-    board.boardPieces[0].playersOnBoardPiece.splice(0, playersToLoad.length - 1);
+
 
     let currentMenuClass = getInstanceByName(gameToload.currentMenu.class);
     if (currentMenuClass) {
@@ -147,14 +162,14 @@ function update() {
     currentMenu?.draw();
 
     hoverList.forEach((e, i) => {
-        c.drawText(e, mouse.x, mouse.y + 35 * (i + 1) - 10, 20, "center", "black", { color: "white", blur: 5 });
+        c.font = 20 + "px " + "verdanai";
+        c.drawText(e, Math.max(c.measureText(e).width / 2 + 5, mouse.x), mouse.y + 35 * (i + 1) - 10, 20, "center", "black", { color: "white", blur: 5 });
     })
     hoverList = [];
 
 
     c.drawText(fps, 5, 80, 20)
 
-    renderC.imageSmoothingEnabled = false;
     renderC.drawImage(canvas, 0, 0, renderCanvas.width, renderCanvas.height);
 
     let tmp = false;
@@ -190,6 +205,17 @@ class MainMenu {
         this.loadButton = new Button({ x: 35, y: 240, w: 195, h: 52 }, images.buttons.load, function () { currentMenu = new LoadGames() });
         this.onlineButton = new Button({ x: 35, y: 320, w: 195, h: 52 }, images.buttons.online, function () { currentMenu = new PublicGames() });
         this.creditsButton = new Button({ x: 35, y: 400, w: 195, h: 52 }, images.buttons.credits);
+        this.fullScreenButton = new Button({ x: 0, y: canvas.height - 40, w: 40, h: 40, hoverText: "Fullskärm", selectButton: true }, images.buttons.fullscreen, function () {
+            if (this.selected) {
+                document.documentElement.requestFullscreen()
+            } else {
+                document.exitFullscreen()
+            }
+        });
+        this.antiAliasingButton = new Button({ x: 40, y: canvas.height - 40, w: 40, h: 40, hoverText: "Antialiasing", selectButton: true }, images.buttons.antilising, function () {
+            renderC.imageSmoothingEnabled = this.selected;
+        });
+
     }
     draw() {
         c.drawImageFromSpriteSheet(images.menus.mainmenu)
@@ -199,6 +225,10 @@ class MainMenu {
         this.loadButton.update();
         this.onlineButton.update();
         this.creditsButton.update();
+        this.fullScreenButton.update();
+        this.antiAliasingButton.update();
+        this.fullScreenButton.selected = document.fullscreenElement != null;
+        this.antiAliasingButton.selected = renderC.imageSmoothingEnabled;
     }
 }
 class LoadGames {
@@ -267,7 +297,7 @@ class LoadGames {
             c.drawText("Spelversion: " + latestSaveVersion, 10, 440, 20, "left", latestSaveVersion == this.games[this.gameButtons.indexOf(this.selected)].saveVersion ? "green" : "red")
             c.drawText("Sparfilsversion: " + this.games[this.gameButtons.indexOf(this.selected)].saveVersion, 10, 460, 20, "left", latestSaveVersion == this.games[this.gameButtons.indexOf(this.selected)].saveVersion ? "green" : "red")
         }
-        this.startButton.disabled = !this.selected
+        this.startButton.disabled = !this.selected || JSON.parse(this.games[this.gameButtons.indexOf(this.selected)].board).done
         this.deleteButton.disabled = !this.selected
         this.startButton.update();
         this.deleteButton.update();
@@ -442,19 +472,21 @@ class SmallMenu {
         this.statButton = new Button({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 2), y: canvas.height / 2 + 25, w: 40, h: 40, hoverText: "Visa Statistik" }, images.buttons.statbutton);
         this.exitButton = new Button({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 3), y: canvas.height / 2 + 25, w: 40, h: 40, hoverText: "Återvänd till Huvudmenyn" }, images.buttons.yes, function () {
             if (currentMenu.constructor.name == "SmallMenu") currentMenu = undefined;
-            setTimeout(e => {
-                saveGame();
-                board = undefined;
-                players = [];
-                currentMenu = new MainMenu();
-                window.onbeforeunload = undefined;
-            }, 100)
+            exitGame();
         });
-        this.antiAliasingButton = new Button({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 0), y: canvas.height / 2 + 75, w: 40, h: 40, hoverText: "Antialiasing" }, images.buttons.antilising);
-        this.fullScreenButton = new Button({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 1), y: canvas.height / 2 + 75, w: 40, h: 40, hoverText: "Fullskärm" }, images.buttons.fullscreen);
+        this.antiAliasingButton = new Button({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 0), y: canvas.height / 2 + 75, w: 40, h: 40, hoverText: "Antialiasing", selectButton: true }, images.buttons.antilising, function () {
+            renderC.imageSmoothingEnabled = this.selected;
+        });
+        this.fullScreenButton = new Button({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 1), y: canvas.height / 2 + 75, w: 40, h: 40, hoverText: "Fullskärm", selectButton: true }, images.buttons.fullscreen, function () {
+            if (this.selected) {
+                document.documentElement.requestFullscreen()
+            } else {
+                document.exitFullscreen()
+            }
+        });
         this.muteButton = new Button({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 4), y: canvas.height / 2 + 75, w: 40, h: 40, hoverText: "Tysta ljudet" }, images.buttons.music);
 
-        this.volumeSlider = new Slider({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 2), y: canvas.height / 2 + 75, w: 80, h: 40, from: 0, to: 100, textSize: 25, unit: "%" })
+        this.volumeSlider = new Slider({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 2), y: canvas.height / 2 + 75, w: 88, h: 40, from: 0, to: 100, textSize: 25, unit: "%" })
     }
     draw() {
         c.drawImageFromSpriteSheet(images.menus.exitmenu, { x: canvas.width / 2 - 128, y: canvas.height / 2 - 128 })
@@ -465,6 +497,9 @@ class SmallMenu {
         this.fullScreenButton.update();
         this.muteButton.update();
         this.volumeSlider.update();
+        this.fullScreenButton.selected = document.fullscreenElement != null;
+        this.antiAliasingButton.selected = renderC.imageSmoothingEnabled;
+
     }
 }
 
@@ -474,6 +509,7 @@ class Board {
         this.dices = new Dice();
         this.playerHasRolled = false;
         this.playerIsWalking = false;
+        this.done = false;
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, this.rollDice)
         this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.nextplayer, this.nextPlayer);
@@ -490,6 +526,10 @@ class Board {
         players[turn].rolls = 0;
         turn++;
         turn = turn % players.length;
+        if (players[turn].dead) {
+            this.nextPlayer();
+            return;
+        };
         board.playerHasRolled = false;
         if (players[turn].inPrison) {
             currentMenu = new PrisonMenu();
@@ -534,6 +574,10 @@ class Board {
         this.nameFontSize = (1 / textsize.width) * 22000 > 30 ? 30 : (1 / textsize.width) * 22000
     }
     update() {
+        if (players.filter(e => !e.dead).length == 1) {
+            this.done = true;
+            exitGame();
+        }
         this.drawBack();
 
         this.boardPieces.forEach(e => e.draw());
@@ -824,6 +868,7 @@ class BuyableProperty extends BoardPiece {
     payRent() {
         this.owner.money += this.info.rent[this.level];
         players[turn].money -= this.info.rent[this.level];
+        players[turn].lastPayment = this.owner;
     }
 }
 class Station extends BuyableProperty {
@@ -858,6 +903,7 @@ class Utility extends BuyableProperty {
         let rent = steps * (amount == 1 ? 4 : 10);
         this.owner.money += rent;
         players[turn].money -= rent;
+        players[turn].lastPayment = this.owner;
     }
 }
 class Community extends BoardPiece {
@@ -1090,10 +1136,12 @@ class CardDraw {
             players[turn].teleportTo(this.card.teleport);
         } else if (this.card.moneyChange) {
             players[turn].money += this.card.moneyChange;
+            players[turn].lastPayment = undefined;
         } else if (this.card.moneyFromPlayers) {
             players[turn].money += (this.card.moneyFromPlayers * players.length);
             players.forEach(e => {
                 e.money -= this.card.moneyFromPlayers;
+                e.lastPayment = players[turn];
             });
         } else if (this.card.type == "getprisoncard") {
             players[turn].prisonCards++;
@@ -1110,16 +1158,21 @@ class CardDraw {
             players[turn].ownedPlaces.forEach(place => {
                 if (place.level < 5) {
                     players[turn].money -= self.card.properyPrice.house * place.level;
+                    players[turn].lastPayment = undefined;
+
                 } else {
                     players[turn].money -= self.card.properyPrice.hotel;
+                    players[turn].lastPayment = undefined;
                 }
             })
         } else if (this.type == "special" && this.cardId == 0) {
             players[turn].goToPrison();
         } else if (this.type == "special" && this.cardId == 2) {
             players[turn].money -= (players[turn].money > 2000 ? 200 : Math.round(players[turn].money / 10));
+            players[turn].lastPayment = undefined;
         } else if (this.type == "special" && this.cardId == 3) {
             players[turn].money -= 100;
+            players[turn].lastPayment = undefined;
         }
         currentMenu = undefined;
     }
@@ -1269,6 +1322,7 @@ class Player {
         this.rolls = 0;
         this.rollsInPrison = 0;
         this.hasBought = false;
+        this.dead = false;
 
         this.moneyShowerThing = new Money(this);
 
@@ -1321,6 +1375,17 @@ class Player {
             offsetY: this.hover ? 1 : 0
         })
         this.moneyShowerThing.update();
+        let netWorth = this.money;
+        if (this.ownedPlaces.length > 0) {
+            netWorth = this.money + this.ownedPlaces.map(e => e.info.price / 2 * (e.mortgaged ? 0 : 1))?.reduce((partialSum, a) => partialSum + a) + this.ownedPlaces.map(e => (e.info?.housePrice == undefined ? 0 : e.info?.housePrice) * e.level)?.reduce((partialSum, a) => partialSum + a);
+        }
+        if (netWorth < 0 && this.ownedPlaces.length == 0 && !this.dead) {
+            this.dead = true;
+            if (this.lastPayment) {
+                this.lastPayment.money += this.money;
+            }
+        }
+
     }
 
     teleportTo(newPos, noSteps) {
