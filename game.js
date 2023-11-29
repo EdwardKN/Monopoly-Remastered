@@ -87,6 +87,7 @@ function loadGame(gameToload) {
         };
     });
     board.id = gameToload.id;
+    turn = gameToload.turn;
 
     let playersToLoad = gameToload.players.map(e => JSON.parse(e));
 
@@ -1235,8 +1236,8 @@ class PropertyCard {
             this.closeButton.update();
             let colorGroup = board.getColorGroup(board.boardPieces[this.n].info.group);
 
-            this.mortgageButton.disabled = (colorGroup.filter(e => e.level > 0).length) || (board.boardPieces[this.n].mortgaged ? !(players[turn].money >= (board.boardPieces[this.n].info.price / 2) * 1.1) : false)
-            this.sellButton.disabled = (colorGroup.filter(e => e.level > 0).length);
+            this.mortgageButton.disabled = board.boardPieces[this.n].info.type != "station" && board.boardPieces[this.n].info.type != "utility" && (colorGroup.filter(e => e.level > 0).length) || (board.boardPieces[this.n].mortgaged ? !(players[turn].money >= (board.boardPieces[this.n].info.price / 2) * 1.1) : false)
+            this.sellButton.disabled = board.boardPieces[this.n].info.type != "station" && board.boardPieces[this.n].info.type != "utility" && (colorGroup.filter(e => e.level > 0).length);
             this.sellButton.update();
             this.mortgageButton.update();
             if (this.hasUpgradeButtons) {
