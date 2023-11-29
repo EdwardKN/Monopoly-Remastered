@@ -23,7 +23,7 @@ renderCanvas.addEventListener("mousemove", function (e) {
         x: e.offsetX / scale,
         y: e.offsetY / scale,
         down: oldDown,
-        which:oldWhich
+        which: oldWhich
     };
 });
 
@@ -60,8 +60,8 @@ function fixCanvas() {
 var buttons = [];
 var textInputs = [];
 
-class Slider{
-    constructor(settings,onChange){
+class Slider {
+    constructor(settings, onChange) {
         this.x = settings?.x;
         this.y = settings?.y;
         this.w = settings?.w;
@@ -72,32 +72,32 @@ class Slider{
         this.textSize = (settings?.textSize == undefined) ? this.h : settings?.textSize;
         this.unit = (settings?.unit == undefined) ? "" : settings?.unit;
         this.beginningText = (settings?.beginningText == undefined) ? "" : settings?.beginningText;
-        this.onChange = (onChange == undefined ? function(){} : onChange);
-        
+        this.onChange = (onChange == undefined ? function () { } : onChange);
+
         this.percentage = 0;
         this.value = 0;
         this.last = this.value;
         this.follow = false;
         buttons.push(this)
     }
-    update(){
+    update() {
         if (this.value !== this.last) {
             this.last = this.value;
             this.onChange();
         };
-        this.hover = detectCollision(this.x, this.y, this.w, this.h, mouse.x, mouse.y, 1, 1); 
-        if(mouse.down && this.hover){
+        this.hover = detectCollision(this.x, this.y, this.w, this.h, mouse.x, mouse.y, 1, 1);
+        if (mouse.down && this.hover) {
             mouse.down = false;
             this.follow = true;
         };
-        if(mouse.up){
+        if (mouse.up) {
             this.follow = false;
         };
 
-        if(this.follow){
+        if (this.follow) {
             this.percentage = Math.max(Math.min((mouse.x - 2 - (this.x)) / (this.w - 4), 1), 0);
             this.value = Math.round((((this.to - this.from) * this.percentage) + this.from) / this.steps) * this.steps;
-            if(this.value > this.to){
+            if (this.value > this.to) {
                 this.value = this.to;
             };
 
@@ -106,27 +106,27 @@ class Slider{
 
 
     }
-    draw(){
+    draw() {
         c.fillStyle = "white";
-        c.fillRect(this.x,this.y,this.w,this.h);
-        c.strokeStyle ="black";
+        c.fillRect(this.x, this.y, this.w, this.h);
+        c.strokeStyle = "black";
         c.lineWidth = 4;
-        c.strokeRect(this.x,this.y,this.w,this.h);
+        c.strokeRect(this.x, this.y, this.w, this.h);
 
         c.fillStyle = "black";
-        c.fillRect(this.x + (this.percentage)*(this.w-4),this.y, 4,this.h);
+        c.fillRect(this.x + (this.percentage) * (this.w - 4), this.y, 4, this.h);
 
-        c.drawText(this.beginningText + this.value + this.unit,this.x + this.w/2,this.y+this.h - (this.h-this.textSize)/2 - 2,this.textSize,"center")
+        c.drawText(this.beginningText + this.value + this.unit, this.x + this.w / 2, this.y + this.h - (this.h - this.textSize) / 2 - 2, this.textSize, "center")
     }
 }
-class TextInput{
-    constructor(settings,onChange){
+class TextInput {
+    constructor(settings, onChange) {
         this.x = settings?.x;
         this.y = settings?.y;
         this.w = settings?.w;
         this.h = settings?.h;
         this.textSize = (settings?.textSize == undefined) ? this.h : settings?.textSize;
-        this.onChange = (onChange == undefined ? function(){} : onChange);
+        this.onChange = (onChange == undefined ? function () { } : onChange);
 
         this.maxLength = settings?.maxLength == undefined ? 100 : settings.maxLength;
         this.placeHolder = settings?.placeHolder;
@@ -134,39 +134,39 @@ class TextInput{
         this.htmlElement = document.createElement("input");
 
         this.htmlElement.addEventListener("mousemove", e => {
-            mouse.x = 10000;
-            mouse.y = 10000;
-        })
+            mouse.x = Infinity;
+            mouse.y = Infinity;
+        });
 
-        document.body.appendChild(this.htmlElement)
+        document.body.appendChild(this.htmlElement);
         this.oldvalue = this.htmlElement.value;
 
-        this.htmlElement.style.position = "absolute"
+        this.htmlElement.style.position = "absolute";
 
-        this.htmlElement.style.padding = "0px"
+        this.htmlElement.style.padding = "0px";
         this.htmlElement.style.zIndex = 100;
-        this.htmlElement.style.fontFamily = "Verdanai"
-        this.htmlElement.placeholder = this.placeHolder != undefined ? this.placeHolder : ""
+        this.htmlElement.style.fontFamily = "Verdanai";
+        this.htmlElement.placeholder = this.placeHolder != undefined ? this.placeHolder : "";
 
         textInputs.push(this);
     }
-    draw(){
-        this.htmlElement.style.display = "inline"
+    draw() {
+        this.htmlElement.style.display = "inline";
         this.htmlElement.style.left = this.x * scale + (window.innerWidth - renderCanvas.width) / 2 + "px";
-        this.htmlElement.style.top = this.y * scale+ (window.innerHeight - renderCanvas.height) / 2 + "px";
-        this.htmlElement.style.width = this.w * scale - 10 * scale / 2+ "px";
-        this.htmlElement.style.height = this.h * scale - 10 * scale / 2+ "px";
+        this.htmlElement.style.top = this.y * scale + (window.innerHeight - renderCanvas.height) / 2 + "px";
+        this.htmlElement.style.width = this.w * scale - 10 * scale / 2 + "px";
+        this.htmlElement.style.height = this.h * scale - 10 * scale / 2 + "px";
 
-        this.htmlElement.style.fontSize = this.textSize*scale + "px"
+        this.htmlElement.style.fontSize = this.textSize * scale + "px";
         this.htmlElement.maxLength = this.maxLength;
-        this.htmlElement.style.border = 5 * scale / 2 + "px solid black "
-        
+        this.htmlElement.style.border = 5 * scale / 2 + "px solid black ";
+
         this.value = this.htmlElement.value;
     }
 }
 
 class Button {
-    constructor(settings, image, onClick,onRightClick) {
+    constructor(settings, image, onClick, onRightClick) {
         this.x = settings?.x;
         this.y = settings?.y;
         this.w = settings?.w;
@@ -204,7 +204,7 @@ class Button {
         if (detectCollision(this.x, this.y, this.w, this.h, mouse.x, mouse.y, 1, 1)) {
             this.hover = true;
         }
-        if(this.invertedHitbox != undefined && this.invertedHitbox != false && !detectCollision(this.invertedHitbox.x,this.invertedHitbox.y,this.invertedHitbox.w,this.invertedHitbox.h,mouse.x, mouse.y, 1, 1)){
+        if (this.invertedHitbox != undefined && this.invertedHitbox != false && !detectCollision(this.invertedHitbox.x, this.invertedHitbox.y, this.invertedHitbox.w, this.invertedHitbox.h, mouse.x, mouse.y, 1, 1)) {
             this.invertedHover = true;
         }
         if ((this.hover || this.invertedHover) && mouse.down && !this.disabled) {
@@ -217,25 +217,25 @@ class Button {
         }
 
         this.draw()
-        
+
     }
     draw() {
         let cropAdder = (this.hover && !this.disableHover) ? this.w : 0;
-        cropAdder = (this.disabled) ? (this.disableDisabledTexture ? 0 : this.w*2) : cropAdder;
-        cropAdder += ((this.selectButton == undefined )? 0 : (this.selected ? ((this.disableSelectTexture == undefined) ? this.w*2 : this.w) : 0));
-        c.drawRotatedImageFromSpriteSheet(this.image,{
-            x:this.x,
-            y:this.y,
-            w:this.w,
-            h:this.h,
-            cropX:cropAdder,
-            cropW:this.w,
-            mirrored:this.mirrored
+        cropAdder = (this.disabled) ? (this.disableDisabledTexture ? 0 : this.w * 2) : cropAdder;
+        cropAdder += ((this.selectButton == undefined) ? 0 : (this.selected ? ((this.disableSelectTexture == undefined) ? this.w * 2 : this.w) : 0));
+        c.drawRotatedImageFromSpriteSheet(this.image, {
+            x: this.x,
+            y: this.y,
+            w: this.w,
+            h: this.h,
+            cropX: cropAdder,
+            cropW: this.w,
+            mirrored: this.mirrored
         })
-        if(this.hover && !this.disabled){
+        if (this.hover && !this.disabled) {
             hoverList.push(this.hoverText);
         }
-        c.drawText(this.text,this.x + this.w/2, this.y+this.textSize, this.textSize,"center",this.color)
+        c.drawText(this.text, this.x + this.w / 2, this.y + this.textSize, this.textSize, "center", this.color)
     };
 }
 
@@ -246,16 +246,16 @@ var spritesheetImage;
 var f = new FontFace('verdanai', 'url(./verdanai.ttf)');
 f.load().then(function (font) { document.fonts.add(font); });
 
-CanvasRenderingContext2D.prototype.drawText = function(text,x,y,fontSize,align,color,shadow){
-    this.font =  fontSize + "px " + "verdanai";
+CanvasRenderingContext2D.prototype.drawText = function (text, x, y, fontSize, align, color, shadow) {
+    this.font = fontSize + "px " + "verdanai";
     this.fillStyle = "gray";
     this.shadowBlur = (shadow?.blur == undefined ? 0 : shadow?.blur);
-    this.shadowColor = (shadow?.color == undefined ? "white": shadow?.color);
+    this.shadowColor = (shadow?.color == undefined ? "white" : shadow?.color);
     this.textAlign = (align != undefined) ? align : "left";
-    this.fillText(text,x,y)
+    this.fillText(text, x, y)
     this.shadowBlur = 0;
     this.fillStyle = (color !== undefined ? color : "black");
-    this.fillText(text,x-1,y-1)
+    this.fillText(text, x - 1, y - 1)
 }
 
 
@@ -268,9 +268,9 @@ async function loadSpriteSheet() {
 
 async function loadImages(imageObject) {
     await loadSpriteSheet();
-    Object.entries(imageObject).forEach((imageList, i) => {  
+    Object.entries(imageObject).forEach((imageList, i) => {
         let tmpList = {};
-        imageList[1].forEach((image,index) => {
+        imageList[1].forEach((image, index) => {
             let src = imageList[0] + "/" + image + ".png";
             tmpList[image] = (spritesheet.frames[spritesheet.frames.map(function (e) { return e.filename; }).indexOf(src)]).frame;
         })
@@ -278,21 +278,21 @@ async function loadImages(imageObject) {
     });
 }
 
-CanvasRenderingContext2D.prototype.drawImageFromSpriteSheet = function (frame,settingsOverride) {
+CanvasRenderingContext2D.prototype.drawImageFromSpriteSheet = function (frame, settingsOverride) {
     if (!frame) { return }
     let settings = {
-        x:0,
-        y:0,
-        w:frame.w,
-        h:frame.h,
-        cropX:0,
-        cropY:0,
-        cropW:frame.w,
-        cropH:frame.h
+        x: 0,
+        y: 0,
+        w: frame.w,
+        h: frame.h,
+        cropX: 0,
+        cropY: 0,
+        cropW: frame.w,
+        cropH: frame.h
     };
-    if(settingsOverride){
+    if (settingsOverride) {
         let tmp = Object.entries(settingsOverride);
-        if(tmp.length){
+        if (tmp.length) {
             tmp.forEach(setting => {
                 settings[setting[0]] = setting[1];
             })
@@ -302,23 +302,23 @@ CanvasRenderingContext2D.prototype.drawImageFromSpriteSheet = function (frame,se
     this.drawImage(spritesheetImage, Math.floor(settings.cropX + frame.x), Math.floor(settings.cropY + frame.y), Math.floor(settings.cropW), Math.floor(settings.cropH), Math.floor(settings.x), Math.floor(settings.y), Math.floor(settings.w), Math.floor(settings.h));
 }
 
-CanvasRenderingContext2D.prototype.drawRotatedImageFromSpriteSheet = function(frame,settingsOverride) {
+CanvasRenderingContext2D.prototype.drawRotatedImageFromSpriteSheet = function (frame, settingsOverride) {
     if (!frame) { return }
     let settings = {
-        x:0,
-        y:0,
-        w:frame.w,
-        h:frame.h,
-        rotation:0,
-        mirrored:false,
-        cropX:0,
-        cropY:0,
-        cropW:frame.w,
-        cropH:frame.h
+        x: 0,
+        y: 0,
+        w: frame.w,
+        h: frame.h,
+        rotation: 0,
+        mirrored: false,
+        cropX: 0,
+        cropY: 0,
+        cropW: frame.w,
+        cropH: frame.h
     };
-    if(settingsOverride){
+    if (settingsOverride) {
         let tmp = Object.entries(settingsOverride);
-        if(tmp.length){
+        if (tmp.length) {
             tmp.forEach(setting => {
                 settings[setting[0]] = setting[1];
             })
@@ -339,36 +339,36 @@ CanvasRenderingContext2D.prototype.drawRotatedImageFromSpriteSheet = function(fr
         this.scale(-1, 1);
     }
 
-    this.drawImageFromSpriteSheet(frame,{x:-settings.w / 2,y:-settings.h/2, w:settings.w, h:settings.h, cropX:settings.cropX, cropY:settings.cropY, cropW:settings.cropW, cropH:settings.cropH});
+    this.drawImageFromSpriteSheet(frame, { x: -settings.w / 2, y: -settings.h / 2, w: settings.w, h: settings.h, cropX: settings.cropX, cropY: settings.cropY, cropW: settings.cropW, cropH: settings.cropH });
 
     this.restore();
 }
 
-CanvasRenderingContext2D.prototype.drawIsometricImage = function(frame,settingsOverride) {
+CanvasRenderingContext2D.prototype.drawIsometricImage = function (frame, settingsOverride) {
     if (!frame) { return }
     let settings = {
-        x:0,
-        y:0,
-        w:frame.w,
-        h:frame.h,
-        rotation:0,
-        mirrored:false,
-        cropX:0,
-        cropY:0,
-        cropW:frame.w,
-        cropH:frame.h,
-        offsetX:0,
-        offsetY:0
+        x: 0,
+        y: 0,
+        w: frame.w,
+        h: frame.h,
+        rotation: 0,
+        mirrored: false,
+        cropX: 0,
+        cropY: 0,
+        cropW: frame.w,
+        cropH: frame.h,
+        offsetX: 0,
+        offsetY: 0
     };
-    if(settingsOverride){
+    if (settingsOverride) {
         let tmp = Object.entries(settingsOverride);
-        if(tmp.length){
+        if (tmp.length) {
             tmp.forEach(setting => {
                 settings[setting[0]] = setting[1];
             })
         }
     }
-    this.drawRotatedImageFromSpriteSheet(frame,{x:to_screen_coordinate(settings.x, settings.y).x  + settings.offsetX, y:to_screen_coordinate(settings.x, settings.y).y + settings.offsetY, w:settings.w, h:settings.h, rotation:settings.rotation, mirrored:settings.mirrored, cropX:settings.cropX, cropY:settings.cropY, cropW:settings.cropW, cropH:settings.cropH})
+    this.drawRotatedImageFromSpriteSheet(frame, { x: to_screen_coordinate(settings.x, settings.y).x + settings.offsetX, y: to_screen_coordinate(settings.x, settings.y).y + settings.offsetY, w: settings.w, h: settings.h, rotation: settings.rotation, mirrored: settings.mirrored, cropX: settings.cropX, cropY: settings.cropY, cropW: settings.cropW, cropH: settings.cropH })
 }
 
 
@@ -618,8 +618,8 @@ window.addEventListener('keyup', function (e) {
 })
 
 Number.prototype.clamp = function (min, max) {
-    if(this < min) return min;
-    if(this > max) return max;
+    if (this < min) return min;
+    if (this > max) return max;
     return this;
 };
 
@@ -632,22 +632,22 @@ function angle(cx, cy, ex, ey) {
     var theta = Math.atan2(dy, dx); // range (-PI, PI]
     theta *= 180 / Math.PI; // rads to degs, range (-180, 180]
     return theta;
-  }
+}
 function angle360(cx, cy, ex, ey) {
     var theta = angle(cx, cy, ex, ey); // range (-180, 180]
     if (theta < 0) theta = 360 + theta; // range [0, 360)
     return theta;
-  }
-  function sum(a) {
+}
+function sum(a) {
     var s = 0;
     for (var i = 0; i < a.length; i++) s += a[i];
     return s;
-} 
+}
 
 function degToRad(a) {
     return Math.PI / 180 * a;
 }
-  function meanAngleDeg(a) {
+function meanAngleDeg(a) {
     let tmp = 180 / Math.PI * Math.atan2(
         sum(a.map(degToRad).map(Math.sin)) / a.length,
         sum(a.map(degToRad).map(Math.cos)) / a.length
@@ -704,7 +704,7 @@ function to_grid_coordinate(x, y) {
     }
 }
 
-function splitPoints(ammount,totalW,w,i){
+function splitPoints(ammount, totalW, w, i) {
     return (totalW / ammount - w) / 2 + totalW / ammount * i
 }
 
@@ -729,7 +729,7 @@ refreshLoop();
 
 const measureText = (() => {
     var data, w, size = 500; // for higher accuracy increase this size in pixels.
-    let tmp = 120/size;
+    let tmp = 120 / size;
 
     const isColumnEmpty = x => {
         var idx = x, h = size * 2;
@@ -740,7 +740,7 @@ const measureText = (() => {
         return true;
     }
     const can = document.createElement("canvas");
-    const ctx = can.getContext('2d' , {willReadFrequently: true});
+    const ctx = can.getContext('2d', { willReadFrequently: true });
     return ({ text, font, baseSize = size }) => {
         size = baseSize;
         can.height = size * 2;
@@ -765,19 +765,19 @@ const measureText = (() => {
         data = undefined; // release RAM held
         can.width = 1; // release RAM held
         return right - left >= 1 ? {
-            left, right, rightOffset: w - right, width: (right - left)*tmp,
+            left, right, rightOffset: w - right, width: (right - left) * tmp,
             measuredWidth: w, font, baseSize
         } : undefined;
     }
 })();
 
 var findClosest = function (x, arr) {
-    var indexArr = arr.map(function(k) { return Math.abs(k - x) })
+    var indexArr = arr.map(function (k) { return Math.abs(k - x) })
     var min = Math.min.apply(Math, indexArr)
     return arr[indexArr.indexOf(min)]
-  }
+}
 
-  function hasDuplicates(array) {
+function hasDuplicates(array) {
     return (new Set(array)).size !== array.length;
 }
 
@@ -793,18 +793,18 @@ Date.prototype.timeNow = function () {
     return ((this.getHours() < 10) ? "0" : "") + this.getHours() + ":" + ((this.getMinutes() < 10) ? "0" : "") + this.getMinutes() + ":" + ((this.getSeconds() < 10) ? "0" : "") + this.getSeconds();
 }
 
-function getClassContructorParams(obj){
+function getClassContructorParams(obj) {
     let match = obj.toString().match(/constructor\((.+)\)/)
-    
-    if(match && match[1]){
-      return match[1].split(",");
-    }
-    
-    // If no match
-    return []  
-  }
 
-  function applyToConstructor(constructor, argArray) {
+    if (match && match[1]) {
+        return match[1].split(",");
+    }
+
+    // If no match
+    return []
+}
+
+function applyToConstructor(constructor, argArray) {
     var args = [null].concat(argArray);
     var factoryFunction = constructor.bind.apply(constructor, args);
     return new factoryFunction();
