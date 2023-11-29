@@ -274,9 +274,10 @@ class LoadGames{
 }
 class PublicGames{
     constructor(){
+        let self = this;
         this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new MainMenu()});
         this.joinID = new TextInput({x:340,y:10,w:200,h:60,maxLength:6,textSize:45,placeHolder:"ID"})
-        this.joinButton = new Button({x:550,y:14,w:195,h:52,disableDisabledTexture:true},images.buttons.joingame,function(){currentMenu = new OnlineLobby(false)});
+        this.joinButton = new Button({x:550,y:14,w:195,h:52,disableDisabledTexture:true},images.buttons.joingame,function(){currentMenu = new OnlineLobby(false,self.joinID.value)});
         this.hostButton = new Button({x:750,y:14,w:195,h:52},images.buttons.hostgame,function(){currentMenu = new OnlineLobby(true)});
 
     }
@@ -290,13 +291,65 @@ class PublicGames{
     }
 }
 class OnlineLobby{
-    constructor(host){
-        this.hosting = host;
+    constructor(hosting,id){
+        this.host = hosting ? createHost() : connectToHost(id)
+        this.clients = {}
         this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new PublicGames()});
+        this.players = []
+        this.initPlayers()
+    }
+    initPlayers(){
+        let self = this;
+        for(let i = 0; i<8; i++){
+            this.players.push(
+                {
+                    textInput: new TextInput({x:10,y:80 + 48*i,w:300,h:45, maxLength:15,textSize:40}),
+                    colorButton: new Button({x:320,y:82+48*i,w:40,h:40, selectButton:true,disableSelectTexture:true},images.playercolorbuttons.unselected,function(){
+                        self.players.forEach((e,index) => {
+                            if(index != i){e.colorButton.selected = false;}else{
+                                self.players.forEach((b) => {
+                                    b.textInput.w = 300;
+                                })
+                                if(index >= 4){
+                                    self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30-40,-62+48*(i+1),e,self.selectedColors) : undefined;
+                                   
+                                    if(self.currentMenu){
+                                        self.players[index-1].textInput.w = 230;
+                                        self.players[index-2].textInput.w = 230;
+                                    }
+                                }else{
+                                    self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30-40,82+48*(i+1),e,self.selectedColors) : undefined;
+                                    
+                                    if(self.currentMenu){
+                                        self.players[index+1].textInput.w = 230;
+                                        self.players[index+2].textInput.w = 230;
+                                    }
+                                }
+                            }
+                        }); 
+                    }),
+                    selectedColor:-1
+                }
+            );
+            if (i === 0) continue
+            this.players[i].colorButton.disabled = true; 
+            this.players[i].textInput.htmlElement.disabled = true
+        }
     }
     draw(){
         c.drawImageFromSpriteSheet(images.menus.lobbymenu);
         this.backButton.update();
+        this.players.forEach(player =>{
+            player.textInput.draw();
+            player.colorButton.image = images.playercolorbuttons[(player.selectedColor == -1 ? "unselected" : "playercolorbutton" + (player.selectedColor == 0 ? "" : player.selectedColor+1))]
+            if(self.currentMenu?.hover){
+                player.colorButton.draw();
+                player.botButton.draw();
+            }else{
+                player.colorButton.update();
+            }
+        })
+        this.currentMenu?.draw()
     }
 }
 class LobbyMenu{
