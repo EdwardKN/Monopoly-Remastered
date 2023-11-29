@@ -328,7 +328,7 @@ class LobbyMenu {
         for (let i = 0; i < 8; i++) {
             this.players.push(
                 {
-                    textInput: new TextInput({ x: 10, y: 80 + 48 * i, w: 300, h: 45, maxLength: 15, textSize: 40 }),
+                    textInput: new TextInput({ x: 10, y: 80 + 48 * i, w: 300, h: 45, maxLength: 15, textSize: 40, placeHolder: "Spelare " + (i + 1) }),
                     colorButton: new Button({ x: 320, y: 82 + 48 * i, w: 40, h: 40, selectButton: true, disableSelectTexture: true }, images.playercolorbuttons.unselected, function () {
                         self.players.forEach((e, index) => {
                             if (index != i) { e.colorButton.selected = false; } else {
