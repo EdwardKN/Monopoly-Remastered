@@ -246,6 +246,9 @@ var spritesheetImage;
 var f = new FontFace('verdanai', 'url(./verdanai.ttf)');
 f.load().then(function (font) { document.fonts.add(font); });
 
+var g = new FontFace('handwritten', 'url(./handwritten.ttf)');
+g.load().then(function (font) { document.fonts.add(font); });
+
 CanvasRenderingContext2D.prototype.drawText = function (text, x, y, fontSize, align, color, shadow) {
     this.font = fontSize + "px " + "verdanai";
     this.fillStyle = "gray";
@@ -808,4 +811,111 @@ function applyToConstructor(constructor, argArray) {
     var args = [null].concat(argArray);
     var factoryFunction = constructor.bind.apply(constructor, args);
     return new factoryFunction();
+}
+
+function monthToText(month) {
+    if (month === 0) {
+        return "Januari"
+    }
+    if (month === 1) {
+        return "Februari"
+    }
+    if (month === 2) {
+        return "Mars"
+    }
+    if (month === 3) {
+        return "April"
+    }
+    if (month === 4) {
+        return "Maj"
+    }
+    if (month === 5) {
+        return "Juni"
+    }
+    if (month === 6) {
+        return "Juli"
+    }
+    if (month === 7) {
+        return "Augusti"
+    }
+    if (month === 8) {
+        return "September"
+    }
+    if (month === 9) {
+        return "Oktober"
+    }
+    if (month === 10) {
+        return "November"
+    }
+    if (month === 11) {
+        return "December"
+    }
+}
+
+function numberToText(number) {
+    let siffror = ["EN", "ETT", "TVÅ", "TRE", "FYRA", "FEM", "SEX", "SJU", "ÅTTA", "NIO", "TIO", "ELVA", "TOLV", "TRETTON", "FJORTON", "FEMTON", "SEXTON", "SJUTTON", "ARTON", "NITTON", "TJUGO", "TRETTIO", "FYRTIO", "FEMTIO", "SEXTIO", "SJUTTIO", "ÅTTIO", "NITTIO", "HUNDRA", "TUSEN"]
+    if (number < 21) {
+        return siffror[number];
+    } else if (number < 100) {
+        if (number - Math.floor(number / 10) * 10 == 1) {
+            if ((number - Math.floor(number / 10) * 10) !== 0) {
+                return (siffror[Math.floor(number / 10) + 18] + siffror[number - Math.floor(number / 10) * 10 - 1])
+            } else {
+                return (siffror[Math.floor(number / 10) + 18])
+            }
+        } else {
+            if (number - Math.floor(number / 10) * 10 == 0) {
+                return (siffror[Math.floor(number / 10) + 18])
+            } else {
+                return (siffror[Math.floor(number / 10) + 18] + siffror[number - Math.floor(number / 10) * 10])
+            }
+        }
+    } else if (number == 100) {
+        return "ETT" + siffror[28]
+    } else if (number < 1000 && JSON.parse(JSON.stringify(number).slice(1, 2)) < 2) {
+        if (JSON.parse(JSON.stringify(number).slice(1, 2)) !== 0) {
+            return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(1, 3))]
+        } else if (JSON.parse(JSON.stringify(number).slice(2, 3)) === 0) {
+            return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[28]
+        } else if (JSON.parse(JSON.stringify(number).slice(2, 3)) === 1) {
+            return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[28] + siffror[0]
+        } else {
+            return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(2, 3))]
+        }
+    } else if (number < 1000) {
+        if (JSON.parse(JSON.stringify(number).slice(2, 3)) == 0) {
+            return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(1, 2)) + 18]
+        } else {
+            return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(1, 2)) + 18] + siffror[JSON.parse(JSON.stringify(number).slice(2, 3))]
+        }
+    } else if (number == 1000) {
+        return "ET" + siffror[29];
+    } else if (number < 10000) {
+        if (JSON.parse(JSON.stringify(number).slice(1, 2)) == 0) {
+            if (JSON.parse(JSON.stringify(number).slice(2, 3)) < 2 && JSON.parse(JSON.stringify(number).slice(2, 3) > 0)) {
+                return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(2, 4))]
+            } else if (JSON.parse(JSON.stringify(number).slice(2, 3)) < 2 && JSON.parse(JSON.stringify(number).slice(3, 4)) == 0) {
+                return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29];
+            } else if (JSON.parse(JSON.stringify(number).slice(2, 3)) < 2) {
+                return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(3, 4))]
+            } else if (JSON.parse(JSON.stringify(number).slice(3, 4)) == 0) {
+                return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(2, 3)) + 18]
+            } else {
+                return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(2, 3)) + 18] + siffror[JSON.parse(JSON.stringify(number).slice(3, 4))]
+            }
+        } else {
+            if (number < 10000 && JSON.parse(JSON.stringify(number).slice(2, 3)) < 2) {
+                if (JSON.parse(JSON.stringify(number).slice(2, 3)) == 0) {
+                    return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(1, 2))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(3, 4))]
+                } else {
+                    return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(1, 2))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(2, 4))]
+                }
+            } else if (JSON.parse(JSON.stringify(number).slice(3, 4)) == 0) {
+                return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(1, 2))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(2, 3)) + 18]
+            } else {
+                return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(1, 2))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(2, 3)) + 18] + siffror[JSON.parse(JSON.stringify(number).slice(3, 4))]
+            }
+        }
+
+    }
 }

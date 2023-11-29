@@ -126,6 +126,7 @@ var images = {
         "hostgame",
         "setting",
         "saveselect",
+        "exitCardTrans"
     ],
     "community card and chance card": [
         "emptychancecard",
@@ -162,7 +163,9 @@ var images = {
         "gatillfinkanS",
         "illegaldices",
         "payincometax",
-        "payrichtax"
+        "payrichtax",
+
+        "bankcheck"
     ],
     menus: [
         "prisonmenu",

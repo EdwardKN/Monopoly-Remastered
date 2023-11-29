@@ -146,6 +146,10 @@ function loadGame(gameToload) {
         });
     }
 
+    if (board.playerIsWalkingTo) {
+        players[turn].teleportTo(board.playerIsWalkingTo);
+    }
+
 }
 
 function update() {
@@ -508,7 +512,7 @@ class Board {
         this.boardPieces = [];
         this.dices = new Dice();
         this.playerHasRolled = false;
-        this.playerIsWalking = false;
+        this.playerIsWalkingTo = false;
         this.done = false;
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, this.rollDice)
@@ -592,7 +596,7 @@ class Board {
         this.nextPlayerButton.disabled = players[turn].money < 0;
 
 
-        if (this.dices.hidden && !currentMenu && !this.playerIsWalking) {
+        if (this.dices.hidden && !currentMenu && (this.playerIsWalkingTo == false)) {
             this.menuButton.update();
             if (!this.playerHasRolled) {
                 this.rollDiceButton.update();
@@ -866,8 +870,7 @@ class BuyableProperty extends BoardPiece {
         players[turn].money += this.info.housePrice / 2;
     }
     payRent() {
-        this.owner.money += this.info.rent[this.level];
-        players[turn].money -= this.info.rent[this.level];
+        currentMenu = new Bankcheck(players.indexOf(this.owner), turn, this.info.rent[this.level], "Hyra")
         players[turn].lastPayment = this.owner;
     }
 }
@@ -901,8 +904,7 @@ class Utility extends BuyableProperty {
     }
     pay(steps, amount) {
         let rent = steps * (amount == 1 ? 4 : 10);
-        this.owner.money += rent;
-        players[turn].money -= rent;
+        currentMenu = new Bankcheck(players.indexOf(this.owner), turn, rent, "Avgift")
         players[turn].lastPayment = this.owner;
     }
 }
@@ -1004,7 +1006,9 @@ class Auction {
             this.leaveButton.update();
         }
         if (this.playerlist.length > 0) {
-            c.drawImageFromSpriteSheet(images.players[this.playerlist[this.turn].info.img], { x: canvas.width / 2 - 220, y: canvas.height / 2 - 90 })
+            if (this.playerlist[this.turn]?.info?.img) {
+                c.drawImageFromSpriteSheet(images.players[this.playerlist[this.turn].info.img], { x: canvas.width / 2 - 220, y: canvas.height / 2 - 90 })
+            }
 
             c.drawText(this.playerlist[this.turn].name, canvas.width / 2 - 190, canvas.height / 2 - 50, this.nameFontSize, "left", this.playerlist[this.turn].info.color)
 
@@ -1108,6 +1112,56 @@ class Trade {
         currentMenu = undefined;
     }
 }
+class Bankcheck {
+    constructor(to, from, amount, reason) {
+        this.to = to;
+        this.from = from;
+        this.amount = amount;
+        this.reason = reason;
+
+        this.closeButton = new Button({
+            x: canvas.width / 2 + 256 - 18 - 2, y: canvas.height / 2 - 128 + 2, w: 18, h: 18, invertedHitbox: { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 }, disableHover: true
+        }, images.buttons.exitCardTrans, () => { this.doCard() })
+    }
+    draw() {
+        c.drawImageFromSpriteSheet(images["community card and chance card"].bankcheck, { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 });
+
+        this.closeButton.update();
+
+        c.font = "30px handwritten";
+        c.fillStyle = "black"
+        c.textAlign = "left"
+        c.fillText(new Date().getDate() + " " + monthToText(new Date().getMonth()), 585, 195);
+
+        c.font = "50px handwritten";
+        c.fillText((typeof this.to == "number") ? players[this.to].name : this.to, 400, 245);
+
+        c.font = "35px handwritten";
+        c.textAlign = "center"
+        c.fillText(this.amount, 680, 245)
+
+        c.textAlign = "left"
+        c.font = "40px handwritten";
+        c.fillText(numberToText(this.amount), 250, 285);
+
+        c.textAlign = "left"
+        c.font = "40px handwritten";
+        c.fillText(this.reason, 300, 330);
+
+        c.textAlign = "left"
+        c.font = "40px handwritten";
+        c.fillText((typeof this.from == "number") ? players[this.from].name : this.to, 500, 335);
+    }
+    doCard() {
+        if (typeof this.to == "number") {
+            players[this.to].money += this.amount;
+        }
+        if (typeof this.from == "number") {
+            players[this.from].money -= this.amount;
+        }
+        currentMenu = undefined;
+    }
+}
 
 class CardDraw {
     constructor(type, cardId) {
@@ -1138,10 +1192,13 @@ class CardDraw {
             players[turn].money += this.card.moneyChange;
             players[turn].lastPayment = undefined;
         } else if (this.card.moneyFromPlayers) {
-            players[turn].money += (this.card.moneyFromPlayers * players.length);
+            currentMenu = new Bankcheck(turn, "Motspelare", (this.card.moneyFromPlayers * players.length - 1), "Present")
+
             players.forEach(e => {
-                e.money -= this.card.moneyFromPlayers;
-                e.lastPayment = players[turn];
+                if (e != players[turn]) {
+                    e.money -= this.card.moneyFromPlayers;
+                    e.lastPayment = players[turn];
+                }
             });
         } else if (this.card.type == "getprisoncard") {
             players[turn].prisonCards++;
@@ -1362,7 +1419,7 @@ class Player {
 
     draw() {
         let coord = to_screen_coordinate(this.drawX, this.drawY);
-        this.hover = (detectCollision(coord.x, coord.y, 24, 48, mouse.x, mouse.y, 1, 1) && !currentMenu && board.dices.hidden && !board.playerIsWalking);
+        this.hover = (detectCollision(coord.x, coord.y, 24, 48, mouse.x, mouse.y, 1, 1) && !currentMenu && board.dices.hidden && (board.playerIsWalkingTo == false));
         if (this.hover) { hoverList.push(this.name + ((players[turn] !== this) ? "(Föreslå bytesförslag)" : "(Du)")) }
         if (this.hover && mouse.down && (players[turn] !== this)) {
             this.moneyShowerThing.button.onClick();
@@ -1403,25 +1460,27 @@ class Player {
         });
     }
     animateSteps(newPos, direction, onStep) {
-        board.playerIsWalking = true;
+        board.playerIsWalkingTo = newPos;
         let self = this;
         let steps = newPos - self.pos;
 
         let timer = setInterval(() => {
-            board.boardPieces[self.pos].playersOnBoardPiece.splice(board.boardPieces[self.pos].playersOnBoardPiece.indexOf(self), 1);
-            self.pos += direction;
-            self.pos = self.pos % 40;
-            board.boardPieces[self.pos].playersOnBoardPiece.push(self);
-            self.calculateDrawPos();
-            if (self.pos == 0 && !self.inPrison) {
-                self.money += 200;
+            if (!currentMenu) {
+                board.boardPieces[self.pos].playersOnBoardPiece.splice(board.boardPieces[self.pos].playersOnBoardPiece.indexOf(self), 1);
+                self.pos += direction;
+                self.pos = self.pos % 40;
+                board.boardPieces[self.pos].playersOnBoardPiece.push(self);
+                self.calculateDrawPos();
+                if (self.pos == 0 && !self.inPrison) {
+                    currentMenu = new Bankcheck(turn, "Banken", 200, "Inkomst")
+                }
+                if (self.pos == newPos) {
+                    clearInterval(timer)
+                    board.dices.hidden = true;
+                    board.playerIsWalkingTo = false;
+                    onStep(steps);
+                };
             }
-            if (self.pos == newPos) {
-                clearInterval(timer)
-                board.dices.hidden = true;
-                board.playerIsWalking = false;
-                onStep(steps);
-            };
         }, 250)
     }
 

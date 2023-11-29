@@ -11,7 +11,9 @@ Funktionalitet
 - [x] Negativa Pengar
 - [x] Antialiasing
 - [x] Fullscreen
+- [x] Bankcheckar
 - [ ] Ljud
+- [ ] Animationer
 - [x] Huvudmeny
 - [ ] Onlinemeny
 - [ ] OnlineLäge
