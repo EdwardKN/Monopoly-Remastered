@@ -123,13 +123,13 @@ function loadGame(gameToload) {
     });
 
 
-    let currentMenuClass = getInstanceByName(gameToload.currentMenu.class);
+    let currentMenuClass = eval(gameToload.currentMenu.class);
     if (currentMenuClass) {
         let args = getClassContructorParams(currentMenuClass);
         let argsToInsert = [];
         args.forEach(e => {
             Object.entries(JSON.parse(gameToload.currentMenu.value)).forEach(b => {
-                if (e == b[0]) {
+                if (e.trim() == b[0]) {
 
                     argsToInsert.push(b[1]);
                 }
@@ -1023,8 +1023,8 @@ class Trade {
         this.player1Id = player1Id;
         this.player2Id = player2Id;
 
-        this.player1 = players[player1Id];
-        this.player2 = players[player2Id];
+        this.player1 = players[this.player1Id];
+        this.player2 = players[this.player2Id];
 
         this.closeButton = new Button({
             x: canvas.width / 2 + 455 - 22, y: canvas.height / 2 - 256 + 4, w: 18, h: 18, invertedHitbox: {
@@ -1034,6 +1034,8 @@ class Trade {
                 h: 512
             }, disableHover: true
         }, images.buttons.exitCard, this.closeTrade)
+
+        console.log(this.player1Id, this.player2Id)
 
         this.player1MoneySlider = new Slider({ x: canvas.width / 2 - 455 + 30, y: 100, w: 400, h: 20, from: 0, to: this.player1.money, steps: 10, unit: "kr" })
         this.player2MoneySlider = new Slider({ x: canvas.width / 2 + 455 - 430, y: 100, w: 400, h: 20, from: 0, to: this.player2.money, steps: 10, unit: "kr" })

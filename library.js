@@ -784,11 +784,6 @@ function hasDuplicates(array) {
     return (new Set(array)).size !== array.length;
 }
 
-function getInstanceByName(name, ...args) {
-    const Class = eval(name);
-    return Class
-}
-
 Date.prototype.today = function () {
     return ((this.getDate() < 10) ? "0" : "") + this.getDate() + "/" + (((this.getMonth() + 1) < 10) ? "0" : "") + (this.getMonth() + 1) + "/" + this.getFullYear();
 }
@@ -814,43 +809,8 @@ function applyToConstructor(constructor, argArray) {
 }
 
 function monthToText(month) {
-    if (month === 0) {
-        return "Januari"
-    }
-    if (month === 1) {
-        return "Februari"
-    }
-    if (month === 2) {
-        return "Mars"
-    }
-    if (month === 3) {
-        return "April"
-    }
-    if (month === 4) {
-        return "Maj"
-    }
-    if (month === 5) {
-        return "Juni"
-    }
-    if (month === 6) {
-        return "Juli"
-    }
-    if (month === 7) {
-        return "Augusti"
-    }
-    if (month === 8) {
-        return "September"
-    }
-    if (month === 9) {
-        return "Oktober"
-    }
-    if (month === 10) {
-        return "November"
-    }
-    if (month === 11) {
-        return "December"
-    }
-}
+    return ["Januari", "Februari", "Mars", "April", "Maj", "Juni", "Juli", "Augusti", "September", "Oktober", "November", "December"][month]
+};
 
 function numberToText(number) {
     let siffror = ["EN", "ETT", "TVÅ", "TRE", "FYRA", "FEM", "SEX", "SJU", "ÅTTA", "NIO", "TIO", "ELVA", "TOLV", "TRETTON", "FJORTON", "FEMTON", "SEXTON", "SJUTTON", "ARTON", "NITTON", "TJUGO", "TRETTIO", "FYRTIO", "FEMTIO", "SEXTIO", "SJUTTIO", "ÅTTIO", "NITTIO", "HUNDRA", "TUSEN"]
