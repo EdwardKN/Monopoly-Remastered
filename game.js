@@ -624,9 +624,7 @@ class Prison {
         this.drawX = 128 * 4 + 60;
         this.drawY = 64 * 6 - 4;
     }
-    draw() {
-
-    }
+    draw() { }
 }
 
 class BoardPiece {
@@ -1326,10 +1324,8 @@ class Player {
 
     teleportTo(newPos, noSteps) {
         newPos = newPos % 40;
-        let direction = 1;
-        if (newPos < 0) {
-            direction = -1;
-        };
+        let direction = Math.sign(newPos);
+
         let self = this;
 
         this.animateSteps(Math.abs(newPos), direction, function (steps) {
@@ -1358,8 +1354,8 @@ class Player {
                 board.playerIsWalking = false;
                 onStep(steps);
             };
-        }, 250)
-    }
+        }, 250);
+    };
 
     goToPrison() {
         let self = this;
