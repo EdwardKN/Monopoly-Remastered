@@ -293,8 +293,9 @@ class PublicGames{
 }
 class OnlineLobby{
     constructor(hosting,id){
-        this.host = hosting ? createHost() : connectToHost(id)
-        this.clients = {}
+        this.hosting = hosting
+        if (hosting) this.host = createHost()
+        if (!hosting) this.client = connectToHost(id)
         this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new PublicGames()});
         this.players = []
         this.initPlayers()
@@ -351,6 +352,14 @@ class OnlineLobby{
             }
         })
         this.currentMenu?.draw()
+        if (this.hosting) {
+            c.drawText("Id: " + this.host.id, 360, 55, 40)
+            if (detectCollision(360,10,300,100,mouse.x,mouse.y,1,1) && mouse.down) {
+                mouse.down = false
+                navigator.clipboard.writeText(this.host.id)
+            }
+        }
+        
     }
 }
 class LobbyMenu {
