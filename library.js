@@ -249,8 +249,14 @@ f.load().then(function (font) { document.fonts.add(font); });
 var g = new FontFace('handwritten', 'url(./handwritten.ttf)');
 g.load().then(function (font) { document.fonts.add(font); });
 
+CanvasRenderingContext2D.prototype.getFontSize = function (text, maxSize, maxWidth) {
+    c.font = "10px verdanai"
+    let width = c.measureText(text).width
+    return (1 / width) * maxWidth * 10 > maxSize ? maxSize : (1 / width) * maxWidth * 10;
+}
+
 CanvasRenderingContext2D.prototype.drawText = function (text, x, y, fontSize, align, color, shadow) {
-    this.font = fontSize + "px " + "verdanai";
+    this.font = fontSize + "px verdanai";
     this.fillStyle = "gray";
     this.shadowBlur = (shadow?.blur == undefined ? 0 : shadow?.blur);
     this.shadowColor = (shadow?.color == undefined ? "white" : shadow?.color);
@@ -729,50 +735,6 @@ function refreshLoop() {
     });
 }
 refreshLoop();
-
-const measureText = (() => {
-    var data, w, size = 500; // for higher accuracy increase this size in pixels.
-    let tmp = 120 / size;
-
-    const isColumnEmpty = x => {
-        var idx = x, h = size * 2;
-        while (h--) {
-            if (data[idx]) { return false }
-            idx += can.width;
-        }
-        return true;
-    }
-    const can = document.createElement("canvas");
-    const ctx = can.getContext('2d', { willReadFrequently: true });
-    return ({ text, font, baseSize = size }) => {
-        size = baseSize;
-        can.height = size * 2;
-        font = size + "px " + font;
-        if (text.trim() === "") { return }
-        ctx.font = font;
-        can.width = (w = ctx.measureText(text).width) + 8;
-        ctx.font = font;
-        ctx.textBaseline = "middle";
-        ctx.textAlign = "left";
-        ctx.fillText(text, 0, size);
-        data = new Uint32Array(ctx.getImageData(0, 0, can.width, can.height,).data.buffer);
-        var left, right;
-        var lIdx = 0, rIdx = can.width - 1;
-        while (lIdx < rIdx) {
-            if (left === undefined && !isColumnEmpty(lIdx)) { left = lIdx }
-            if (right === undefined && !isColumnEmpty(rIdx)) { right = rIdx }
-            if (right !== undefined && left !== undefined) { break }
-            lIdx += 1;
-            rIdx -= 1;
-        }
-        data = undefined; // release RAM held
-        can.width = 1; // release RAM held
-        return right - left >= 1 ? {
-            left, right, rightOffset: w - right, width: (right - left) * tmp,
-            measuredWidth: w, font, baseSize
-        } : undefined;
-    }
-})();
 
 var findClosest = function (x, arr) {
     var indexArr = arr.map(function (k) { return Math.abs(k - x) })

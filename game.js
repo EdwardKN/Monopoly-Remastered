@@ -38,7 +38,6 @@ function startGame(playersToStartGameWith) {
         }
     })
 
-    board.calculateNameFontSize();
 }
 
 function addRandomPlayer(name) {
@@ -539,7 +538,6 @@ class Board {
         if (players[turn].inPrison) {
             currentMenu = new PrisonMenu();
         }
-        board.calculateNameFontSize();
     }
     getColorGroup(group) {
         return this.boardPieces.filter(e => e?.info?.group == group);
@@ -574,10 +572,6 @@ class Board {
         }
         this.boardPieces.push(new Prison());
     }
-    calculateNameFontSize() {
-        let textsize = measureText({ font: "verdanai", text: "Just nu:" + players[turn].name })
-        this.nameFontSize = (1 / textsize.width) * 22000 > 30 ? 30 : (1 / textsize.width) * 22000
-    }
     update() {
         if (players.filter(e => !e.dead).length == 1) {
             this.done = true;
@@ -590,7 +584,7 @@ class Board {
         this.boardPieces.forEach(e => { if (e.owner && e.constructor.name == "BuyableProperty") e.drawHouses() })
         this.boardPieces.forEach(e => { if (e.hover) { hoverList.push(e.info.name + (e.owner !== undefined ? "(" + e.owner.name + ")" : "")) } });
 
-        c.drawText("Just nu:" + players[turn].name, canvas.width / 2, 30, this.nameFontSize, "center", players[turn].info.color)
+        c.drawText("Just nu:" + players[turn].name, canvas.width / 2, 30, c.getFontSize("Just nu:" + players[turn].name, 30, 240), "center", players[turn].info.color)
 
         this.dices.draw();
 
@@ -599,6 +593,7 @@ class Board {
 
         if (this.dices.hidden && !currentMenu && (this.playerIsWalkingTo == false)) {
             this.menuButton.update();
+
             if (!this.playerHasRolled) {
                 this.rollDiceButton.update();
             } else {
@@ -931,12 +926,12 @@ class SuperTax extends BoardPiece {
 class Auction {
     constructor(cardId) {
         let self = this;
-        this.boardPiece = board.boardPieces[cardId];
+        this.cardId = cardId;
+        this.boardPiece = board.boardPieces[this.cardId];
         this.startButton = new Button({ x: canvas.width / 2 - 256 + 28, y: canvas.height / 2 + 80, w: 220, h: 40 }, images.buttons.startauction, function () { self.startAuction() })
         this.auctionMoney = 0;
         this.turn = turn;
         this.playerlist = [...players];
-        this.calculateNameFontSize();
         if ((this.playerlist[this.turn].money < this.auctionMoney + 2) || this.playerlist[this.turn].money < this.boardPiece.info.price / 2) {
             this.leaveAuction();
         };
@@ -987,10 +982,6 @@ class Auction {
         currentMenu = undefined;
     };
 
-    calculateNameFontSize() {
-        let textsize = measureText({ font: "verdanai", text: this.playerlist[turn].name })
-        this.nameFontSize = (1 / textsize.width) * 20000 > 30 ? 30 : (1 / textsize.width) * 20000
-    }
     draw() {
         c.drawImageFromSpriteSheet(images.cards[this.boardPiece.info.card], { x: canvas.width / 2 - 10, y: canvas.height / 2 - 162 })
         c.drawImageFromSpriteSheet(images.menus.auctionmenubackground, { x: canvas.width / 2 - 256 + 10, y: canvas.height / 2 - 162 })
@@ -1009,7 +1000,7 @@ class Auction {
                 c.drawImageFromSpriteSheet(images.players[this.playerlist[this.turn].info.img], { x: canvas.width / 2 - 220, y: canvas.height / 2 - 90 })
             }
 
-            c.drawText(this.playerlist[this.turn].name, canvas.width / 2 - 190, canvas.height / 2 - 50, this.nameFontSize, "left", this.playerlist[this.turn].info.color)
+            c.drawText(this.playerlist[this.turn].name, canvas.width / 2 - 190, canvas.height / 2 - 50, c.getFontSize(this.playerlist[this.turn].name, 40, 180), "left", this.playerlist[this.turn].info.color)
 
             c.drawText(this.auctionMoney + "kr", canvas.width / 2 - 118, canvas.height / 2, 30, "center", !this.started ? "black" : (this.auctionMoney < this.boardPiece.info.price / 2) ? "red" : "green")
         }
@@ -1573,7 +1564,6 @@ class Money {
         this.player = player;
         this.index = players.length
         this.calculateDrawPos();
-        this.calculateNameFontSize();
     }
     calculateDrawPos() {
         this.side = this.index % 2;
@@ -1586,16 +1576,12 @@ class Money {
             currentMenu = new Trade(players.indexOf(players[turn]), players.indexOf(self.player));
         })
     }
-    calculateNameFontSize() {
-        let textsize = measureText({ font: "verdanai", text: this.player.name })
-        this.nameFontSize = (1 / textsize.width) * 16000 > 30 ? 30 : (1 / textsize.width) * 16000
-    }
     update() {
         this.button.disabled = (this.player == players[turn] || currentMenu);
         this.button.update();
         c.drawImageFromSpriteSheet(images.players[this.player.info.img], { x: (!this.side ? 3 : canvas.width - 3 - images.players.player.w), y: 3 + this.drawY })
 
-        c.drawText(this.player.name, this.drawX + (this.side ? 15 : 30), this.drawY + 36, this.nameFontSize, "left", this.player.info.color)
+        c.drawText(this.player.name, this.drawX + (this.side ? 15 : 30), this.drawY + 36, c.getFontSize(this.player.name, 30, 165), "left", this.player.info.color)
 
         c.drawText(this.player.money + "kr", this.drawX + (this.side ? 185 : 200), this.drawY + 36, 30)
     }
