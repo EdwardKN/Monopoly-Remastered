@@ -210,6 +210,7 @@ class Button {
         if ((this.hover || this.invertedHover) && mouse.down && !this.disabled) {
             mouse.down = false;
             this.selected = !this.selected;
+            this.hover = false;
             this.onClick();
         }
         if (this.hover && mouse.rightDown && !this.disabled) {

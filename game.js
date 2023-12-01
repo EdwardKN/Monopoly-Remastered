@@ -19,6 +19,8 @@ async function init() {
 function exitGame() {
     setTimeout(e => {
         saveGame();
+        board.boardPieces.forEach(e => e.hover = false);
+        players.forEach(e => e.hover = false);
         board = undefined;
         players = [];
         currentMenu = new MainMenu();
@@ -46,8 +48,6 @@ function addRandomPlayer(name) {
     colorsToPick.splice(random, 1);
 }
 
-
-
 async function saveGame() {
     if (!board || !players) { return }
     let games = JSON.parse(localStorage.getItem("games"));
@@ -64,12 +64,7 @@ async function saveGame() {
         screenshot: canvas.toDataURL(),
         currentMenu: { class: currentMenu?.constructor.name, value: JSON.prune(currentMenu) }
     };
-
-    if (board.id === undefined) {
-        game.id = games.length === 0 ? 0 : games[games.length - 1].id + 1
-    } else {
-        game.id = board.id;
-    }
+    game.id = board.id == undefined ? (games.length === 0 ? 0 : games[games.length - 1].id + 1) : board.id
 
     let tmpGame = JSON.prune(game);
     let tmp = false;
@@ -121,28 +116,20 @@ function loadGame(gameToload) {
         })
     });
 
-
     let currentMenuClass = eval(gameToload.currentMenu.class);
     if (currentMenuClass) {
         let args = getClassContructorParams(currentMenuClass);
         let argsToInsert = [];
         args.forEach(e => {
             Object.entries(JSON.parse(gameToload.currentMenu.value)).forEach(b => {
-                if (e.trim() == b[0]) {
-
-                    argsToInsert.push(b[1]);
-                }
+                if (e.trim() == b[0]) { argsToInsert.push(b[1]); }
             })
         })
         currentMenu = applyToConstructor(currentMenuClass, argsToInsert);
         Object.entries(JSON.parse(gameToload.currentMenu.value)).forEach(e => {
             if (typeof e[1] != "object") {
                 currentMenu[e[0]] = e[1];
-            } else if (e[0] == "card") {
-                currentMenu["card"] = e[1];
-            } else {
-
-            };
+            } else if (e[0] == "card") { currentMenu["card"] = e[1]; }
         });
     }
 
@@ -158,9 +145,7 @@ function update() {
     renderC.clearRect(0, 0, renderCanvas.width, renderCanvas.height)
     c.clearRect(0, 0, canvas.width, canvas.height);
 
-    textInputs.forEach(e => {
-        e.htmlElement.style.display = "none"
-    })
+    textInputs.forEach(e => { e.htmlElement.style.display = "none" })
 
     board?.update();
     currentMenu?.draw();
@@ -171,37 +156,13 @@ function update() {
     })
     hoverList = [];
 
-
     c.drawText(fps, 5, 80, 20)
 
     renderC.drawImage(canvas, 0, 0, renderCanvas.width, renderCanvas.height);
 
-    let tmp = false;
-    buttons.forEach(e => {
-        if (e.hover && !e.disabled) {
-            tmp = true;
-        }
-        e.hover = false;
-    });
-    board?.boardPieces.forEach(e => {
-        if (e.hover) {
-            tmp = true;
-        };
-        e.hover = false;
-    });
-    players.forEach(e => {
-        if (e.hover) {
-            tmp = true;
-        };
-        e.hover = false;
-    });
+    renderCanvas.style.cursor = (players.map(e => e.hover).includes(true) || board?.boardPieces.map(e => e.hover).includes(true) || buttons?.map(e => e.hover).includes(true)) ? "pointer" : "auto"
 
-
-    if (tmp === true) {
-        renderCanvas.style.cursor = "pointer"
-    } else {
-        renderCanvas.style.cursor = "auto"
-    }
+    buttons.forEach(e => e.hover = false);
 }
 class MainMenu {
     constructor() {
@@ -1425,7 +1386,7 @@ class Player {
     }
     calculateDrawPos() {
         let self = this;
-        let playersAtPos = players.filter(e => e.pos == self.pos).length;
+        let index = board.boardPieces[this.pos].playersOnBoardPiece.indexOf(this);
 
         this.drawX = board.boardPieces[this.pos].drawX;
         this.drawY = board.boardPieces[this.pos].drawY - 64;
@@ -1437,24 +1398,25 @@ class Player {
             }
         }
         if (Math.floor(this.pos / 10) === 0) {
-            this.drawY += 32 * (playersAtPos - 1)
+            this.drawY += 32 * (index - 1)
         }
         if (Math.floor(this.pos / 10) === 1) {
-            this.drawX -= 32 * (playersAtPos - 1)
+            this.drawX -= 32 * (index - 1)
         }
         if (Math.floor(this.pos / 10) === 2) {
-            this.drawY -= 32 * (playersAtPos - 1)
+            this.drawY -= 32 * (index - 1)
         }
         if (Math.floor(this.pos / 10) === 3) {
-            this.drawX += 32 * (playersAtPos - 1)
+            this.drawX += 32 * (index - 1)
         }
         if (this.pos == 40) {
-            this.drawX += 32 * (playersAtPos - 1)
-            this.drawY -= 32 * (playersAtPos - 1)
+            this.drawX += 32 * (index - 1)
+            this.drawY -= 32 * (index - 1)
         }
     }
 
     draw() {
+        this.calculateDrawPos();
         let coord = to_screen_coordinate(this.drawX, this.drawY);
         this.hover = (detectCollision(coord.x, coord.y, 24, 48, mouse.x, mouse.y, 1, 1) && !currentMenu && board.dices.hidden && (board.playerIsWalkingTo == false));
         if (this.hover) { hoverList.push(this.name + ((players[turn] !== this) ? "(Föreslå bytesförslag)" : "(Du)")) }
