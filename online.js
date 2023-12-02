@@ -23,15 +23,8 @@ function sendMessageToAll(clients, _type, _data) {
 }
 
 function getIndexFromObject(obj, key) {
-    let i = 0
-    for (let k of Object.keys(obj)) {
-        if (k === key) return i
-        i++
-    }
-    return false
+    return Object.keys(obj).indexOf(key)
 }
-
-
 
 function changeColor(idx, from, to) {
     currentMenu.players[idx].selectedColor = to
@@ -45,19 +38,6 @@ function changeColor(idx, from, to) {
     currentMenu.currentMenu.selectedColors.push(to)
     currentMenu.currentMenu.initColors()
 }
-/*
-let i = -1
-for (let player of currentMenu.players) {
-    i++
-    if (i === 0) continue
-    let prevPlayer = currentMenu.players[i - 1]
-    prevPlayer.textInput.htmlElement.value = player.textInput.htmlElement.value
-    player.textInput.htmlElement.value = ""
-
-    prevPlayer.selectedColor = player.selectedColor
-}
-currentMenu.currentMenu = undefined
-*/
 
 function createHost() {
     const peer = new Peer(generateId(6), { debug: 1 })
@@ -101,15 +81,31 @@ function createHost() {
         x.on('data', (response) => {
             const client = peer.clients[id]
             const idx = getIndexFromObject(peer.clients, id) + 1
+            const player = currentMenu.players[idx]
             const type = response.type
             const data = response.data
             console.log(response)
 
             if (type === 'confirmName') {
+                if (!data.confirm) { player.textInput.htmlElement.style.backgroundColor = 'white'; return }
+
+                let name = data.name.trim()
+                let valid = true
+                let reason = ""
                 
+                if (name.length < 3) { valid = false; reason = "Username must be atleast 3 characters long" }
+                else if (name.length > 15) { valid = false; reason = "Username must be at most 15 characters long" }
+
+                for (let p of currentMenu.players) if (p.textInput.htmlElement.style.backgroundColor === '' && p.textInput.htmlElement.value === name) { valid = false; reason = "Username is already taken" }
+
+                sendMessage(client.connection, "name", { valid: valid, name: name, reason: reason })
+                if (!valid) return 
+                
+                player.textInput.htmlElement.value = name
+                player.textInput.htmlElement.style.backgroundColor = ''
             }
             if (type === 'nameChange') {
-                currentMenu.players[idx].textInput.htmlElement.value = data
+                player.textInput.htmlElement.value = data
             }
             if (type === 'selectColor') {
                 // Check if it is already taken
@@ -147,14 +143,19 @@ function connectToHost(hostId) {
             const data = response.data
             console.log(response)
 
+            if (type === "name") {
+                if (data.valid) currentMenu.players[0].textInput.htmlElement.value = data.name
+                else {
+                    currentMenu.players[0].confirmButton.onClick()
+                    alert(data.reason)
+                }
+            }
             if (type === 'invalidColor') {
                 changeColor(0, data.to, data.from) // Reverse the action
             }
-
             if (type === 'selectedColors') {
                 currentMenu.selectedColors = data
                 if (currentMenu.currentMenu) {
-                    console.log("Hi")
                     currentMenu.currentMenu.selectedColors = data
                     currentMenu.currentMenu.initColors()
                 }

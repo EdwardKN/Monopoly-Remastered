@@ -379,6 +379,7 @@ class OnlineLobby{
                 }
             );
             let player = this.players[i]
+
             if (this.client) {
                 player.textInput.htmlElement.onchange = () => this.client.connection.send({ type: 'nameChange', data: player.textInput.value })
 
@@ -392,7 +393,8 @@ class OnlineLobby{
                     let text = player.textInput.htmlElement
                     text.disabled = !text.disabled
                     player.confirmButton.image = text.disabled ? images.buttons.no : images.buttons.yes
-                }, () => this.client.connection.send({ type: 'confirmName', data: text.disabled }))
+                    this.client.connection.send({ type: 'confirmName', data: { confirm: text.disabled, name: text.value }})
+                })
             }
             if (i === 0) continue
             player.textInput.htmlElement.disabled = true
@@ -551,7 +553,7 @@ class ColorSelector {
                 else if (currentMenu.client) sendMessage(currentMenu.client.connection, "selectColor", { from: currentMenu.prev, to: current })
                 currentMenu.prev = current
             }))
-            this.colorButtons[i].disabled = self.player?.selectedColor != -1 && this.selectedColors?.length > 0 && (this.selectedColors?.indexOf(i) != -1)
+            this.colorButtons[i].disabled = this.selectedColors?.length > 0 && (this.selectedColors?.indexOf(i) != -1)
         }
 
     }
