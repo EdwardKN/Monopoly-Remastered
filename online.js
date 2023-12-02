@@ -95,8 +95,7 @@ function createHost() {
                 
                 if (name.length < 3) { valid = false; reason = "Username must be atleast 3 characters long" }
                 else if (name.length > 15) { valid = false; reason = "Username must be at most 15 characters long" }
-
-                for (let p of currentMenu.players) if (p.textInput.htmlElement.style.backgroundColor === '' && p.textInput.htmlElement.value === name) { valid = false; reason = "Username is already taken" }
+                else if (currentMenu.players.some(p => p.textInput.htmlElement.style.backgroundColor === '' && p.textInput.htmlElement.value === name)) { valid = false, reason = "Username is already taken" }
 
                 sendMessage(client.connection, "name", { valid: valid, name: name, reason: reason })
                 if (!valid) return 
@@ -104,9 +103,7 @@ function createHost() {
                 player.textInput.htmlElement.value = name
                 player.textInput.htmlElement.style.backgroundColor = ''
             }
-            if (type === 'nameChange') {
-                player.textInput.htmlElement.value = data
-            }
+            if (type === 'nameChange') player.textInput.htmlElement.value = data
             if (type === 'selectColor') {
                 // Check if it is already taken
                 if (currentMenu.selectedColors.includes(data.to)) { sendMessage(client.connection, 'invalidColor', data); return }
