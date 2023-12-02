@@ -31,6 +31,19 @@ function getIndexFromObject(obj, key) {
     return false
 }
 
+
+
+function changeColor(idx, from, to) {
+    currentMenu.players[idx].selectedColor = to
+    if (to === -1) return
+    currentMenu.selectedColors = currentMenu.selectedColors.filter(e => e !== from)
+    currentMenu.selectedColors.push(to)
+
+    if (!currentMenu.currentMenu) return
+    currentMenu.currentMenu.selectedColors.push(data)
+    currentMenu.currentMenu.initColors()
+}
+
 function createHost() {
     const peer = new Peer(generateId(6), { debug: 1 })
     peer.clients = {}
@@ -40,8 +53,12 @@ function createHost() {
 
         x.on('open', () => {
             console.log("Id: ", id, " connected")
-            currentMenu.players[Object.entries(peer.connections).length].textInput.htmlElement.disabled = false
-            console.log(x)
+            // HTML
+            const length = Object.entries(peer.connections).length
+            currentMenu.players[length].textInput.htmlElement.disabled = false
+            currentMenu.players[length].colorButton.disabled = false
+
+            // Connnection
             peer.clients[id] = { connection: peer.connect(id) }
             setTimeout(() => sendMessage(peer.clients[id].connection, 'selectedColors', currentMenu.selectedColors), 100)
         })
@@ -52,8 +69,8 @@ function createHost() {
         })
     
         x.on('data', (response) => {
-            const client = peer.connections[id]
-            const idx = getIndexFromObject(peer.connections, id) + 1 // + 1 is the host
+            const client = peer.clients[id]
+            const idx = getIndexFromObject(peer.clients, id) + 1 // + 1 is the host
             const type = response.type
             const data = response.data
             console.log(response)
@@ -65,13 +82,12 @@ function createHost() {
                 currentMenu.players[idx].textInput.htmlElement.value = data
             }
             if (type === 'selectColor') {
-                currentMenu.selectedColors.push(data)
-                if (currentMenu.currentMenu) {
-                    currentMenu.currentMenu.selectedColors.push(data)
-                    currentMenu.currentMenu.initColors()
-                }
-            }
+                // Check if it is already taken
+                if (currentMenu.selectedColors.includes(data.to)) { sendMessage(client.connection, 'invalidColor', data); return }
 
+                changeColor(idx, data.from, data.to)
+                sendMessageToAll(peer.clients, 'selectedColors', currentMenu.selectedColors)
+            }
         })
     })
 
@@ -99,6 +115,11 @@ function connectToHost(hostId) {
             const type = response.type
             const data = response.data
             console.log(response)
+
+            if (type === 'invalidColor') {
+                changeColor(0, data.to, data.from) // Reverse the action
+            }
+
             if (type === 'selectedColors') {
                 currentMenu.selectedColors = data
                 if (currentMenu.currentMenu) {

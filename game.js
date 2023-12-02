@@ -339,6 +339,7 @@ class OnlineLobby{
         this.selectedColors = []
         this.hosting = hosting
         this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new PublicGames()});
+        this.prev = -1
     }
     initPlayers(amount){
         let self = this;
@@ -521,6 +522,7 @@ class ColorSelector {
         this.colorButtons = [];
         for (let i = 0; i < 8; i++) {
             this.colorButtons.push(new Button({ x: this.x + splitPoints(4, 180, 40, i % 4), y: this.y + splitPoints(2, 90, 40, Math.floor(i / 4)), w: 40, h: 40, selectButton: true }, images.playercolorbuttons["playercolorbutton" + (i == 0 ? "" : i + 1)], function () {
+                let current
                 self.colorButtons.forEach((e, index) => {
                     if (index != i) { e.selected = false } else {
                         if (e.selected) {
@@ -529,19 +531,21 @@ class ColorSelector {
                             }
                             self.player.selectedColor = i;
                             self.selectedColors.push(i);
+                            current = i
                         } else {
                             self.selectedColors.splice(self.selectedColors.indexOf(self.player.selectedColor))
                             self.player.selectedColor = -1;
+                            current = -1
                         }
                     };
                 })
                 self.colorButtons.forEach((e, index) => {
                     e.disabled = self.player?.selectedColor != index && self.selectedColors?.length > 0 && (self.selectedColors?.indexOf(index) != -1)
                 })
-                if (currentMenu.client) sendMessage(currentMenu.client.connection, 'selectColor', { from})
-                else if (currentMenu.host) sendMessageToAll()
 
-                console.log(self.selectedColors)
+                if (currentMenu.host) sendMessageToAll(currentMenu.host.clients, "selectedColors", currentMenu.selectedColors)
+                else if (currentMenu.client) sendMessage(currentMenu.client.connection, "selectColor", { from: currentMenu.prev, to: current })
+                currentMenu.prev = current
             }))
             this.colorButtons[i].disabled = self.player?.selectedColor != -1 && this.selectedColors?.length > 0 && (this.selectedColors?.indexOf(i) != -1)
         }
