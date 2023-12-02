@@ -71,7 +71,7 @@ function createHost() {
             // HTML
             const length = Object.entries(peer.connections).length
             currentMenu.players[length].textInput.htmlElement.style.backgroundColor = 'white'
-            currentMenu.players[length].textInput.htmlElement.placeHolder = id
+            currentMenu.players[length].textInput.htmlElement.setAttribute('placeHolder', id)
 
             // Connnection
             peer.clients[id] = { connection: peer.connect(id) }
