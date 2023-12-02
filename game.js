@@ -338,7 +338,11 @@ class OnlineLobby{
         }
         this.selectedColors = []
         this.hosting = hosting
-        this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new PublicGames()});
+        this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back, () => {
+            if (this.host) Object.values(this.host.clients).forEach(client => client.connection.close())
+            else if (this.client) this.client.connection.close()
+            currentMenu = new PublicGames()
+        });
         this.prev = -1
     }
     initPlayers(amount){
@@ -385,15 +389,15 @@ class OnlineLobby{
                     h: 40
                 }, images.buttons.yes, () => {
                     // Fix
-                    let player = this.players[i]
                     let text = player.textInput.htmlElement
                     text.disabled = !text.disabled
                     player.confirmButton.image = text.disabled ? images.buttons.no : images.buttons.yes
-                }, () => this.client.connection.send({ type: 'confirmName', data: true}))
+                }, () => this.client.connection.send({ type: 'confirmName', data: text.disabled }))
             }
             if (i === 0) continue
-            player.colorButton.disabled = true; 
             player.textInput.htmlElement.disabled = true
+            player.colorButton.disabled = true
+            player.colorButton.disableDisabledTexture = true
         }
     }
     draw() {

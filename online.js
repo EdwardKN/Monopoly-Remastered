@@ -35,14 +35,29 @@ function getIndexFromObject(obj, key) {
 
 function changeColor(idx, from, to) {
     currentMenu.players[idx].selectedColor = to
-    if (to === -1) return
     currentMenu.selectedColors = currentMenu.selectedColors.filter(e => e !== from)
+    if (currentMenu.currentMenu) currentMenu.currentMenu.selectedColors = currentMenu.currentMenu.selectedColors.filter(e => e !== from)
+
+    if (to === -1) return
     currentMenu.selectedColors.push(to)
 
     if (!currentMenu.currentMenu) return
-    currentMenu.currentMenu.selectedColors.push(data)
+    currentMenu.currentMenu.selectedColors.push(to)
     currentMenu.currentMenu.initColors()
 }
+/*
+let i = -1
+for (let player of currentMenu.players) {
+    i++
+    if (i === 0) continue
+    let prevPlayer = currentMenu.players[i - 1]
+    prevPlayer.textInput.htmlElement.value = player.textInput.htmlElement.value
+    player.textInput.htmlElement.value = ""
+
+    prevPlayer.selectedColor = player.selectedColor
+}
+currentMenu.currentMenu = undefined
+*/
 
 function createHost() {
     const peer = new Peer(generateId(6), { debug: 1 })
@@ -55,8 +70,8 @@ function createHost() {
             console.log("Id: ", id, " connected")
             // HTML
             const length = Object.entries(peer.connections).length
-            currentMenu.players[length].textInput.htmlElement.disabled = false
-            currentMenu.players[length].colorButton.disabled = false
+            currentMenu.players[length].textInput.htmlElement.style.backgroundColor = 'white'
+            currentMenu.players[length].textInput.htmlElement.placeHolder = id
 
             // Connnection
             peer.clients[id] = { connection: peer.connect(id) }
@@ -64,13 +79,28 @@ function createHost() {
         })
         
         x.on('close', () => {
-            currentMenu.players[Object.entries(peer.connections).length + 1].textInput.htmlElement.disabled = true
+            const idx = getIndexFromObject(peer.clients, id) + 1
+            let values = Object.values(peer.clients)
+
+            for (let i = idx + 1; i <= values.length; i++) {
+                let player = currentMenu.players[i]
+                let prevPlayer = currentMenu.players[i - 1]
+
+                prevPlayer.textInput.htmlElement.value = player.textInput.htmlElement.value
+                prevPlayer.selectedColor = player.selectedColor
+
+                if (i < values.length) continue
+                player.selectedColor = -1
+                player.textInput.htmlElement.value = ""
+                player.textInput.htmlElement.style.backgroundColor = ''
+            }
+
             delete peer.clients[id]
         })
     
         x.on('data', (response) => {
             const client = peer.clients[id]
-            const idx = getIndexFromObject(peer.clients, id) + 1 // + 1 is the host
+            const idx = getIndexFromObject(peer.clients, id) + 1
             const type = response.type
             const data = response.data
             console.log(response)
@@ -108,7 +138,8 @@ function connectToHost(hostId) {
         })
 
         x.on('close', () => {
-
+            console.log("Connection Lost")
+            currentMenu = new PublicGames()
         })
 
         x.on('data', (response) => {
@@ -123,6 +154,7 @@ function connectToHost(hostId) {
             if (type === 'selectedColors') {
                 currentMenu.selectedColors = data
                 if (currentMenu.currentMenu) {
+                    console.log("Hi")
                     currentMenu.currentMenu.selectedColors = data
                     currentMenu.currentMenu.initColors()
                 }
