@@ -327,16 +327,22 @@ class PublicGames{
 }
 class OnlineLobby{
     constructor(hosting,id){
-        this.hosting = hosting
-        if (hosting) this.host = createHost()
-        if (!hosting) this.client = connectToHost(id)
-        this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new PublicGames()});
         this.players = []
-        this.initPlayers()
+        if (hosting) {
+            this.host = createHost()
+            this.initPlayers(8)
+        }
+        if (!hosting) {
+            this.client = connectToHost(id)
+            this.initPlayers(1)
+        }
+        this.selectedColors = []
+        this.hosting = hosting
+        this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new PublicGames()});
     }
-    initPlayers(){
+    initPlayers(amount){
         let self = this;
-        for(let i = 0; i<8; i++){
+        for(let i = 0; i<amount; i++){
             this.players.push(
                 {
                     textInput: new TextInput({x:10,y:80 + 48*i,w:300,h:45, maxLength:15,textSize:40}),
@@ -356,7 +362,7 @@ class OnlineLobby{
                                 }else{
                                     self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30-40,82+48*(i+1),e,self.selectedColors) : undefined;
                                     
-                                    if(self.currentMenu){
+                                    if(self.currentMenu && !self.client){
                                         self.players[index+1].textInput.w = 230;
                                         self.players[index+2].textInput.w = 230;
                                     }
@@ -367,9 +373,26 @@ class OnlineLobby{
                     selectedColor:-1
                 }
             );
+            let player = this.players[i]
+            if (this.client) {
+                player.textInput.htmlElement.onchange = () => this.client.connection.send({ type: 'nameChange', data: player.textInput.value })
+
+                player.confirmButton = new Button({
+                    x: 370,
+                    y: 82 + 48 * i,
+                    w: 40,
+                    h: 40
+                }, images.buttons.yes, () => {
+                    // Fix
+                    let player = this.players[i]
+                    let text = player.textInput.htmlElement
+                    text.disabled = !text.disabled
+                    player.confirmButton.image = text.disabled ? images.buttons.no : images.buttons.yes
+                }, () => this.client.connection.send({ type: 'confirmName', data: true}))
+            }
             if (i === 0) continue
-            this.players[i].colorButton.disabled = true; 
-            this.players[i].textInput.htmlElement.disabled = true
+            player.colorButton.disabled = true; 
+            player.textInput.htmlElement.disabled = true
         }
     }
     draw() {
@@ -380,11 +403,12 @@ class OnlineLobby{
             player.colorButton.image = images.playercolorbuttons[(player.selectedColor == -1 ? "unselected" : "playercolorbutton" + (player.selectedColor == 0 ? "" : player.selectedColor+1))]
             if(self.currentMenu?.hover){
                 player.colorButton.draw();
-                player.botButton.draw();
             }else{
                 player.colorButton.update();
             }
+            player.confirmButton?.update()
         })
+        
         this.currentMenu?.draw()
         if (this.hosting) {
             c.drawText("Id: " + this.host.id, 360, 55, 40)
@@ -486,7 +510,6 @@ class ColorSelector {
         this.y = y;
         this.w = 180,
             this.h = 90;
-        this.colorButtons = [];
         this.hover = false;
         this.selectedColors = selectedColors;
 
@@ -495,6 +518,7 @@ class ColorSelector {
     }
     initColors() {
         let self = this;
+        this.colorButtons = [];
         for (let i = 0; i < 8; i++) {
             this.colorButtons.push(new Button({ x: this.x + splitPoints(4, 180, 40, i % 4), y: this.y + splitPoints(2, 90, 40, Math.floor(i / 4)), w: 40, h: 40, selectButton: true }, images.playercolorbuttons["playercolorbutton" + (i == 0 ? "" : i + 1)], function () {
                 self.colorButtons.forEach((e, index) => {
@@ -514,6 +538,10 @@ class ColorSelector {
                 self.colorButtons.forEach((e, index) => {
                     e.disabled = self.player?.selectedColor != index && self.selectedColors?.length > 0 && (self.selectedColors?.indexOf(index) != -1)
                 })
+                if (currentMenu.client) sendMessage(currentMenu.client.connection, 'selectColor', { from})
+                else if (currentMenu.host) sendMessageToAll()
+
+                console.log(self.selectedColors)
             }))
             this.colorButtons[i].disabled = self.player?.selectedColor != -1 && this.selectedColors?.length > 0 && (this.selectedColors?.indexOf(i) != -1)
         }
