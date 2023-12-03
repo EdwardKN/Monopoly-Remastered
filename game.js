@@ -389,7 +389,6 @@ class OnlineLobby{
                     w: 40,
                     h: 40
                 }, images.buttons.yes, () => {
-                    // Fix
                     let text = player.textInput.htmlElement
                     text.disabled = !text.disabled
                     player.confirmButton.image = text.disabled ? images.buttons.no : images.buttons.yes
@@ -414,6 +413,7 @@ class OnlineLobby{
                 player.colorButton.update();
             }
             player.confirmButton?.update()
+            player.kickButton?.update()
         })
         
         this.currentMenu?.draw()

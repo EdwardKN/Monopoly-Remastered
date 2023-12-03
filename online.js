@@ -26,6 +26,31 @@ function getIndexFromObject(obj, key) {
     return Object.keys(obj).indexOf(key)
 }
 
+function removeClient(peer, id) {
+    const idx = getIndexFromObject(peer.clients, id) + 1
+    let values = Object.values(peer.clients)
+
+    for (let i = idx + 1; i <= values.length; i++) {
+        let player = currentMenu.players[i]
+        let prevPlayer = currentMenu.players[i - 1]
+        
+        if (i > 1) {
+            prevPlayer.textInput.htmlElement.value = player.textInput.htmlElement.value
+            prevPlayer.selectedColor = player.selectedColor
+            prevPlayer.textInput.htmlElement.setAttribute("placeHolder", player.textInput.htmlElement.getAttribute("placeHolder"))
+        }
+
+        if (i < values.length) continue
+        player.selectedColor = -1
+        player.textInput.htmlElement.value = ""
+        player.textInput.htmlElement.style.backgroundColor = ''
+        player.textInput.htmlElement.setAttribute("placeHolder", "")
+        delete player.kickButton
+    }
+
+    delete peer.clients[id]
+}
+
 function changeColor(idx, from, to) {
     currentMenu.players[idx].selectedColor = to
     currentMenu.selectedColors = currentMenu.selectedColors.filter(e => e !== from)
@@ -52,30 +77,20 @@ function createHost() {
             const length = Object.entries(peer.connections).length
             currentMenu.players[length].textInput.htmlElement.style.backgroundColor = 'white'
             currentMenu.players[length].textInput.htmlElement.setAttribute('placeHolder', id)
+            currentMenu.players[length].kickButton = new Button({
+                x: 370,
+                y: 82 + 48 * length,
+                w: 40,
+                h: 40
+            }, images.buttons.no, () => removeClient(peer, id))
 
             // Connnection
             peer.clients[id] = { connection: peer.connect(id) }
-            setTimeout(() => sendMessage(peer.clients[id].connection, 'selectedColors', currentMenu.selectedColors), 100)
+            setTimeout(() => sendMessage(peer.clients[id].connection, 'selectedColors', currentMenu.selectedColors), 1000)
         })
         
         x.on('close', () => {
-            const idx = getIndexFromObject(peer.clients, id) + 1
-            let values = Object.values(peer.clients)
-
-            for (let i = idx + 1; i <= values.length; i++) {
-                let player = currentMenu.players[i]
-                let prevPlayer = currentMenu.players[i - 1]
-
-                prevPlayer.textInput.htmlElement.value = player.textInput.htmlElement.value
-                prevPlayer.selectedColor = player.selectedColor
-
-                if (i < values.length) continue
-                player.selectedColor = -1
-                player.textInput.htmlElement.value = ""
-                player.textInput.htmlElement.style.backgroundColor = ''
-            }
-
-            delete peer.clients[id]
+            removeClient(peer, id)
         })
     
         x.on('data', (response) => {
