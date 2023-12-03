@@ -160,7 +160,7 @@ function update() {
 
     renderC.drawImage(canvas, 0, 0, renderCanvas.width, renderCanvas.height);
 
-    renderCanvas.style.cursor = (players.map(e => e.hover).includes(true) || board?.boardPieces.map(e => e.hover).includes(true) || buttons?.map(e => e.hover).includes(true)) ? "pointer" : "auto"
+    renderCanvas.style.cursor = (players.map(e => e.hover).includes(true) || board?.boardPieces.map(e => e.hover).includes(true) || buttons?.map(e => (e.hover && !e.disabled)).includes(true)) ? "pointer" : "auto"
 
     buttons.forEach(e => e.hover = false);
 }
