@@ -719,7 +719,8 @@ function splitPoints(ammount, totalW, w, i) {
 
 var times = [];
 var fps = 60;
-var deltaTime = 1;
+var deltaTime = 0;
+var updateDelta = false;
 
 function refreshLoop() {
     window.requestAnimationFrame(function () {
@@ -729,11 +730,13 @@ function refreshLoop() {
         }
         times.push(now);
         fps = times.length;
-        //deltaTime = 60 / fps;
+        deltaTime = updateDelta ? 60 / fps : 1;
         refreshLoop();
     });
 }
 refreshLoop();
+
+setTimeout(() => { updateDelta = true; }, 1000);
 
 var findClosest = function (x, arr) {
     var indexArr = arr.map(function (k) { return Math.abs(k - x) })
