@@ -273,8 +273,8 @@ class PublicGames {
     constructor() {
         this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, function () { currentMenu = new MainMenu() });
         this.joinID = new TextInput({ x: 340, y: 10, w: 200, h: 60, maxLength: 6, textSize: 45, placeHolder: "ID" })
-        this.joinButton = new Button({ x: 550, y: 14, w: 195, h: 52, disableDisabledTexture: true }, images.buttons.joingame, function () { currentMenu = new OnlineLobby(false) });
-        this.hostButton = new Button({ x: 750, y: 14, w: 195, h: 52 }, images.buttons.hostgame, function () { currentMenu = new OnlineLobby(true) });
+        this.joinButton = new Button({ x: 550, y: 10, w: 195, h: 60 }, images.buttons.joingame, function () { currentMenu = new OnlineLobby(false) });
+        this.hostButton = new Button({ x: 750, y: 10, w: 195, h: 60 }, images.buttons.hostgame, function () { currentMenu = new OnlineLobby(true) });
 
     }
     draw() {
@@ -1133,7 +1133,7 @@ class CardDraw {
 
         this.type = type;
         if (this.type !== "special") {
-            this.cardId = randomIntFromRange(0, (this.type == "community") ? 12 : 13)
+            this.cardId = randomIntFromRange(0, (this.type == "community") ? 12 : 13);
 
             this.card = ((this.type == "community") ? communitycards[this.cardId] : chanceCards[this.cardId])
         } else {
@@ -1175,14 +1175,15 @@ class CardDraw {
 
     }
     useCard() {
+        let close = true;
         if (this.card.teleport !== undefined) {
             players[turn].teleportTo(this.card.teleport);
         } else if (this.card.moneyChange) {
             players[turn].money += this.card.moneyChange;
             players[turn].lastPayment = undefined;
         } else if (this.card.moneyFromPlayers) {
-            currentMenu = new Bankcheck(turn, "Motspelare", (this.card.moneyFromPlayers * players.length - 1), "Present")
-
+            currentMenu = new Bankcheck(turn, "Motspelare", (this.card.moneyFromPlayers * (players.length - 1)), "Present")
+            close = false;
             players.forEach(e => {
                 if (e != players[turn]) {
                     e.money -= this.card.moneyFromPlayers;
@@ -1220,7 +1221,7 @@ class CardDraw {
             players[turn].money -= 100;
             players[turn].lastPayment = undefined;
         }
-        currentMenu = undefined;
+        if (close) currentMenu = undefined;
     }
 }
 
@@ -1388,7 +1389,7 @@ class Player {
         board.boardPieces[0].playersOnBoardPiece.push(this);
     }
     calculateDrawPos() {
-        let index = board.boardPieces[this.inPrison ? 40 : this.pos].playersOnBoardPiece.indexOf(this);
+        let index = this.inPrison ? players.filter(e => e.inPrison).indexOf(this) : board.boardPieces[this.pos].playersOnBoardPiece.indexOf(this);
 
         this.drawX = board.boardPieces[this.pos].drawX;
         this.drawY = board.boardPieces[this.pos].drawY - 64;
@@ -1504,8 +1505,6 @@ class Player {
         this.pos = 10;
         this.calculateDrawPos();
         this.inPrison = false;
-        board.boardPieces[40].playersOnBoardPiece.splice(board.boardPieces[40].playersOnBoardPiece.indexOf(this), 1);
-        board.boardPieces[10].playersOnBoardPiece.push(this);
     }
 
     rollDice() {
