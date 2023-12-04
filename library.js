@@ -251,10 +251,10 @@ f.load().then(function (font) { document.fonts.add(font); });
 var g = new FontFace('handwritten', 'url(./handwritten.ttf)');
 g.load().then(function (font) { document.fonts.add(font); });
 
-CanvasRenderingContext2D.prototype.getFontSize = function (text, maxSize, maxWidth) {
+CanvasRenderingContext2D.prototype.getFontSize = function (text, maxWidth, maxHeight) {
     c.font = "10px verdanai"
     let width = c.measureText(text).width
-    return (1 / width) * maxWidth * 10 > maxSize ? maxSize : (1 / width) * maxWidth * 10;
+    return (1 / width) * maxWidth * 10 > maxHeight ? maxHeight : (1 / width) * maxWidth * 10;
 }
 
 CanvasRenderingContext2D.prototype.drawText = function (text, x, y, fontSize, align, color, shadow) {
@@ -428,9 +428,9 @@ function distance(x1, y1, x2, y2) {
 function drawLine(from, to, co) {
     c.lineWidth = 2;
     c.beginPath();
-    c.moveTo(from.x * tileSize, from.y * tileSize);
-    c.lineTo(to.x * tileSize, to.y * tileSize);
-    c.strokeStyle = co
+    c.moveTo(from.x, from.y);
+    c.lineTo(to.x, to.y);
+    c.strokeStyle = co == undefined ? "black" : co;
     c.stroke();
 }
 
