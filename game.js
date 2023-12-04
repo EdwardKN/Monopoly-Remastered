@@ -8,7 +8,7 @@ let colorsToPick = [0, 1, 2, 3, 4, 5, 6, 7];
 
 async function init() {
     fixCanvas();
-    await loadImages(images);
+    await loadImages();
 
     renderC.imageSmoothingEnabled = false;
 

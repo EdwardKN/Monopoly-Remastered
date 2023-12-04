@@ -243,6 +243,7 @@ class Button {
 
 var spritesheet;
 var spritesheetImage;
+var images = {};
 
 var f = new FontFace('verdanai', 'url(./verdanai.ttf)');
 f.load().then(function (font) { document.fonts.add(font); });
@@ -276,15 +277,13 @@ async function loadSpriteSheet() {
     spritesheetImage.src = "./images/texture.png";
 }
 
-async function loadImages(imageObject) {
+async function loadImages() {
     await loadSpriteSheet();
-    Object.entries(imageObject).forEach((imageList, i) => {
-        let tmpList = {};
-        imageList[1].forEach((image, index) => {
-            let src = imageList[0] + "/" + image + ".png";
-            tmpList[image] = (spritesheet.frames[spritesheet.frames.map(function (e) { return e.filename; }).indexOf(src)]).frame;
-        })
-        images[imageList[0]] = tmpList;
+    console.log()
+    spritesheet.frames.forEach((frame, i) => {
+        let tmp = frame.filename.replaceAll(".png", "").split("/");
+        if (images[tmp[0]] == undefined) { images[tmp[0]] = {}; }
+        images[tmp[0]][tmp[1]] = frame.frame;
     });
 }
 
