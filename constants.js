@@ -1,5 +1,48 @@
 const latestSaveVersion = 1;
 
+const playerInfo = [
+    {
+        color: "red",
+        img: "player",
+        ownedImg: "redowned"
+    },
+    {
+        color: "pink",
+        img: "player2",
+        ownedImg: "pinkowned"
+    },
+    {
+        color: "purple",
+        img: "player3",
+        ownedImg: "purpleowned"
+    },
+    {
+        color: "blue",
+        img: "player4",
+        ownedImg: "blueowned"
+    },
+    {
+        color: "lightblue",
+        img: "player5",
+        ownedImg: "lightblueowned"
+    },
+    {
+        color: "green",
+        img: "player6",
+        ownedImg: "greenowned"
+    },
+    {
+        color: "yellow",
+        img: "player7",
+        ownedImg: "yellowowned"
+    },
+    {
+        color: "orange",
+        img: "player8",
+        ownedImg: "orangeowned"
+    }
+]
+
 const specialCards = [
     {
         img: "gatillfinkanS"

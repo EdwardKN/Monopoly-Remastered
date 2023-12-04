@@ -54,7 +54,6 @@ async function saveGame() {
     games = (games == null || games == undefined) ? [] : games;
 
     let game = {
-        id: board.id,
         board: JSON.prune(board),
         saveVersion: latestSaveVersion,
         players: players.map(e => JSON.prune(e)),
@@ -64,7 +63,9 @@ async function saveGame() {
         screenshot: canvas.toDataURL(),
         currentMenu: { class: currentMenu?.constructor.name, value: JSON.prune(currentMenu) }
     };
-    game.id = board.id == undefined ? (games.length === 0 ? 0 : games[games.length - 1].id + 1) : board.id
+
+    game.id = (board.id == undefined || board.id == null) ? (games.length === 0 ? 0 : JSON.parse(games[games.length - 1]).id + 1) : board.id;
+
 
     let tmpGame = JSON.prune(game);
     let tmp = false;
@@ -210,7 +211,7 @@ class LoadGames {
             self.games.splice(index, 1);
 
             let tmpGames = self.games.map(e => JSON.prune(e));
-            localStorage.setItem("games", JSON.prune(tmpGames));
+            localStorage.setItem("games", JSON.prune(tmpGames.reverse()));
             self.init();
             if (self.games[index]) {
                 self.gameButtons[index].selected = true;
@@ -545,7 +546,7 @@ class Board {
         this.boardPieces.forEach(e => { if (e.owner && e.constructor.name == "BuyableProperty") e.drawHouses() })
         this.boardPieces.forEach(e => { if (e.hover) { hoverList.push(e.info.name + (e.owner !== undefined ? "(" + e.owner.name + ")" : "")) } });
 
-        c.drawText("Just nu:" + players[turn].name, canvas.width / 2, 30, c.getFontSize("Just nu:" + players[turn].name, 30, 240), "center", players[turn].info.color)
+        c.drawText("Just nu:" + players[turn].name, canvas.width / 2, 30, c.getFontSize("Just nu:" + players[turn].name, 240, 30), "center", players[turn].info.color)
 
         this.dices.draw();
 
@@ -608,6 +609,7 @@ class PrisonMenu {
         });
         this.cardButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 2), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisongetoutofjail, function () {
             players[turn].getOutOfPrison();
+            players[turn].prisonCards--;
             currentMenu = undefined;
         });
     }
@@ -627,6 +629,7 @@ class Prison {
     constructor() {
         this.drawX = 128 * 4 + 60;
         this.drawY = 64 * 6 - 4;
+        this.playersOnBoardPiece = [];
     }
     draw() { }
 }
@@ -961,7 +964,7 @@ class Auction {
                 c.drawImageFromSpriteSheet(images.players[this.playerlist[this.turn].info.img], { x: canvas.width / 2 - 220, y: canvas.height / 2 - 90 })
             }
 
-            c.drawText(this.playerlist[this.turn].name, canvas.width / 2 - 190, canvas.height / 2 - 50, c.getFontSize(this.playerlist[this.turn].name, 40, 180), "left", this.playerlist[this.turn].info.color)
+            c.drawText(this.playerlist[this.turn].name, canvas.width / 2 - 190, canvas.height / 2 - 50, c.getFontSize(this.playerlist[this.turn].name, 180, 40), "left", this.playerlist[this.turn].info.color)
 
             c.drawText(this.auctionMoney + "kr", canvas.width / 2 - 118, canvas.height / 2, 30, "center", !this.started ? "black" : (this.auctionMoney < this.boardPiece.info.price / 2) ? "red" : "green")
         }
@@ -1385,8 +1388,7 @@ class Player {
         board.boardPieces[0].playersOnBoardPiece.push(this);
     }
     calculateDrawPos() {
-        let self = this;
-        let index = board.boardPieces[this.pos].playersOnBoardPiece.indexOf(this);
+        let index = board.boardPieces[this.inPrison ? 40 : this.pos].playersOnBoardPiece.indexOf(this);
 
         this.drawX = board.boardPieces[this.pos].drawX;
         this.drawY = board.boardPieces[this.pos].drawY - 64;
@@ -1445,7 +1447,6 @@ class Player {
     }
 
     teleportTo(newPos, noSteps) {
-        newPos = newPos % 40;
         let direction = Math.sign(newPos);
 
         let self = this;
@@ -1457,6 +1458,7 @@ class Player {
         });
     }
     animateSteps(newPos, direction, onStep) {
+        newPos = newPos % 40;
         if (this.pos == 40) return;
         board.playerIsWalkingTo = newPos;
         let self = this;
@@ -1502,6 +1504,8 @@ class Player {
         this.pos = 10;
         this.calculateDrawPos();
         this.inPrison = false;
+        board.boardPieces[40].playersOnBoardPiece.splice(board.boardPieces[40].playersOnBoardPiece.indexOf(this), 1);
+        board.boardPieces[10].playersOnBoardPiece.push(this);
     }
 
     rollDice() {
@@ -1543,7 +1547,7 @@ class Money {
         this.button.update();
         c.drawImageFromSpriteSheet(images.players[this.player.info.img], { x: (!this.side ? 3 : canvas.width - 3 - images.players.player.w), y: 3 + this.drawY })
 
-        c.drawText(this.player.name, this.drawX + (this.side ? 15 : 30), this.drawY + 36, c.getFontSize(this.player.name, 30, 165), "left", this.player.info.color)
+        c.drawText(this.player.name, this.drawX + (this.side ? 15 : 30), this.drawY + 36, c.getFontSize(this.player.name, 165, 30), "left", this.player.info.color)
 
         c.drawText(this.player.money + "kr", this.drawX + (this.side ? 185 : 200), this.drawY + 36, 30)
     }
