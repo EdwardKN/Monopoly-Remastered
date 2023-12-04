@@ -281,7 +281,7 @@ async function loadImages() {
     await loadSpriteSheet();
     spritesheet.frames.forEach((frame, i) => {
         let tmp = frame.filename.replaceAll(".png", "").split("/");
-        if (images[tmp[0]] == undefined) { images[tmp[0]] = {}; }
+        images[tmp[0]] = images[tmp[0]] ?? {}
         images[tmp[0]][tmp[1]] = frame.frame;
     });
 }
