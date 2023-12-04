@@ -564,10 +564,24 @@ class Board {
         }
 
         for (let i = 20; i >= 0; i--) {
-            board.boardPieces[i].playersOnBoardPiece.forEach(e => e.draw());
+            if (i < 10) {
+                board.boardPieces[i].playersOnBoardPiece.forEach(e => e.draw());
+            } else {
+                let length = board.boardPieces[i].playersOnBoardPiece.length - 1;
+                for (let i2 = length; i2 >= 0; i2--) {
+                    board.boardPieces[i].playersOnBoardPiece[i2].draw();
+                }
+            }
         }
         for (let i = 21; i < 40; i++) {
-            board.boardPieces[i].playersOnBoardPiece.forEach(e => e.draw());
+            if (i >= 30) {
+                board.boardPieces[i].playersOnBoardPiece.forEach(e => e.draw());
+            } else {
+                let length = board.boardPieces[i].playersOnBoardPiece.length - 1;
+                for (let i2 = length; i2 >= 0; i2--) {
+                    board.boardPieces[i].playersOnBoardPiece[i2].draw();
+                }
+            }
         }
 
     }
@@ -1448,8 +1462,9 @@ class Player {
     }
 
     teleportTo(newPos, noSteps) {
+        newPos = newPos == 0 ? 40 : newPos;
         let direction = Math.sign(newPos);
-
+        newPos = newPos % 40;
         let self = this;
 
         this.animateSteps(Math.abs(newPos), direction, function (steps) {
@@ -1459,7 +1474,6 @@ class Player {
         });
     }
     animateSteps(newPos, direction, onStep) {
-        newPos = newPos % 40;
         if (this.pos == 40) return;
         board.playerIsWalkingTo = newPos;
         let self = this;
@@ -1479,6 +1493,7 @@ class Player {
                     if (self.pos == 0 && !self.inPrison) {
                         currentMenu = new Bankcheck(turn, "Banken", 200, "Inkomst")
                     }
+                    console.log(self.pos, newPos)
                     if (self.pos == newPos) {
                         clearInterval(timer)
                         board.dices.hidden = true;
