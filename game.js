@@ -530,6 +530,32 @@ class Board {
     getColorGroup(group) {
         return this.boardPieces.filter(e => e?.info?.group == group);
     }
+    getTotalHousesAndHotelsInColorGroup(group) {
+        let levels = board.boardPieces.filter(e => (e?.info?.group == group)).map(e => e.level)
+        let houses = 0;
+        let hotels = 0;
+        levels.forEach(e => {
+            if (e < 5) {
+                houses += e;
+            } else {
+                hotels++;
+            }
+        })
+        return { houses: houses, hotels: hotels }
+    }
+    getTotalHousesAndHotels() {
+        let levels = board.boardPieces.filter(e => e?.info?.group).map(e => e.level)
+        let houses = 0;
+        let hotels = 0;
+        levels.forEach(e => {
+            if (e < 5) {
+                houses += e;
+            } else {
+                hotels++;
+            }
+        })
+        return { houses: houses, hotels: hotels }
+    }
     init() {
         for (let n = 0; n < 40; n++) {
             if (n % 10 === 0) {
@@ -1176,24 +1202,44 @@ class CardDraw {
         this.animationStep = 0;
 
         this.type = type;
-        if (this.type !== "special") {
+        if (this.type !== "special" && this.type !== "textSpecial") {
             this.cardId = randomIntFromRange(0, (this.type == "community") ? 12 : 13);
 
             this.card = ((this.type == "community") ? communitycards[this.cardId] : chanceCards[this.cardId])
-        } else {
+        } else if (this.type !== "textSpecial") {
             this.cardId = cardId;
             this.card = specialCards[this.cardId];
+        } else {
+            this.card = { img: "specialempty" }
+            this.text = cardId;
         }
 
         let self = this;
+        this.closeButton = new Button({
+            x: canvas.width / 2 + 256 - 22, y: canvas.height / 2 - 128 + 4, w: 18, h: 18, invertedHitbox: { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 }, disableHover: true
+        }, images.buttons.exitCardTrans, () => currentMenu = undefined)
+
         this.okayButton = new Button({ x: canvas.width / 2 - 100, y: 330, w: 200, h: 60, invertedHitbox: { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 } }, images.buttons.okej, function () { self.animationStep = 3 })
 
     }
     draw() {
         c.drawImageFromSpriteSheet(images["community card and chance card"][this.card.img], { x: canvas.width / 2 - 256, y: this.yPos, w: 512, h: 256 })
 
+        if (this.type == "textSpecial") {
+            let splitText = this.text.split("^");
+
+            splitText.forEach((text, i) => {
+                c.drawText(text, canvas.width / 2 - 256 + 15, this.yPos + 30 + splitPoints(splitText.length, 180, 30, i), 30, "left")
+            })
+
+        }
+
         if (this.animationStep == 2) {
             this.okayButton.update();
+            if (this.type == "textSpecial") {
+                this.closeButton.update();
+                this.okayButton.invertedHitbox = undefined;
+            }
         } else if (this.animationStep == 0) {
             this.yPos -= 1 - (canvas.height / 2 - 250 - this.yPos) / 20;
             if (canvas.height / 2 - 180 - this.yPos > 0) {
@@ -1296,8 +1342,49 @@ class PropertyCard {
         } else {
             this.sellButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 0), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj" }, images.buttons.sellbutton, function () { self.sellThis() })
             this.mortgageButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 1), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Inteckna" }, images.buttons.mortgage, function () { board.boardPieces[self.n].mortgage() })
-            this.downgradeButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 2), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj Hus" }, images.buttons.arrowdown, function () { board.boardPieces[self.indexToDowngrade].downgrade() })
-            this.upgradeButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 3), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Köp Hus" }, images.buttons.arrowup, function () { board.boardPieces[self.indexToUpgrade].upgrade() })
+            this.downgradeButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 2), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj Hus" }, images.buttons.arrowdown, function () {
+                if (self.downgradeInfo?.index) {
+                    board.boardPieces[self.downgradeInfo.index].downgrade()
+                } else {
+                    if (-self.downgradeInfo.price > board.boardPieces[self.n].info.housePrice) {
+                        currentMenu = new CardDraw("textSpecial", "Matchen har slut på hus och^du måste nedgradera några^gator mer än en nivå.^Detta kommer att ge dig " + -self.downgradeInfo.price * 0.9 + "kr^Är du säker på att du vill^göra detta?")
+                        currentMenu.useCard = function () {
+                            self.downgradeInfo.values.forEach(e => {
+                                board.boardPieces[e.n].level = e.level
+                            })
+                            players[turn].money -= self.downgradeInfo.price * 0.9;
+                            currentMenu = undefined;
+                        }
+                    } else {
+                        self.downgradeInfo.values.forEach(e => {
+                            board.boardPieces[e.n].level = e.level
+                        })
+                        players[turn].money -= self.downgradeInfo.price * 0.9;
+                    }
+                }
+            })
+            this.upgradeButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 3), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Köp Hus" }, images.buttons.arrowup, function () {
+                if (self.upgradeInfo?.index) {
+                    board.boardPieces[self.upgradeInfo.index].upgrade()
+                } else {
+                    if (self.upgradeInfo.price > board.boardPieces[self.n].info.housePrice) {
+                        currentMenu = new CardDraw("textSpecial", "Matchen har slut på hus och^du måste uppgradera några^gator till hotell.^Detta kommer att kosta " + self.upgradeInfo.price + "kr^Är du säker på att du vill^göra detta?")
+                        currentMenu.useCard = function () {
+                            self.upgradeInfo.values.forEach(e => {
+                                board.boardPieces[e.n].level = e.level
+                            })
+                            players[turn].money -= self.upgradeInfo.price;
+                            currentMenu = undefined;
+                        }
+                    } else {
+                        self.upgradeInfo.values.forEach(e => {
+                            board.boardPieces[e.n].level = e.level
+                        })
+                        players[turn].money -= self.upgradeInfo.price;
+                    }
+
+                }
+            })
         }
 
     };
@@ -1312,7 +1399,8 @@ class PropertyCard {
     }
 
     calculateUpgrade() {
-        let colorGroup = board.getColorGroup(board.boardPieces[this.n].info.group);
+        let colorGroupName = board.boardPieces[this.n].info.group;
+        let colorGroup = board.getColorGroup(colorGroupName);
 
         if (colorGroup.length == colorGroup.filter(e => e.owner == players[turn]).length) {
             if (players[turn].money < board.boardPieces[this.n].info.housePrice) {
@@ -1322,28 +1410,76 @@ class PropertyCard {
                 if (lowest == 5) {
                     return false;
                 }
+                if (lowest == 4 && board.getTotalHousesAndHotels().hotels == board.settings.maxHotels) {
+                    return false;
+                }
+                if (lowest < 4) {
+                    let houses = board.getTotalHousesAndHotels().houses;
+                    if (houses == board.settings.maxHouses) {
+                        let housesInColorGroup = board.getTotalHousesAndHotelsInColorGroup(colorGroupName).houses;
+
+                        if (housesInColorGroup < 5) {
+                            let price = (colorGroup.length * 5 - housesInColorGroup) * board.boardPieces[this.n].info.housePrice;
+                            return price > players[turn].money ? false : { price: price, values: colorGroup.map(e => { return { n: e.n, level: 5 } }) }
+                        } else if (housesInColorGroup >= (colorGroup.length - 1) * 4) {
+                            let oldLevels = colorGroup.map(e => e.level).reduce((partialSum, a) => partialSum + a)
+                            let values = (colorGroup.map(e => { return { n: e.n, level: (e.n == this.n ? 5 : 4) } }))
+                            let newLevels = values.map(e => e.level).reduce((partialSum, a) => partialSum + a)
+                            let price = (newLevels - oldLevels) * board.boardPieces[this.n].info.housePrice;
+                            return price > players[turn].money ? false : { price: price, values: values }
+                        } else {
+                            let oldLevels = colorGroup.map(e => e.level).reduce((partialSum, a) => partialSum + a)
+                            let values = (colorGroup.map(e => { return { n: e.n, level: ((e.n == this.n || e.n == colorGroup[colorGroup.length - 1].n) ? 5 : 4) } }))
+                            let newLevels = values.map(e => e.level).reduce((partialSum, a) => partialSum + a)
+                            let price = (newLevels - oldLevels) * board.boardPieces[this.n].info.housePrice
+                            return price > players[turn].money ? false : { price: price, values: values }
+                        }
+
+                    }
+                }
+
                 if (board.boardPieces[this.n].level == lowest) {
-                    return this.n;
+                    return { index: this.n };
                 }
                 let propertyWithLowestLevel = colorGroup.filter(e => e.level == lowest);
-                return propertyWithLowestLevel.sort((a, b) => b.n - a.n)[0].n;
+                return { index: propertyWithLowestLevel.sort((a, b) => b.n - a.n)[0].n };
             }
         } else {
             return false;
         }
     }
     calculateDowngrade() {
-        let colorGroup = board.getColorGroup(board.boardPieces[this.n].info.group);
+        let colorGroupName = board.boardPieces[this.n].info.group;
+        let colorGroup = board.getColorGroup(colorGroupName);
         if (colorGroup.length == colorGroup.filter(e => e.owner == players[turn]).length) {
             let highest = !board.settings.evenHouses ? board.boardPieces[this.n].level : colorGroup.sort((a, b) => b.level - a.level)[0].level;
             if (highest == 0) {
                 return false;
             };
+            let index = undefined;
             if (board.boardPieces[this.n].level == highest) {
-                return this.n;
+                index = this.n;
             };
             let propertyWithHighestLevel = colorGroup.filter(e => e.level == highest);
-            return propertyWithHighestLevel.sort((a, b) => a.n - b.n)[0].n;
+            index = !index ? propertyWithHighestLevel.sort((a, b) => a.n - b.n)[0].n : index;
+
+            if (board.boardPieces[index].level == 5) {
+                let houses = board.getTotalHousesAndHotels().houses;
+                if (board.settings.maxHouses - houses < 4) {
+                    let housesInColorGroup = board.getTotalHousesAndHotelsInColorGroup(colorGroupName).houses;
+                    let values = (colorGroup.map(e => { return { n: e.n, level: 0 } }))
+                    values.forEach((e, i) => {
+                        e.level = divide(housesInColorGroup + board.settings.maxHouses - board.getTotalHousesAndHotels().houses, colorGroup.length)[i]
+                    })
+                    let oldLevels = colorGroup.map(e => e.level).reduce((partialSum, a) => partialSum + a)
+                    let newLevels = values.map(e => e.level).reduce((partialSum, a) => partialSum + a)
+                    let price = (newLevels - oldLevels) * board.boardPieces[this.n].info.housePrice;
+
+                    return { price: price, values: values };
+                }
+            }
+
+            return { index: index }
         } else {
             return false;
         }
@@ -1389,10 +1525,10 @@ class PropertyCard {
                 this.sellButton.update();
                 this.mortgageButton.update();
                 if (this.hasUpgradeButtons) {
-                    this.indexToUpgrade = this.calculateUpgrade();
-                    this.indexToDowngrade = this.calculateDowngrade();
-                    this.upgradeButton.disabled = (players[turn].money < board.boardPieces[this.n].info.housePrice || !this.indexToUpgrade || (board.settings.houseOnStanding ? !(players[turn].pos == this.n) : false));
-                    this.downgradeButton.disabled = !this.indexToDowngrade || (board.settings.houseOnStanding ? !(players[turn].pos == this.n) : false);
+                    this.upgradeInfo = this.calculateUpgrade();
+                    this.downgradeInfo = this.calculateDowngrade();
+                    this.upgradeButton.disabled = (!this.upgradeInfo || (board.settings.houseOnStanding ? !(players[turn].pos == this.n) : false));
+                    this.downgradeButton.disabled = !this.downgradeInfo || (board.settings.houseOnStanding ? !(players[turn].pos == this.n) : false);
                     this.downgradeButton.update();
                     this.upgradeButton.update();
                 }
@@ -1463,7 +1599,7 @@ class Player {
     }
 
     draw() {
-        this.hasBought = (players[turn].laps < board.settings.roundsBeforePurchase)
+        if (players[turn].laps < board.settings.roundsBeforePurchase) this.hasBought = true
         this.calculateDrawPos();
         let coord = to_screen_coordinate(this.drawX, this.drawY);
         this.hover = (detectCollision(coord.x, coord.y, 24, 48, mouse.x, mouse.y, 1, 1) && !currentMenu && board.dices.hidden && (board.playerIsWalkingTo == false));
