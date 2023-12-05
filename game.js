@@ -1416,24 +1416,33 @@ class PropertyCard {
                 if (lowest < 4) {
                     let houses = board.getTotalHousesAndHotels().houses;
                     if (houses == board.settings.maxHouses) {
-                        let housesInColorGroup = board.getTotalHousesAndHotelsInColorGroup(colorGroupName).houses;
+                        if (board.settings.evenHouses) {
+                            let housesInColorGroup = board.getTotalHousesAndHotelsInColorGroup(colorGroupName).houses;
 
-                        if (housesInColorGroup < 5) {
-                            let price = (colorGroup.length * 5 - housesInColorGroup) * board.boardPieces[this.n].info.housePrice;
-                            return price > players[turn].money ? false : { price: price, values: colorGroup.map(e => { return { n: e.n, level: 5 } }) }
-                        } else if (housesInColorGroup >= (colorGroup.length - 1) * 4) {
-                            let oldLevels = colorGroup.map(e => e.level).reduce((partialSum, a) => partialSum + a)
-                            let values = (colorGroup.map(e => { return { n: e.n, level: (e.n == this.n ? 5 : 4) } }))
-                            let newLevels = values.map(e => e.level).reduce((partialSum, a) => partialSum + a)
-                            let price = (newLevels - oldLevels) * board.boardPieces[this.n].info.housePrice;
-                            return price > players[turn].money ? false : { price: price, values: values }
+                            if (housesInColorGroup < 5) {
+                                let price = (colorGroup.length * 5 - housesInColorGroup) * board.boardPieces[this.n].info.housePrice;
+                                return price > players[turn].money ? false : { price: price, values: colorGroup.map(e => { return { n: e.n, level: 5 } }) }
+                            } else if (housesInColorGroup >= (colorGroup.length - 1) * 4) {
+                                let oldLevels = colorGroup.map(e => e.level).reduce((partialSum, a) => partialSum + a)
+                                let values = (colorGroup.map(e => { return { n: e.n, level: (e.n == this.n ? 5 : 4) } }))
+                                let newLevels = values.map(e => e.level).reduce((partialSum, a) => partialSum + a)
+                                let price = (newLevels - oldLevels) * board.boardPieces[this.n].info.housePrice;
+                                return price > players[turn].money ? false : { price: price, values: values }
+                            } else {
+                                let oldLevels = colorGroup.map(e => e.level).reduce((partialSum, a) => partialSum + a)
+                                let values = (colorGroup.map(e => { return { n: e.n, level: ((e.n == this.n || e.n == colorGroup[colorGroup.length - 1].n) ? 5 : 4) } }))
+                                let newLevels = values.map(e => e.level).reduce((partialSum, a) => partialSum + a)
+                                let price = (newLevels - oldLevels) * board.boardPieces[this.n].info.housePrice
+                                return price > players[turn].money ? false : { price: price, values: values }
+                            }
                         } else {
                             let oldLevels = colorGroup.map(e => e.level).reduce((partialSum, a) => partialSum + a)
-                            let values = (colorGroup.map(e => { return { n: e.n, level: ((e.n == this.n || e.n == colorGroup[colorGroup.length - 1].n) ? 5 : 4) } }))
+                            let values = (colorGroup.map(e => { return { n: e.n, level: ((e.n == this.n) ? 5 : e.level) } }))
                             let newLevels = values.map(e => e.level).reduce((partialSum, a) => partialSum + a)
                             let price = (newLevels - oldLevels) * board.boardPieces[this.n].info.housePrice
                             return price > players[turn].money ? false : { price: price, values: values }
                         }
+
 
                     }
                 }
@@ -1464,13 +1473,23 @@ class PropertyCard {
             index = !index ? propertyWithHighestLevel.sort((a, b) => a.n - b.n)[0].n : index;
 
             if (board.boardPieces[index].level == 5) {
-                let houses = board.getTotalHousesAndHotels().houses;
-                if (board.settings.maxHouses - houses < 4) {
-                    let housesInColorGroup = board.getTotalHousesAndHotelsInColorGroup(colorGroupName).houses;
-                    let values = (colorGroup.map(e => { return { n: e.n, level: 0 } }))
-                    values.forEach((e, i) => {
-                        e.level = divide(housesInColorGroup + board.settings.maxHouses - board.getTotalHousesAndHotels().houses, colorGroup.length)[i]
-                    })
+                if (board.settings.evenHouses) {
+                    let houses = board.getTotalHousesAndHotels().houses;
+                    if (board.settings.maxHouses - houses < 4) {
+                        let housesInColorGroup = board.getTotalHousesAndHotelsInColorGroup(colorGroupName).houses;
+                        let values = (colorGroup.map(e => { return { n: e.n, level: 0 } }))
+                        values.forEach((e, i) => {
+                            e.level = divide(housesInColorGroup + board.settings.maxHouses - board.getTotalHousesAndHotels().houses, colorGroup.length)[i]
+                        })
+                        let oldLevels = colorGroup.map(e => e.level).reduce((partialSum, a) => partialSum + a)
+                        let newLevels = values.map(e => e.level).reduce((partialSum, a) => partialSum + a)
+                        let price = (newLevels - oldLevels) * board.boardPieces[this.n].info.housePrice;
+
+                        return { price: price, values: values };
+                    }
+                } else {
+                    let values = (colorGroup.map(e => { return { n: e.n, level: e.n == this.n ? (board.settings.maxHouses - board.getTotalHousesAndHotels().houses > 4 ? 4 : board.settings.maxHouses - board.getTotalHousesAndHotels().houses) : e.level } }))
+
                     let oldLevels = colorGroup.map(e => e.level).reduce((partialSum, a) => partialSum + a)
                     let newLevels = values.map(e => e.level).reduce((partialSum, a) => partialSum + a)
                     let price = (newLevels - oldLevels) * board.boardPieces[this.n].info.housePrice;
