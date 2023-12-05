@@ -28,9 +28,10 @@ function exitGame() {
     }, 100)
 }
 
-function startGame(playersToStartGameWith) {
+function startGame(playersToStartGameWith, settings) {
     window.onbeforeunload = saveGame;
     board = new Board();
+    board.settings = settings;
 
     playersToStartGameWith.forEach(player => {
         if (player.color != -1) {
@@ -93,6 +94,7 @@ function loadGame(gameToload) {
         };
     });
     board.id = gameToload.id;
+    board.settings = JSON.parse(gameToload.board).settings;
     turn = gameToload.turn;
 
     let playersToLoad = gameToload.players.map(e => JSON.parse(e));
@@ -263,7 +265,7 @@ class LoadGames {
             c.drawText("Spelversion: " + latestSaveVersion, 10, 440, 20, "left", latestSaveVersion == this.games[this.gameButtons.indexOf(this.selected)].saveVersion ? "green" : "red")
             c.drawText("Sparfilsversion: " + this.games[this.gameButtons.indexOf(this.selected)].saveVersion, 10, 460, 20, "left", latestSaveVersion == this.games[this.gameButtons.indexOf(this.selected)].saveVersion ? "green" : "red")
         }
-        this.startButton.disabled = !this.selected || JSON.parse(this.games[this.gameButtons.indexOf(this.selected)].board).done
+        this.startButton.disabled = !this.selected || JSON.parse(this.games[this.gameButtons.indexOf(this.selected)].board).done || !(latestSaveVersion == this.games[this.gameButtons.indexOf(this.selected)].saveVersion)
         this.deleteButton.disabled = !this.selected
         this.startButton.update();
         this.deleteButton.update();
@@ -309,9 +311,26 @@ class LobbyMenu {
                     color: e.selectedColor
                 })
             })
-            startGame(tmp);
+            let tmpSettings = {};
+            self.settings.forEach((setting, index) => {
+                tmpSettings[settings[index].variable] = setting instanceof Button ? setting.selected : setting.value
+            })
+            console.log(tmpSettings)
+            startGame(tmp, tmpSettings);
             currentMenu = undefined;
         });
+        this.settings = [];
+        settings.forEach((setting, index,) => {
+            let length = settings.length;
+            if (setting.type == "select") {
+                this.settings.push(new Button({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, selectButton: true, text: setting.title, textSize: c.getFontSize(setting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting));
+                this.settings[index].selected = setting.start;
+            } else if (setting.type == "slider") {
+                this.settings.push(new Slider({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, from: setting.from, to: setting.to, unit: setting.unit, steps: setting.steps, beginningText: setting.title }))
+                this.settings[index].percentage = (-setting.from + setting.start) / (-setting.from + setting.to)
+                this.settings[index].value = setting.start
+            }
+        })
 
         this.currentMenu = undefined;
 
@@ -376,6 +395,13 @@ class LobbyMenu {
         let readyPlayers = this.players.filter(e => e.textInput.value.length > 1);
         this.startButton.disabled = (readyPlayers.length < 2 || hasDuplicates(readyPlayers.map(e => e.textInput.value)))
         this.startButton.update();
+        this.settings.forEach((setting, index) => {
+            if (settings[index].needed) {
+                setting.disabled = !this.settings[settings.map(e => e.variable).indexOf(settings[index].needed)].selected;
+                setting.selected = !this.settings[settings.map(e => e.variable).indexOf(settings[index].needed)].selected ? false : setting.selected
+            }
+            setting.update()
+        });
 
     }
 }
@@ -842,7 +868,9 @@ class BuyableProperty extends BoardPiece {
         players[turn].money += this.info.housePrice / 2;
     }
     payRent() {
-        currentMenu = new Bankcheck(players.indexOf(this.owner), turn, this.info.rent[this.level], "Hyra")
+        if (!(!this.owner.inPrison || board.settings.prisonpay)) return
+        let colorGroup = board.getColorGroup(this.info.group);
+        currentMenu = new Bankcheck(players.indexOf(this.owner), turn, this.info.rent[this.level] * ((colorGroup.length == colorGroup.filter(e => e.owner == this.owner).length && board.settings.doublePay) ? 2 : 1), "Hyra")
         players[turn].lastPayment = this.owner;
     }
 }
@@ -861,6 +889,7 @@ class Utility extends BuyableProperty {
         if (this.owner == undefined) {
             this.openCard();
         } else if (this.owner != players[turn]) {
+            if (!(!this.owner.inPrison || board.settings.prisonpay)) return
             let amount = this.owner.ownedPlaces.filter(e => e.constructor.name == "Utility").length;
             if (steps == undefined) {
                 let self = this;
@@ -909,8 +938,9 @@ class Auction {
         this.startButton = new Button({ x: canvas.width / 2 - 256 + 28, y: canvas.height / 2 + 80, w: 220, h: 40 }, images.buttons.startauction, function () { self.startAuction() })
         this.auctionMoney = 0;
         this.turn = turn;
+        this.minimumPay = this.boardPiece.info.price * (board.settings.lowestAuction / 100);
         this.playerlist = [...players];
-        if ((this.playerlist[this.turn].money < this.auctionMoney + 2) || this.playerlist[this.turn].money < this.boardPiece.info.price / 2) {
+        if ((this.playerlist[this.turn].money < this.auctionMoney + 2) || this.playerlist[this.turn].money < this.minimumPay) {
             this.leaveAuction();
         };
     }
@@ -925,7 +955,7 @@ class Auction {
     };
     addMoney(amount) {
         this.auctionMoney += amount;
-        if (this.auctionMoney >= this.boardPiece.info.price / 2) {
+        if (this.auctionMoney >= this.minimumPay) {
             this.playerlist[this.turn].hasLaidOver = true;
         }
         this.nextPlayer();
@@ -945,14 +975,14 @@ class Auction {
         if (this.playerlist.length == 1 && this.playerlist[this.turn].hasLaidOver) {
             this.winAuction(this.playerlist[0]);
         }
-        if ((this.playerlist[this.turn].money < this.auctionMoney + 2) || this.playerlist[this.turn].money < this.boardPiece.info.price / 2) {
+        if ((this.playerlist[this.turn].money < this.auctionMoney + 2) || this.playerlist[this.turn].money < this.minimumPay) {
             this.leaveAuction();
         };
     }
     winAuction(winner) {
         let playerIndex = players.indexOf(winner);
 
-        if (this.auctionMoney >= this.boardPiece.info.price / 2) {
+        if (this.auctionMoney >= this.minimumPay) {
             players[playerIndex].money -= this.auctionMoney;
             this.boardPiece.owner = players[playerIndex];
             players[playerIndex].ownedPlaces.push(this.boardPiece);
@@ -980,7 +1010,7 @@ class Auction {
 
             c.drawText(this.playerlist[this.turn].name, canvas.width / 2 - 190, canvas.height / 2 - 50, c.getFontSize(this.playerlist[this.turn].name, 180, 40), "left", this.playerlist[this.turn].info.color)
 
-            c.drawText(this.auctionMoney + "kr", canvas.width / 2 - 118, canvas.height / 2, 30, "center", !this.started ? "black" : (this.auctionMoney < this.boardPiece.info.price / 2) ? "red" : "green")
+            c.drawText(this.auctionMoney + "kr", canvas.width / 2 - 118, canvas.height / 2, 30, "center", !this.started ? "black" : (this.auctionMoney < this.minimumPay) ? "red" : "green")
         }
     }
 
@@ -1196,9 +1226,9 @@ class CardDraw {
             players[turn].money += this.card.moneyChange;
             players[turn].lastPayment = undefined;
         } else if (this.card.moneyFromPlayers) {
-            currentMenu = new Bankcheck(turn, "Motspelare", (this.card.moneyFromPlayers * (players.length - 1)), "Present")
+            currentMenu = new Bankcheck(turn, "Motspelare", (this.card.moneyFromPlayers * (players.filter(e => (!e.inPrison || board.settings.prisonpay)).length - 1)), "Present")
             close = false;
-            players.forEach(e => {
+            players.filter(e => (!e.inPrison || board.settings.prisonpay)).forEach(e => {
                 if (e != players[turn]) {
                     e.money -= this.card.moneyFromPlayers;
                     e.lastPayment = players[turn];
@@ -1288,7 +1318,7 @@ class PropertyCard {
             if (players[turn].money < board.boardPieces[this.n].info.housePrice) {
                 return false;
             } else {
-                let lowest = colorGroup.sort((a, b) => a.level - b.level)[0].level;
+                let lowest = !board.settings.evenHouses ? board.boardPieces[this.n].level : colorGroup.sort((a, b) => a.level - b.level)[0].level;
                 if (lowest == 5) {
                     return false;
                 }
@@ -1305,7 +1335,7 @@ class PropertyCard {
     calculateDowngrade() {
         let colorGroup = board.getColorGroup(board.boardPieces[this.n].info.group);
         if (colorGroup.length == colorGroup.filter(e => e.owner == players[turn]).length) {
-            let highest = colorGroup.sort((a, b) => b.level - a.level)[0].level;
+            let highest = !board.settings.evenHouses ? board.boardPieces[this.n].level : colorGroup.sort((a, b) => b.level - a.level)[0].level;
             if (highest == 0) {
                 return false;
             };
@@ -1317,7 +1347,6 @@ class PropertyCard {
         } else {
             return false;
         }
-
     }
     draw() {
         c.drawRotatedImageFromSpriteSheet(images.cards[pieces[this.n].card], {
@@ -1341,10 +1370,10 @@ class PropertyCard {
 
                 let self = this;
                 this.buyButton.disabled = (players[turn].money < board.boardPieces[this.n].info.price);
-                this.auctionButton.disabled = (players.filter(e => e.money >= board.boardPieces[self.n].info.price / 2).length < 2);
+                this.auctionButton.disabled = (players.filter(e => e.money >= board.boardPieces[self.n].info.price / 2).length < 2 || !board.settings.auctions);
 
 
-                if (this.buyButton.disabled && this.auctionButton.disabled) {
+                if (this.buyButton.disabled && this.auctionButton.disabled || !board.settings.auctions) {
                     this.closeButton.update();
                 }
 
@@ -1355,15 +1384,15 @@ class PropertyCard {
                 this.closeButton.update();
                 let colorGroup = board.getColorGroup(board.boardPieces[this.n].info.group);
 
-                this.mortgageButton.disabled = board.boardPieces[this.n].info.type != "station" && board.boardPieces[this.n].info.type != "utility" && (colorGroup.filter(e => e.level > 0).length) || (board.boardPieces[this.n].mortgaged ? !(players[turn].money >= (board.boardPieces[this.n].info.price / 2) * 1.1) : false)
+                this.mortgageButton.disabled = !board.settings.canMortgage || board.boardPieces[this.n].info.type != "station" && board.boardPieces[this.n].info.type != "utility" && (colorGroup.filter(e => e.level > 0).length) || (board.boardPieces[this.n].mortgaged ? !(players[turn].money >= (board.boardPieces[this.n].info.price / 2) * 1.1) : false)
                 this.sellButton.disabled = board.boardPieces[this.n].info.type != "station" && board.boardPieces[this.n].info.type != "utility" && (colorGroup.filter(e => e.level > 0).length);
                 this.sellButton.update();
                 this.mortgageButton.update();
                 if (this.hasUpgradeButtons) {
                     this.indexToUpgrade = this.calculateUpgrade();
                     this.indexToDowngrade = this.calculateDowngrade();
-                    this.upgradeButton.disabled = (players[turn].money < board.boardPieces[this.n].info.housePrice || !this.indexToUpgrade);
-                    this.downgradeButton.disabled = !this.indexToDowngrade;
+                    this.upgradeButton.disabled = (players[turn].money < board.boardPieces[this.n].info.housePrice || !this.indexToUpgrade || (board.settings.houseOnStanding ? !(players[turn].pos == this.n) : false));
+                    this.downgradeButton.disabled = !this.indexToDowngrade || (board.settings.houseOnStanding ? !(players[turn].pos == this.n) : false);
                     this.downgradeButton.update();
                     this.upgradeButton.update();
                 }
@@ -1386,7 +1415,7 @@ class Player {
     constructor(color, name) {
         this.color = color;
         this.pos = 0;
-        this.money = 1400;
+        this.money = board.settings.startMoney;
         this.ownedPlaces = [];
         this.name = name;
         this.prisonCards = 0;
@@ -1396,6 +1425,7 @@ class Player {
         this.rollsInPrison = 0;
         this.hasBought = false;
         this.dead = false;
+        this.laps = 0;
 
         this.moneyShowerThing = new Money(this);
 
@@ -1433,6 +1463,7 @@ class Player {
     }
 
     draw() {
+        this.hasBought = (players[turn].laps < board.settings.roundsBeforePurchase)
         this.calculateDrawPos();
         let coord = to_screen_coordinate(this.drawX, this.drawY);
         this.hover = (detectCollision(coord.x, coord.y, 24, 48, mouse.x, mouse.y, 1, 1) && !currentMenu && board.dices.hidden && (board.playerIsWalkingTo == false));
@@ -1491,6 +1522,7 @@ class Player {
                     board.boardPieces[self.pos].playersOnBoardPiece.push(self);
                     self.calculateDrawPos();
                     if (self.pos == 0 && !self.inPrison) {
+                        self.laps++;
                         currentMenu = new Bankcheck(turn, "Banken", 200, "Inkomst")
                     }
                     if (self.pos == newPos) {

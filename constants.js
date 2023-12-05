@@ -1,4 +1,103 @@
-const latestSaveVersion = 1;
+const latestSaveVersion = 2;
+
+const settings = [
+    {
+        title: "Ge alla skattepengar till fri parkering",
+        type: "select",
+        variable: "giveAllTaxToParking",
+        start: false
+    },
+    {
+        title: "Ge alla bankpengar till fri parkering",
+        type: "select",
+        variable: "giveAllToParking",
+        needed: "giveAllTaxToParking",
+        start: false
+    },
+    {
+        title: "Dubbel hyra på komplett färggrupp",
+        type: "select",
+        variable: "doublePay",
+        start: true
+    },
+    {
+        title: "Auktioner",
+        type: "select",
+        variable: "auctions",
+        start: true
+    },
+    {
+        title: "Få/förlora pengar i fängelset",
+        type: "select",
+        variable: "prisonpay",
+        start: true
+    },
+    {
+        title: "Möjlighet att inteckna",
+        type: "select",
+        variable: "canMortgage",
+        start: true
+    },
+    {
+        title: "Jämn utbyggnad",
+        type: "select",
+        variable: "evenHouses",
+        start: true
+    },
+    {
+        title: "Endast köpa hus på den man står på",
+        type: "select",
+        variable: "houseOnStanding",
+        start: false
+    },
+    {
+        title: "Startkapital: ",
+        type: "slider",
+        variable: "startMoney",
+        start: 1400,
+        unit: "kr",
+        from: 0,
+        to: 3000,
+        steps: 100
+    },
+    {
+        title: "Antal varv innan köp: ",
+        type: "slider",
+        variable: "roundsBeforePurchase",
+        start: 0,
+        from: 0,
+        to: 5,
+        steps: 1
+    },
+    {
+        title: "Lägsta bud på auktioner(% av gatupris): ",
+        type: "slider",
+        variable: "lowestAuction",
+        start: 50,
+        from: 0,
+        to: 100,
+        steps: 10,
+        unit: "%"
+    },
+    {
+        title: "Max antal hus: ",
+        type: "slider",
+        variable: "maxHouses",
+        start: 32,
+        from: 1,
+        to: 88,
+        steps: 1
+    },
+    {
+        title: "Max antal hotell: ",
+        type: "slider",
+        variable: "maxHotels",
+        start: 12,
+        from: 1,
+        to: 22,
+        steps: 1
+    }
+]
 
 const playerInfo = [
     {
