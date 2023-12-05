@@ -7,10 +7,6 @@ function generateId(length) {
     return id
 }
 
-function removeElementFromArray(arr, element) {
-    return arr.filter(e => e !== element)
-}
-
 function sendMessage(connection, _type, _data) {
     connection.send({
         type: _type,
@@ -40,6 +36,8 @@ function removeClient(peer, id) {
 
     peer.clients[id].connection.close()
     let player = currentMenu.players[values.length]
+    
+    removeColor(player.selectedColor)
     player.selectedColor = -1
     player.textInput.htmlElement.value = ""
     player.textInput.htmlElement.style.backgroundColor = ''
@@ -71,8 +69,24 @@ function changeColor(playerIdx, from, to) {
     currentMenu.currentMenu.initColors()
 }
 
-function validPlayer(name, color) {
+function validPlayer(player, name, color) {
+    let tempPlayers = currentMenu.players.filter(p2 => p2 !== player)
+    let tempColors = tempPlayers.map(player => player.selectedColor)
+    let valid = true
+    let reason = ""
+    name = name.trim()
+    if (name.length < 3) { valid = false; reason = "Username must be atleast 3 characters long" }
     
+    else if (name.length > 15) { valid = false; reason = "Username must be at most 15 characters long" }
+    
+    else if (color === -1) { valid = false; reason = "Must have a selected color" }
+    
+    else if (tempColors.includes(color)) { valid = false; reason = "Color is already taken" }
+    
+    else if (tempPlayers.some(p => p.textInput.htmlElement.style.backgroundColor === "" &&
+        p.textInput.htmlElement.value === name)) { valid = false; reason = "Username is already taken" }
+
+    return [valid, name, reason]
 }
 
 function createHost() {
@@ -85,12 +99,13 @@ function createHost() {
         x.on('open', () => {
             console.log("Id: ", id, " connected")
             // HTML
-            const length = Object.entries(peer.connections).length
-            currentMenu.players[length].textInput.htmlElement.style.backgroundColor = 'white'
-            currentMenu.players[length].textInput.htmlElement.setAttribute('placeHolder', id)
-            currentMenu.players[length].kickButton = new Button({
+            const idx = Object.entries(peer.clients).length + 1
+            const player = currentMenu.players[idx]
+            player.textInput.htmlElement.style.backgroundColor = 'white'
+            player.textInput.htmlElement.setAttribute('placeHolder', id)
+            player.kickButton = new Button({
                 x: 370,
-                y: 82 + 48 * length,
+                y: 82 + 48 * idx,
                 w: 40,
                 h: 40
             }, images.buttons.no, () => removeClient(peer, id))
@@ -118,30 +133,16 @@ function createHost() {
                 sendMessageToAll(peer.clients, "selectedColors", currentMenu.selectedColors)
             }
             if (type === 'select') {
-                let name = data.name.trim()
-                let color = data.color
-                let valid = true
-                let reason = ""
+                let [valid, name, reason] = validPlayer(player, data.name, data.color)
                 
-                // Check name
-                if (name.length < 3) { valid = false; reason = "Username must be atleast 3 characters long" }
-                else if (name.length > 15) { valid = false; reason = "Username must be at most 15 characters long" }
-                else if (currentMenu.players.some(p => p.textInput.htmlElement.style.backgroundColor === '' && p.textInput.htmlElement.value === name)) { valid = false, reason = "Username is already taken" }
-
-                // Check color
-                if (currentMenu.selectedColors.includes(color)) { valid = false; reason = "Color is already taken" }
-                else if (color === -1) { valid = false; reason = "Must have a selected color" }
-
-                // Send confirmation to client
                 sendMessage(client.connection, "select", { valid: valid, name: name, reason: reason })
                 if (!valid) return
 
                 // Update HTML
                 player.textInput.htmlElement.value = name
                 player.textInput.htmlElement.style.backgroundColor = ""
-                addColor(color)
-
-                for (let p2 of currentMenu.players) if (player !== p2 && p2.selectedColor === color) p2.selectedColor = -1
+                addColor(data.color)
+                for (let p2 of currentMenu.players) if (player !== p2 && p2.selectedColor === data.color) p2.selectedColor = -1
                 sendMessageToAll(peer.clients, "selectedColors", currentMenu.selectedColors, [client])
             }
             if (type === "nameChange") player.textInput.htmlElement.value = data
@@ -177,10 +178,11 @@ function connectToHost(hostId) {
             console.log(response)
 
             if (type === "select") {
-                if (data.valid) { player.textInput.htmlElement.value = data.name; return }
-                if (data.reason === "Color is already taken") player.selectedColor = -1
-                player.confirmButton.onClick()
-                alert(data.reason)
+                if (!data.valid) {
+                    if (data.reason === "Color is already taken") player.selectedColor = -1
+                    player.confirmButton.onClick()
+                    alert(data.reason)
+                } else player.textInput.htmlElement.value = data.name
             }
             if (type === "selectedColors") {
                 if (data.includes(player.selectedColor)) player.selectedColor = -1

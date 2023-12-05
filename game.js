@@ -287,8 +287,9 @@ class PublicGames {
 }
 class OnlineLobby{
     constructor(hosting,id){
+        this.hosting = hosting
         this.players = []
-        if (hosting) {
+        if (this.hosting) {
             this.host = createHost()
             this.initPlayers(8)
             this.startButton = new Button({ x: 10 + 100, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, () => {
@@ -308,12 +309,11 @@ class OnlineLobby{
                 currentMenu = undefined
             })
         }
-        if (!hosting) {
+        if (!this.hosting) {
             this.client = connectToHost(id)
             this.initPlayers(1)
         }
         this.selectedColors = []
-        this.hosting = hosting
         this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back, () => {
             if (this.host) Object.values(this.host.clients).forEach(client => client.connection.close())
             else if (this.client) this.client.connection.close()
@@ -357,26 +357,37 @@ class OnlineLobby{
             let player = this.players[i]
 
             if (i === 0) {
-                let connection = this.client?.connection
-                if (connection) player.textInput.htmlElement.onchange = () => sendMessage(connection, "nameChange", player.textInput.value)
+                player.textInput.htmlElement.style.backgroundColor = 'white'
+                if (!this.hosting) player.textInput.htmlElement.onchange = () => sendMessage(currentMenu.client.connection, "nameChange", player.textInput.value)
                 
                 player.confirmButton = new Button({
                     x: 370,
                     y: 82 + 48 * i,
                     w: 40,
                     h: 40
-                }, images.buttons.yes, () => {
+                }, images.buttons.yes, (wrong) => {
+                    if (!wrong && this.host) {
+                        let [valid, name, reason] = validPlayer(player, player.textInput.value, player.selectedColor)
+                        if (!valid) {
+                            if (reason === "Color is already taken") player.selectedColor = -1
+                            player.confirmButton.onClick(true)
+                            alert(reason)
+                        } else player.textInput.htmlElement.value = name
+                    }
+
                     let text = player.textInput.htmlElement
                     text.disabled = !text.disabled
                     if (text.disabled) {
                         player.confirmButton.image = images.buttons.no
                         player.colorButton.disabled = true
+                        text.style.backgroundColor = ''
                     } else {
                         player.confirmButton.image = images.buttons.yes
                         player.colorButton.disabled = false
+                        text.style.backgroundColor = 'white'
                     }
 
-                    if (connection) sendMessage(connection, text.disabled ? "select" : "deselect", { name: text.value, color: player.selectedColor })
+                    if (!this.hosting) sendMessage(this.client.connection, text.disabled ? "select" : "deselect", { name: text.value, color: player.selectedColor })
                 })
                 continue
             }
