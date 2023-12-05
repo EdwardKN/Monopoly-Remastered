@@ -919,3 +919,7 @@ function numberToText(number) {
 
     }
 }
+
+function getIndexFromObject(obj, key) {
+    return Object.keys(obj).indexOf(key)
+}

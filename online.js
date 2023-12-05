@@ -1,5 +1,5 @@
 function generateId(length) {
-    const ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    const ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     let id = ""
     for (let _ = 0; _ < length; _++) { 
         id += ALPHABET[Math.floor(Math.random() * ALPHABET.length)]
@@ -18,12 +18,10 @@ function sendMessage(connection, _type, _data) {
     })
 }
 
-function sendMessageToAll(clients, _type, _data) {
-    for (let client of Object.values(clients)) sendMessage(client.connection, _type, _data)
-}
-
-function getIndexFromObject(obj, key) {
-    return Object.keys(obj).indexOf(key)
+function sendMessageToAll(clients, _type, _data, exceptions = []) {
+    for (let client of Object.values(clients)) {
+        if (!exceptions.includes(client)) sendMessage(client.connection, _type, _data)
+    }
 }
 
 function removeClient(peer, id) {
@@ -33,28 +31,37 @@ function removeClient(peer, id) {
     for (let i = idx + 1; i <= values.length; i++) {
         let player = currentMenu.players[i]
         let prevPlayer = currentMenu.players[i - 1]
+        if (i <= 1) continue
         
-        if (i > 1) {
-            prevPlayer.textInput.htmlElement.value = player.textInput.htmlElement.value
-            prevPlayer.selectedColor = player.selectedColor
-            prevPlayer.textInput.htmlElement.setAttribute("placeHolder", player.textInput.htmlElement.getAttribute("placeHolder"))
-        }
-
-        if (i < values.length) continue
-        player.selectedColor = -1
-        player.textInput.htmlElement.value = ""
-        player.textInput.htmlElement.style.backgroundColor = ''
-        player.textInput.htmlElement.setAttribute("placeHolder", "")
-        delete player.kickButton
+        prevPlayer.textInput.htmlElement.value = player.textInput.htmlElement.value
+        prevPlayer.selectedColor = player.selectedColor
+        prevPlayer.textInput.htmlElement.setAttribute("placeHolder", player.textInput.htmlElement.getAttribute("placeHolder"))
     }
 
+    peer.clients[id].connection.close()
+    let player = currentMenu.players[values.length]
+    player.selectedColor = -1
+    player.textInput.htmlElement.value = ""
+    player.textInput.htmlElement.style.backgroundColor = ''
+    player.textInput.htmlElement.setAttribute("placeHolder", "")
+
+    delete player.kickButton
     delete peer.clients[id]
 }
 
-function changeColor(idx, from, to) {
-    currentMenu.players[idx].selectedColor = to
-    currentMenu.selectedColors = currentMenu.selectedColors.filter(e => e !== from)
-    if (currentMenu.currentMenu) currentMenu.currentMenu.selectedColors = currentMenu.currentMenu.selectedColors.filter(e => e !== from)
+function removeColor(colorIdx) {
+    currentMenu.selectedColors = currentMenu.selectedColors.filter(e => e !== colorIdx)
+    if (currentMenu.currentMenu) currentMenu.currentMenu.selectedColors = currentMenu.currentMenu.selectedColors.filter(e => e !== colorIdx)
+}
+
+function addColor(colorIdx) {
+    currentMenu.selectedColors.push(colorIdx)
+    if (currentMenu.currentMenu) currentMenu.currentMenu.selectedColors.push(colorIdx)
+}
+
+function changeColor(playerIdx, from, to) {
+    currentMenu.players[playerIdx].selectedColor = to
+    removeColor(from)
 
     if (to === -1) return
     currentMenu.selectedColors.push(to)
@@ -101,31 +108,40 @@ function createHost() {
             const data = response.data
             console.log(response)
 
-            if (type === 'confirmName') {
-                if (!data.confirm) { player.textInput.htmlElement.style.backgroundColor = 'white'; return }
-
+            if (type === 'deselect') {
+                removeColor(data.color)
+                player.textInput.htmlElement.style.backgroundColor = 'white'
+                sendMessageToAll(peer.clients, "selectedColors", currentMenu.selectedColors)
+            }
+            if (type === 'select') {
                 let name = data.name.trim()
+                let color = data.color
                 let valid = true
                 let reason = ""
                 
+                // Check name
                 if (name.length < 3) { valid = false; reason = "Username must be atleast 3 characters long" }
                 else if (name.length > 15) { valid = false; reason = "Username must be at most 15 characters long" }
                 else if (currentMenu.players.some(p => p.textInput.htmlElement.style.backgroundColor === '' && p.textInput.htmlElement.value === name)) { valid = false, reason = "Username is already taken" }
 
-                sendMessage(client.connection, "name", { valid: valid, name: name, reason: reason })
-                if (!valid) return 
-                
-                player.textInput.htmlElement.value = name
-                player.textInput.htmlElement.style.backgroundColor = ''
-            }
-            if (type === 'nameChange') player.textInput.htmlElement.value = data
-            if (type === 'selectColor') {
-                // Check if it is already taken
-                if (currentMenu.selectedColors.includes(data.to)) { sendMessage(client.connection, 'invalidColor', data); return }
+                // Check color
+                if (currentMenu.selectedColors.includes(color)) { valid = false; reason = "Color is already taken" }
+                else if (color === -1) { valid = false; reason = "Must have a selected color" }
 
-                changeColor(idx, data.from, data.to)
-                sendMessageToAll(peer.clients, 'selectedColors', currentMenu.selectedColors)
+                // Send confirmation to client
+                sendMessage(client.connection, "select", { valid: valid, name: name, reason: reason })
+                if (!valid) return
+
+                // Update HTML
+                player.textInput.htmlElement.value = name
+                player.textInput.htmlElement.style.backgroundColor = ""
+                addColor(color)
+
+                for (let p2 of currentMenu.players) if (player !== p2 && p2.selectedColor === color) p2.selectedColor = -1
+                sendMessageToAll(peer.clients, "selectedColors", currentMenu.selectedColors, [client])
             }
+            if (type === "nameChange") player.textInput.htmlElement.value = data
+            if (type === "colorChange") player.selectedColor = data
         })
     })
 
@@ -136,36 +152,35 @@ function connectToHost(hostId) {
     let id = generateId(6)
     const peer = new Peer(id, { debug: 1 })
 
-    peer.on('open', id => {
+    peer.on("open", id => {
         peer.connection = peer.connect(hostId)
     })
 
-    peer.on('connection', x => {
-        x.on('open', () => {
+    peer.on("connection", x => {
+        x.on("open", () => {
             console.log("Connected to " + x.peer)
         })
 
-        x.on('close', () => {
+        x.on("close", () => {
             console.log("Connection Lost")
             currentMenu = new PublicGames()
         })
 
-        x.on('data', (response) => {
+        x.on("data", (response) => {
+            const player = currentMenu.players[0]
             const type = response.type
             const data = response.data
             console.log(response)
 
-            if (type === "name") {
-                if (data.valid) currentMenu.players[0].textInput.htmlElement.value = data.name
-                else {
-                    currentMenu.players[0].confirmButton.onClick()
-                    alert(data.reason)
-                }
+            if (type === "select") {
+                if (data.valid) { player.textInput.htmlElement.value = data.name; return }
+                if (data.reason === "Color is already taken") player.selectedColor = -1
+                player.confirmButton.onClick()
+                alert(data.reason)
             }
-            if (type === 'invalidColor') {
-                changeColor(0, data.to, data.from) // Reverse the action
-            }
-            if (type === 'selectedColors') {
+            if (type === "selectedColors") {
+                if (data.includes(player.selectedColor)) player.selectedColor = -1
+
                 currentMenu.selectedColors = data
                 if (currentMenu.currentMenu) {
                     currentMenu.currentMenu.selectedColors = data
@@ -175,8 +190,14 @@ function connectToHost(hostId) {
         })
     })
 
-    peer.on('error', error => {
-        if (error.type === 'peer-unavailable') currentMenu = new PublicGames()
+    peer.on("error", error => {
+        if (error.type === "peer-unavailable") currentMenu = new PublicGames()
     })
     return peer
+}
+
+
+window.onload = () => {
+    let params = new URLSearchParams(window.location.search)
+    if (params.has("lobbyId")) currentMenu = new OnlineLobby(false, params.get("lobbyId"))
 }
