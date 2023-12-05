@@ -12,11 +12,10 @@ Funktionalitet
 - [x] Antialiasing
 - [x] Fullscreen
 - [x] Bankcheckar
-- [ ] Ljud
-- [ ] Animationer
 - [x] Huvudmeny
-- [ ] Onlinemeny
-- [ ] OnlineLäge
+- [ ] Ljud
+- [x] Animationer
 - [ ] Statistik
+- [ ] OnlineLäge
 - [ ] Bots
 

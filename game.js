@@ -8,7 +8,7 @@ let colorsToPick = [0, 1, 2, 3, 4, 5, 6, 7];
 
 async function init() {
     fixCanvas();
-    await loadImages(images);
+    await loadImages();
 
     renderC.imageSmoothingEnabled = false;
 
@@ -19,6 +19,8 @@ async function init() {
 function exitGame() {
     setTimeout(e => {
         saveGame();
+        board.boardPieces.forEach(e => e.hover = false);
+        players.forEach(e => e.hover = false);
         board = undefined;
         players = [];
         currentMenu = new MainMenu();
@@ -38,7 +40,6 @@ function startGame(playersToStartGameWith) {
         }
     })
 
-    board.calculateNameFontSize();
 }
 
 function addRandomPlayer(name) {
@@ -47,15 +48,12 @@ function addRandomPlayer(name) {
     colorsToPick.splice(random, 1);
 }
 
-
-
 async function saveGame() {
     if (!board || !players) { return }
     let games = JSON.parse(localStorage.getItem("games"));
     games = (games == null || games == undefined) ? [] : games;
 
     let game = {
-        id: board.id,
         board: JSON.prune(board),
         saveVersion: latestSaveVersion,
         players: players.map(e => JSON.prune(e)),
@@ -66,11 +64,8 @@ async function saveGame() {
         currentMenu: { class: currentMenu?.constructor.name, value: JSON.prune(currentMenu) }
     };
 
-    if (board.id === undefined) {
-        game.id = games.length === 0 ? 0 : games[games.length - 1].id + 1
-    } else {
-        game.id = board.id;
-    }
+    game.id = (board.id == undefined || board.id == null) ? (games.length === 0 ? 0 : JSON.parse(games[games.length - 1]).id + 1) : board.id;
+
 
     let tmpGame = JSON.prune(game);
     let tmp = false;
@@ -98,6 +93,7 @@ function loadGame(gameToload) {
         };
     });
     board.id = gameToload.id;
+    turn = gameToload.turn;
 
     let playersToLoad = gameToload.players.map(e => JSON.parse(e));
 
@@ -121,28 +117,20 @@ function loadGame(gameToload) {
         })
     });
 
-
-    let currentMenuClass = getInstanceByName(gameToload.currentMenu.class);
+    let currentMenuClass = eval(gameToload.currentMenu.class);
     if (currentMenuClass) {
         let args = getClassContructorParams(currentMenuClass);
         let argsToInsert = [];
         args.forEach(e => {
             Object.entries(JSON.parse(gameToload.currentMenu.value)).forEach(b => {
-                if (e == b[0]) {
-
-                    argsToInsert.push(b[1]);
-                }
+                if (e.trim() == b[0]) { argsToInsert.push(b[1]); }
             })
         })
         currentMenu = applyToConstructor(currentMenuClass, argsToInsert);
         Object.entries(JSON.parse(gameToload.currentMenu.value)).forEach(e => {
             if (typeof e[1] != "object") {
                 currentMenu[e[0]] = e[1];
-            } else if (e[0] == "card") {
-                currentMenu["card"] = e[1];
-            } else {
-
-            };
+            } else if (e[0] == "card") { currentMenu["card"] = e[1]; }
         });
     }
 
@@ -158,9 +146,7 @@ function update() {
     renderC.clearRect(0, 0, renderCanvas.width, renderCanvas.height)
     c.clearRect(0, 0, canvas.width, canvas.height);
 
-    textInputs.forEach(e => {
-        e.htmlElement.style.display = "none"
-    })
+    textInputs.forEach(e => { e.htmlElement.style.display = "none" })
 
     board?.update();
     currentMenu?.draw();
@@ -171,37 +157,13 @@ function update() {
     })
     hoverList = [];
 
-
     c.drawText(fps, 5, 80, 20)
 
     renderC.drawImage(canvas, 0, 0, renderCanvas.width, renderCanvas.height);
 
-    let tmp = false;
-    buttons.forEach(e => {
-        if (e.hover && !e.disabled) {
-            tmp = true;
-        }
-        e.hover = false;
-    });
-    board?.boardPieces.forEach(e => {
-        if (e.hover) {
-            tmp = true;
-        };
-        e.hover = false;
-    });
-    players.forEach(e => {
-        if (e.hover) {
-            tmp = true;
-        };
-        e.hover = false;
-    });
+    renderCanvas.style.cursor = (players.map(e => e.hover).includes(true) || board?.boardPieces.map(e => e.hover).includes(true) || buttons?.map(e => (e.hover && !e.disabled)).includes(true)) ? "pointer" : "auto"
 
-
-    if (tmp === true) {
-        renderCanvas.style.cursor = "pointer"
-    } else {
-        renderCanvas.style.cursor = "auto"
-    }
+    buttons.forEach(e => e.hover = false);
 }
 class MainMenu {
     constructor() {
@@ -249,7 +211,7 @@ class LoadGames {
             self.games.splice(index, 1);
 
             let tmpGames = self.games.map(e => JSON.prune(e));
-            localStorage.setItem("games", JSON.prune(tmpGames));
+            localStorage.setItem("games", JSON.prune(tmpGames.reverse()));
             self.init();
             if (self.games[index]) {
                 self.gameButtons[index].selected = true;
@@ -307,13 +269,12 @@ class LoadGames {
         this.deleteButton.update();
     }
 }
-class PublicGames{
-    constructor(){
-        let self = this;
-        this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back,function(){currentMenu = new MainMenu()});
-        this.joinID = new TextInput({x:340,y:10,w:200,h:60,maxLength:6,textSize:45,placeHolder:"ID"})
-        this.joinButton = new Button({x:550,y:14,w:195,h:52,disableDisabledTexture:true},images.buttons.joingame,function(){currentMenu = new OnlineLobby(false,self.joinID.value)});
-        this.hostButton = new Button({x:750,y:14,w:195,h:52},images.buttons.hostgame,function(){currentMenu = new OnlineLobby(true)});
+class PublicGames {
+    constructor() {
+        this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, function () { currentMenu = new MainMenu() });
+        this.joinID = new TextInput({ x: 340, y: 10, w: 200, h: 60, maxLength: 6, textSize: 45, placeHolder: "ID" })
+        this.joinButton = new Button({ x: 550, y: 10, w: 195, h: 60 }, images.buttons.joingame, function () { currentMenu = new OnlineLobby(false) });
+        this.hostButton = new Button({ x: 750, y: 10, w: 195, h: 60 }, images.buttons.hostgame, function () { currentMenu = new OnlineLobby(true) });
 
     }
     draw() {
@@ -667,7 +628,6 @@ class Board {
         if (players[turn].inPrison) {
             currentMenu = new PrisonMenu();
         }
-        board.calculateNameFontSize();
     }
     getColorGroup(group) {
         return this.boardPieces.filter(e => e?.info?.group == group);
@@ -702,10 +662,6 @@ class Board {
         }
         this.boardPieces.push(new Prison());
     }
-    calculateNameFontSize() {
-        let textsize = measureText({ font: "verdanai", text: "Just nu:" + players[turn].name })
-        this.nameFontSize = (1 / textsize.width) * 22000 > 30 ? 30 : (1 / textsize.width) * 22000
-    }
     update() {
         if (players.filter(e => !e.dead).length == 1) {
             this.done = true;
@@ -718,7 +674,7 @@ class Board {
         this.boardPieces.forEach(e => { if (e.owner && e.constructor.name == "BuyableProperty") e.drawHouses() })
         this.boardPieces.forEach(e => { if (e.hover) { hoverList.push(e.info.name + (e.owner !== undefined ? "(" + e.owner.name + ")" : "")) } });
 
-        c.drawText("Just nu:" + players[turn].name, canvas.width / 2, 30, this.nameFontSize, "center", players[turn].info.color)
+        c.drawText("Just nu:" + players[turn].name, canvas.width / 2, 30, c.getFontSize("Just nu:" + players[turn].name, 240, 30), "center", players[turn].info.color)
 
         this.dices.draw();
 
@@ -727,6 +683,7 @@ class Board {
 
         if (this.dices.hidden && !currentMenu && (this.playerIsWalkingTo == false)) {
             this.menuButton.update();
+
             if (!this.playerHasRolled) {
                 this.rollDiceButton.update();
             } else {
@@ -735,10 +692,24 @@ class Board {
         }
 
         for (let i = 20; i >= 0; i--) {
-            board.boardPieces[i].playersOnBoardPiece.forEach(e => e.draw());
+            if (i < 10) {
+                board.boardPieces[i].playersOnBoardPiece.forEach(e => e.draw());
+            } else {
+                let length = board.boardPieces[i].playersOnBoardPiece.length - 1;
+                for (let i2 = length; i2 >= 0; i2--) {
+                    board.boardPieces[i].playersOnBoardPiece[i2].draw();
+                }
+            }
         }
         for (let i = 21; i < 40; i++) {
-            board.boardPieces[i].playersOnBoardPiece.forEach(e => e.draw());
+            if (i >= 30) {
+                board.boardPieces[i].playersOnBoardPiece.forEach(e => e.draw());
+            } else {
+                let length = board.boardPieces[i].playersOnBoardPiece.length - 1;
+                for (let i2 = length; i2 >= 0; i2--) {
+                    board.boardPieces[i].playersOnBoardPiece[i2].draw();
+                }
+            }
         }
 
     }
@@ -780,6 +751,7 @@ class PrisonMenu {
         });
         this.cardButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 2), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisongetoutofjail, function () {
             players[turn].getOutOfPrison();
+            players[turn].prisonCards--;
             currentMenu = undefined;
         });
     }
@@ -799,10 +771,9 @@ class Prison {
     constructor() {
         this.drawX = 128 * 4 + 60;
         this.drawY = 64 * 6 - 4;
+        this.playersOnBoardPiece = [];
     }
-    draw() {
-
-    }
+    draw() { }
 }
 
 class BoardPiece {
@@ -1061,12 +1032,12 @@ class SuperTax extends BoardPiece {
 class Auction {
     constructor(cardId) {
         let self = this;
-        this.boardPiece = board.boardPieces[cardId];
+        this.cardId = cardId;
+        this.boardPiece = board.boardPieces[this.cardId];
         this.startButton = new Button({ x: canvas.width / 2 - 256 + 28, y: canvas.height / 2 + 80, w: 220, h: 40 }, images.buttons.startauction, function () { self.startAuction() })
         this.auctionMoney = 0;
         this.turn = turn;
         this.playerlist = [...players];
-        this.calculateNameFontSize();
         if ((this.playerlist[this.turn].money < this.auctionMoney + 2) || this.playerlist[this.turn].money < this.boardPiece.info.price / 2) {
             this.leaveAuction();
         };
@@ -1117,10 +1088,6 @@ class Auction {
         currentMenu = undefined;
     };
 
-    calculateNameFontSize() {
-        let textsize = measureText({ font: "verdanai", text: this.playerlist[turn].name })
-        this.nameFontSize = (1 / textsize.width) * 20000 > 30 ? 30 : (1 / textsize.width) * 20000
-    }
     draw() {
         c.drawImageFromSpriteSheet(images.cards[this.boardPiece.info.card], { x: canvas.width / 2 - 10, y: canvas.height / 2 - 162 })
         c.drawImageFromSpriteSheet(images.menus.auctionmenubackground, { x: canvas.width / 2 - 256 + 10, y: canvas.height / 2 - 162 })
@@ -1139,7 +1106,7 @@ class Auction {
                 c.drawImageFromSpriteSheet(images.players[this.playerlist[this.turn].info.img], { x: canvas.width / 2 - 220, y: canvas.height / 2 - 90 })
             }
 
-            c.drawText(this.playerlist[this.turn].name, canvas.width / 2 - 190, canvas.height / 2 - 50, this.nameFontSize, "left", this.playerlist[this.turn].info.color)
+            c.drawText(this.playerlist[this.turn].name, canvas.width / 2 - 190, canvas.height / 2 - 50, c.getFontSize(this.playerlist[this.turn].name, 180, 40), "left", this.playerlist[this.turn].info.color)
 
             c.drawText(this.auctionMoney + "kr", canvas.width / 2 - 118, canvas.height / 2, 30, "center", !this.started ? "black" : (this.auctionMoney < this.boardPiece.info.price / 2) ? "red" : "green")
         }
@@ -1153,8 +1120,8 @@ class Trade {
         this.player1Id = player1Id;
         this.player2Id = player2Id;
 
-        this.player1 = players[player1Id];
-        this.player2 = players[player2Id];
+        this.player1 = players[this.player1Id];
+        this.player2 = players[this.player2Id];
 
         this.closeButton = new Button({
             x: canvas.width / 2 + 455 - 22, y: canvas.height / 2 - 256 + 4, w: 18, h: 18, invertedHitbox: {
@@ -1248,38 +1215,48 @@ class Bankcheck {
         this.amount = amount;
         this.reason = reason;
 
-        this.closeButton = new Button({
-            x: canvas.width / 2 + 256 - 18 - 2, y: canvas.height / 2 - 128 + 2, w: 18, h: 18, invertedHitbox: { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 }, disableHover: true
-        }, images.buttons.exitCardTrans, () => { this.doCard() })
+        this.xPos = canvas.width + 512;
+
+        this.hasPayed = false;
+
     }
     draw() {
-        c.drawImageFromSpriteSheet(images["community card and chance card"].bankcheck, { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 });
 
-        this.closeButton.update();
+        this.xPos -= 3 + Math.abs(this.xPos - canvas.width / 2 - 256) / 50
+
+        if (Math.abs(this.xPos - canvas.width / 2 - 256) < 5 && !this.hasPayed) {
+            this.hasPayed = true;
+            this.doCard();
+        }
+        if (this.xPos < -512) {
+            currentMenu = undefined;
+        }
+
+        c.drawImageFromSpriteSheet(images["community card and chance card"].bankcheck, { x: this.xPos - 512, y: canvas.height / 2 - 128, w: 512, h: 256 });
 
         c.font = "30px handwritten";
         c.fillStyle = "black"
         c.textAlign = "left"
-        c.fillText(new Date().getDate() + " " + monthToText(new Date().getMonth()), 585, 195);
+        c.fillText(new Date().getDate() + " " + monthToText(new Date().getMonth()), 585 - canvas.width / 2 - 256 + this.xPos, 195);
 
         c.font = "50px handwritten";
-        c.fillText((typeof this.to == "number") ? players[this.to].name : this.to, 400, 245);
+        c.fillText((typeof this.to == "number") ? players[this.to].name : this.to, 400 - canvas.width / 2 - 256 + this.xPos, 245);
 
         c.font = "35px handwritten";
         c.textAlign = "center"
-        c.fillText(this.amount, 680, 245)
+        c.fillText(this.amount, 680 - canvas.width / 2 - 256 + this.xPos, 245)
 
         c.textAlign = "left"
         c.font = "40px handwritten";
-        c.fillText(numberToText(this.amount), 250, 285);
+        c.fillText(numberToText(this.amount), 250 - canvas.width / 2 - 256 + this.xPos, 285);
 
         c.textAlign = "left"
         c.font = "40px handwritten";
-        c.fillText(this.reason, 300, 330);
+        c.fillText(this.reason, 300 - canvas.width / 2 - 256 + this.xPos, 330);
 
         c.textAlign = "left"
         c.font = "40px handwritten";
-        c.fillText((typeof this.from == "number") ? players[this.from].name : this.to, 500, 335);
+        c.fillText((typeof this.from == "number") ? players[this.from].name : this.to, 500 - canvas.width / 2 - 256 + this.xPos, 335);
     }
     doCard() {
         if (typeof this.to == "number") {
@@ -1288,15 +1265,17 @@ class Bankcheck {
         if (typeof this.from == "number") {
             players[this.from].money -= this.amount;
         }
-        currentMenu = undefined;
     }
 }
 
 class CardDraw {
     constructor(type, cardId) {
+        this.yPos = canvas.height;
+        this.animationStep = 0;
+
         this.type = type;
         if (this.type !== "special") {
-            this.cardId = randomIntFromRange(0, (this.type == "community") ? 12 : 13)
+            this.cardId = randomIntFromRange(0, (this.type == "community") ? 12 : 13);
 
             this.card = ((this.type == "community") ? communitycards[this.cardId] : chanceCards[this.cardId])
         } else {
@@ -1305,24 +1284,48 @@ class CardDraw {
         }
 
         let self = this;
-        this.okayButton = new Button({ x: canvas.width / 2 - 100, y: 330, w: 200, h: 60, invertedHitbox: { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 } }, images.buttons.okej, function () { self.useCard() })
+        this.okayButton = new Button({ x: canvas.width / 2 - 100, y: 330, w: 200, h: 60, invertedHitbox: { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 } }, images.buttons.okej, function () { self.animationStep = 3 })
 
     }
     draw() {
-        c.drawImageFromSpriteSheet(images["community card and chance card"][this.card.img], { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 })
+        c.drawImageFromSpriteSheet(images["community card and chance card"][this.card.img], { x: canvas.width / 2 - 256, y: this.yPos, w: 512, h: 256 })
 
-        this.okayButton.update();
+        if (this.animationStep == 2) {
+            this.okayButton.update();
+        } else if (this.animationStep == 0) {
+            this.yPos -= 1 - (canvas.height / 2 - 250 - this.yPos) / 20;
+            if (canvas.height / 2 - 180 - this.yPos > 0) {
+                this.animationStep = 1;
+            }
+        } else if (this.animationStep == 1) {
+            this.yPos += 1 - (this.yPos - canvas.height / 2 - 128) / 50;
+            if (this.yPos > canvas.height / 2 - 128) {
+                this.yPos = canvas.height / 2 - 128;
+                this.animationStep = 2;
+            }
+        } else if (this.animationStep == 3) {
+            this.yPos -= 1 - (canvas.height / 2 - 250 - this.yPos) / 20;
+            if (canvas.height / 2 - 180 - this.yPos > 0) {
+                this.animationStep = 4;
+            }
+        } else if (this.animationStep == 4) {
+            this.yPos += 1 + (this.yPos) / 20;
+            if (this.yPos > canvas.height) {
+                this.useCard();
+            }
+        }
 
     }
     useCard() {
+        let close = true;
         if (this.card.teleport !== undefined) {
             players[turn].teleportTo(this.card.teleport);
         } else if (this.card.moneyChange) {
             players[turn].money += this.card.moneyChange;
             players[turn].lastPayment = undefined;
         } else if (this.card.moneyFromPlayers) {
-            currentMenu = new Bankcheck(turn, "Motspelare", (this.card.moneyFromPlayers * players.length - 1), "Present")
-
+            currentMenu = new Bankcheck(turn, "Motspelare", (this.card.moneyFromPlayers * (players.length - 1)), "Present")
+            close = false;
             players.forEach(e => {
                 if (e != players[turn]) {
                     e.money -= this.card.moneyFromPlayers;
@@ -1351,7 +1354,7 @@ class CardDraw {
                     players[turn].lastPayment = undefined;
                 }
             })
-        } else if (this.type == "special" && this.cardId == 0) {
+        } else if (this.type == "special" && (this.cardId == 0 || this.cardId == 1)) {
             players[turn].goToPrison();
         } else if (this.type == "special" && this.cardId == 2) {
             players[turn].money -= (players[turn].money > 2000 ? 200 : Math.round(players[turn].money / 10));
@@ -1360,7 +1363,7 @@ class CardDraw {
             players[turn].money -= 100;
             players[turn].lastPayment = undefined;
         }
-        currentMenu = undefined;
+        if (close) currentMenu = undefined;
     }
 }
 
@@ -1375,6 +1378,8 @@ class PropertyCard {
                 h: 324
             }, disableHover: true
         }, images.buttons.exitCard, this.closeCard)
+
+        this.animationFactor = 0;
 
         let self = this;
 
@@ -1444,51 +1449,61 @@ class PropertyCard {
     }
     draw() {
         c.drawRotatedImageFromSpriteSheet(images.cards[pieces[this.n].card], {
-            x: canvas.width / 2 - 128,
-            y: canvas.height / 2 - 162
+            x: canvas.width / 2 - 128 * this.animationFactor,
+            y: canvas.height / 2 - 162 * this.animationFactor,
+            w: this.animationFactor * 256,
+            h: this.animationFactor * 324
         });
         if (board.boardPieces[this.n].mortgaged) {
             c.drawRotatedImageFromSpriteSheet(images.cards.mortgageoverlay, {
-                x: canvas.width / 2 - 128,
-                y: canvas.height / 2 - 162
+                x: canvas.width / 2 - 128 * this.animationFactor,
+                y: canvas.height / 2 - 162 * this.animationFactor,
+                w: this.animationFactor * 256,
+                h: this.animationFactor * 324
             });
         }
 
 
+        if (this.animationFactor == 1) {
+            if (players[turn].pos === this.n && board.boardPieces[this.n].owner === undefined && !players[turn].hasBought) {
 
-        if (players[turn].pos === this.n && board.boardPieces[this.n].owner === undefined && !players[turn].hasBought) {
-
-            let self = this;
-            this.buyButton.disabled = (players[turn].money < board.boardPieces[this.n].info.price);
-            this.auctionButton.disabled = (players.filter(e => e.money >= board.boardPieces[self.n].info.price / 2).length < 2);
+                let self = this;
+                this.buyButton.disabled = (players[turn].money < board.boardPieces[this.n].info.price);
+                this.auctionButton.disabled = (players.filter(e => e.money >= board.boardPieces[self.n].info.price / 2).length < 2);
 
 
-            if (this.buyButton.disabled && this.auctionButton.disabled) {
+                if (this.buyButton.disabled && this.auctionButton.disabled) {
+                    this.closeButton.update();
+                }
+
+                this.buyButton.update();
+                this.auctionButton.update();
+
+            } else if (board.boardPieces[this.n].owner == players[turn]) {
+                this.closeButton.update();
+                let colorGroup = board.getColorGroup(board.boardPieces[this.n].info.group);
+
+                this.mortgageButton.disabled = board.boardPieces[this.n].info.type != "station" && board.boardPieces[this.n].info.type != "utility" && (colorGroup.filter(e => e.level > 0).length) || (board.boardPieces[this.n].mortgaged ? !(players[turn].money >= (board.boardPieces[this.n].info.price / 2) * 1.1) : false)
+                this.sellButton.disabled = board.boardPieces[this.n].info.type != "station" && board.boardPieces[this.n].info.type != "utility" && (colorGroup.filter(e => e.level > 0).length);
+                this.sellButton.update();
+                this.mortgageButton.update();
+                if (this.hasUpgradeButtons) {
+                    this.indexToUpgrade = this.calculateUpgrade();
+                    this.indexToDowngrade = this.calculateDowngrade();
+                    this.upgradeButton.disabled = (players[turn].money < board.boardPieces[this.n].info.housePrice || !this.indexToUpgrade);
+                    this.downgradeButton.disabled = !this.indexToDowngrade;
+                    this.downgradeButton.update();
+                    this.upgradeButton.update();
+                }
+            } else {
                 this.closeButton.update();
             }
-
-            this.buyButton.update();
-            this.auctionButton.update();
-
-        } else if (board.boardPieces[this.n].owner == players[turn]) {
-            this.closeButton.update();
-            let colorGroup = board.getColorGroup(board.boardPieces[this.n].info.group);
-
-            this.mortgageButton.disabled = (colorGroup.filter(e => e.level > 0).length) || (board.boardPieces[this.n].mortgaged ? !(players[turn].money >= (board.boardPieces[this.n].info.price / 2) * 1.1) : false)
-            this.sellButton.disabled = (colorGroup.filter(e => e.level > 0).length);
-            this.sellButton.update();
-            this.mortgageButton.update();
-            if (this.hasUpgradeButtons) {
-                this.indexToUpgrade = this.calculateUpgrade();
-                this.indexToDowngrade = this.calculateDowngrade();
-                this.upgradeButton.disabled = (players[turn].money < board.boardPieces[this.n].info.housePrice || !this.indexToUpgrade);
-                this.downgradeButton.disabled = !this.indexToDowngrade;
-                this.downgradeButton.update();
-                this.upgradeButton.update();
-            }
         } else {
-            this.closeButton.update();
+            this.animationFactor += 0.001;
+            this.animationFactor *= 1.5;
+            this.animationFactor = this.animationFactor.clamp(0, 1);
         }
+
     }
     closeCard() {
         currentMenu = undefined;
@@ -1516,8 +1531,7 @@ class Player {
         board.boardPieces[0].playersOnBoardPiece.push(this);
     }
     calculateDrawPos() {
-        let self = this;
-        let playersAtPos = players.filter(e => e.pos == self.pos).length;
+        let index = this.inPrison ? players.filter(e => e.inPrison).indexOf(this) : board.boardPieces[this.pos].playersOnBoardPiece.indexOf(this);
 
         this.drawX = board.boardPieces[this.pos].drawX;
         this.drawY = board.boardPieces[this.pos].drawY - 64;
@@ -1529,24 +1543,25 @@ class Player {
             }
         }
         if (Math.floor(this.pos / 10) === 0) {
-            this.drawY += 32 * (playersAtPos - 1)
+            this.drawY += 32 * (index - 1)
         }
         if (Math.floor(this.pos / 10) === 1) {
-            this.drawX -= 32 * (playersAtPos - 1)
+            this.drawX -= 32 * (index - 1)
         }
         if (Math.floor(this.pos / 10) === 2) {
-            this.drawY -= 32 * (playersAtPos - 1)
+            this.drawY -= 32 * (index - 1)
         }
         if (Math.floor(this.pos / 10) === 3) {
-            this.drawX += 32 * (playersAtPos - 1)
+            this.drawX += 32 * (index - 1)
         }
         if (this.pos == 40) {
-            this.drawX += 32 * (playersAtPos - 1)
-            this.drawY -= 32 * (playersAtPos - 1)
+            this.drawX += 32 * (index - 1)
+            this.drawY -= 32 * (index - 1)
         }
     }
 
     draw() {
+        this.calculateDrawPos();
         let coord = to_screen_coordinate(this.drawX, this.drawY);
         this.hover = (detectCollision(coord.x, coord.y, 24, 48, mouse.x, mouse.y, 1, 1) && !currentMenu && board.dices.hidden && (board.playerIsWalkingTo == false));
         if (this.hover) { hoverList.push(this.name + ((players[turn] !== this) ? "(Föreslå bytesförslag)" : "(Du)")) }
@@ -1575,11 +1590,9 @@ class Player {
     }
 
     teleportTo(newPos, noSteps) {
+        newPos = newPos == 0 ? 40 : newPos;
+        let direction = Math.sign(newPos);
         newPos = newPos % 40;
-        let direction = 1;
-        if (newPos < 0) {
-            direction = -1;
-        };
         let self = this;
 
         this.animateSteps(Math.abs(newPos), direction, function (steps) {
@@ -1589,28 +1602,37 @@ class Player {
         });
     }
     animateSteps(newPos, direction, onStep) {
+        if (this.pos == 40) return;
         board.playerIsWalkingTo = newPos;
         let self = this;
         let steps = newPos - self.pos;
 
-        let timer = setInterval(() => {
-            if (!currentMenu) {
-                board.boardPieces[self.pos].playersOnBoardPiece.splice(board.boardPieces[self.pos].playersOnBoardPiece.indexOf(self), 1);
-                self.pos += direction;
-                self.pos = self.pos % 40;
-                board.boardPieces[self.pos].playersOnBoardPiece.push(self);
-                self.calculateDrawPos();
-                if (self.pos == 0 && !self.inPrison) {
-                    currentMenu = new Bankcheck(turn, "Banken", 200, "Inkomst")
+        if (steps == 0) {
+            onStep(steps);
+            board.playerIsWalkingTo = false;
+        } else {
+            let timer = setInterval(() => {
+                if (!currentMenu) {
+                    board.boardPieces[self.pos].playersOnBoardPiece.splice(board.boardPieces[self.pos].playersOnBoardPiece.indexOf(self), 1);
+                    self.pos += direction;
+                    self.pos = self.pos % 40;
+                    board.boardPieces[self.pos].playersOnBoardPiece.push(self);
+                    self.calculateDrawPos();
+                    if (self.pos == 0 && !self.inPrison) {
+                        currentMenu = new Bankcheck(turn, "Banken", 200, "Inkomst")
+                    }
+                    console.log(self.pos, newPos)
+                    if (self.pos == newPos) {
+                        clearInterval(timer)
+                        board.dices.hidden = true;
+                        board.playerIsWalkingTo = false;
+                        onStep(steps);
+                    };
                 }
-                if (self.pos == newPos) {
-                    clearInterval(timer)
-                    board.dices.hidden = true;
-                    board.playerIsWalkingTo = false;
-                    onStep(steps);
-                };
-            }
-        }, 250)
+            }, 250)
+        }
+
+
     }
 
     goToPrison() {
@@ -1650,7 +1672,6 @@ class Money {
         this.player = player;
         this.index = players.length
         this.calculateDrawPos();
-        this.calculateNameFontSize();
     }
     calculateDrawPos() {
         this.side = this.index % 2;
@@ -1663,16 +1684,12 @@ class Money {
             currentMenu = new Trade(players.indexOf(players[turn]), players.indexOf(self.player));
         })
     }
-    calculateNameFontSize() {
-        let textsize = measureText({ font: "verdanai", text: this.player.name })
-        this.nameFontSize = (1 / textsize.width) * 16000 > 30 ? 30 : (1 / textsize.width) * 16000
-    }
     update() {
         this.button.disabled = (this.player == players[turn] || currentMenu);
         this.button.update();
         c.drawImageFromSpriteSheet(images.players[this.player.info.img], { x: (!this.side ? 3 : canvas.width - 3 - images.players.player.w), y: 3 + this.drawY })
 
-        c.drawText(this.player.name, this.drawX + (this.side ? 15 : 30), this.drawY + 36, this.nameFontSize, "left", this.player.info.color)
+        c.drawText(this.player.name, this.drawX + (this.side ? 15 : 30), this.drawY + 36, c.getFontSize(this.player.name, 165, 30), "left", this.player.info.color)
 
         c.drawText(this.player.money + "kr", this.drawX + (this.side ? 185 : 200), this.drawY + 36, 30)
     }

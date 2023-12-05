@@ -210,6 +210,7 @@ class Button {
         if ((this.hover || this.invertedHover) && mouse.down && !this.disabled) {
             mouse.down = false;
             this.selected = !this.selected;
+            this.hover = false;
             this.onClick();
         }
         if (this.hover && mouse.rightDown && !this.disabled) {
@@ -242,6 +243,7 @@ class Button {
 
 var spritesheet;
 var spritesheetImage;
+var images = {};
 
 var f = new FontFace('verdanai', 'url(./verdanai.ttf)');
 f.load().then(function (font) { document.fonts.add(font); });
@@ -249,8 +251,14 @@ f.load().then(function (font) { document.fonts.add(font); });
 var g = new FontFace('handwritten', 'url(./handwritten.ttf)');
 g.load().then(function (font) { document.fonts.add(font); });
 
+CanvasRenderingContext2D.prototype.getFontSize = function (text, maxWidth, maxHeight) {
+    c.font = "10px verdanai"
+    let width = c.measureText(text).width
+    return (1 / width) * maxWidth * 10 > maxHeight ? maxHeight : (1 / width) * maxWidth * 10;
+}
+
 CanvasRenderingContext2D.prototype.drawText = function (text, x, y, fontSize, align, color, shadow) {
-    this.font = fontSize + "px " + "verdanai";
+    this.font = fontSize + "px verdanai";
     this.fillStyle = "gray";
     this.shadowBlur = (shadow?.blur == undefined ? 0 : shadow?.blur);
     this.shadowColor = (shadow?.color == undefined ? "white" : shadow?.color);
@@ -269,15 +277,12 @@ async function loadSpriteSheet() {
     spritesheetImage.src = "./images/texture.png";
 }
 
-async function loadImages(imageObject) {
+async function loadImages() {
     await loadSpriteSheet();
-    Object.entries(imageObject).forEach((imageList, i) => {
-        let tmpList = {};
-        imageList[1].forEach((image, index) => {
-            let src = imageList[0] + "/" + image + ".png";
-            tmpList[image] = (spritesheet.frames[spritesheet.frames.map(function (e) { return e.filename; }).indexOf(src)]).frame;
-        })
-        images[imageList[0]] = tmpList;
+    spritesheet.frames.forEach((frame, i) => {
+        let tmp = frame.filename.replaceAll(".png", "").split("/");
+        images[tmp[0]] = images[tmp[0]] ?? {}
+        images[tmp[0]][tmp[1]] = frame.frame;
     });
 }
 
@@ -423,9 +428,9 @@ function distance(x1, y1, x2, y2) {
 function drawLine(from, to, co) {
     c.lineWidth = 2;
     c.beginPath();
-    c.moveTo(from.x * tileSize, from.y * tileSize);
-    c.lineTo(to.x * tileSize, to.y * tileSize);
-    c.strokeStyle = co
+    c.moveTo(from.x, from.y);
+    c.lineTo(to.x, to.y);
+    c.strokeStyle = co == undefined ? "black" : co;
     c.stroke();
 }
 
@@ -714,7 +719,8 @@ function splitPoints(ammount, totalW, w, i) {
 
 var times = [];
 var fps = 60;
-var deltaTime = 1;
+var deltaTime = 0;
+var updateDelta = false;
 
 function refreshLoop() {
     window.requestAnimationFrame(function () {
@@ -724,55 +730,13 @@ function refreshLoop() {
         }
         times.push(now);
         fps = times.length;
-        //deltaTime = 60 / fps;
+        deltaTime = updateDelta ? 60 / fps : 1;
         refreshLoop();
     });
 }
 refreshLoop();
 
-const measureText = (() => {
-    var data, w, size = 500; // for higher accuracy increase this size in pixels.
-    let tmp = 120 / size;
-
-    const isColumnEmpty = x => {
-        var idx = x, h = size * 2;
-        while (h--) {
-            if (data[idx]) { return false }
-            idx += can.width;
-        }
-        return true;
-    }
-    const can = document.createElement("canvas");
-    const ctx = can.getContext('2d', { willReadFrequently: true });
-    return ({ text, font, baseSize = size }) => {
-        size = baseSize;
-        can.height = size * 2;
-        font = size + "px " + font;
-        if (text.trim() === "") { return }
-        ctx.font = font;
-        can.width = (w = ctx.measureText(text).width) + 8;
-        ctx.font = font;
-        ctx.textBaseline = "middle";
-        ctx.textAlign = "left";
-        ctx.fillText(text, 0, size);
-        data = new Uint32Array(ctx.getImageData(0, 0, can.width, can.height,).data.buffer);
-        var left, right;
-        var lIdx = 0, rIdx = can.width - 1;
-        while (lIdx < rIdx) {
-            if (left === undefined && !isColumnEmpty(lIdx)) { left = lIdx }
-            if (right === undefined && !isColumnEmpty(rIdx)) { right = rIdx }
-            if (right !== undefined && left !== undefined) { break }
-            lIdx += 1;
-            rIdx -= 1;
-        }
-        data = undefined; // release RAM held
-        can.width = 1; // release RAM held
-        return right - left >= 1 ? {
-            left, right, rightOffset: w - right, width: (right - left) * tmp,
-            measuredWidth: w, font, baseSize
-        } : undefined;
-    }
-})();
+setTimeout(() => { updateDelta = true; }, 1000);
 
 var findClosest = function (x, arr) {
     var indexArr = arr.map(function (k) { return Math.abs(k - x) })
@@ -782,11 +746,6 @@ var findClosest = function (x, arr) {
 
 function hasDuplicates(array) {
     return (new Set(array)).size !== array.length;
-}
-
-function getInstanceByName(name, ...args) {
-    const Class = eval(name);
-    return Class
 }
 
 Date.prototype.today = function () {
@@ -814,43 +773,8 @@ function applyToConstructor(constructor, argArray) {
 }
 
 function monthToText(month) {
-    if (month === 0) {
-        return "Januari"
-    }
-    if (month === 1) {
-        return "Februari"
-    }
-    if (month === 2) {
-        return "Mars"
-    }
-    if (month === 3) {
-        return "April"
-    }
-    if (month === 4) {
-        return "Maj"
-    }
-    if (month === 5) {
-        return "Juni"
-    }
-    if (month === 6) {
-        return "Juli"
-    }
-    if (month === 7) {
-        return "Augusti"
-    }
-    if (month === 8) {
-        return "September"
-    }
-    if (month === 9) {
-        return "Oktober"
-    }
-    if (month === 10) {
-        return "November"
-    }
-    if (month === 11) {
-        return "December"
-    }
-}
+    return ["Januari", "Februari", "Mars", "April", "Maj", "Juni", "Juli", "Augusti", "September", "Oktober", "November", "December"][month]
+};
 
 function numberToText(number) {
     let siffror = ["EN", "ETT", "TVÅ", "TRE", "FYRA", "FEM", "SEX", "SJU", "ÅTTA", "NIO", "TIO", "ELVA", "TOLV", "TRETTON", "FJORTON", "FEMTON", "SEXTON", "SJUTTON", "ARTON", "NITTON", "TJUGO", "TRETTIO", "FYRTIO", "FEMTIO", "SEXTIO", "SJUTTIO", "ÅTTIO", "NITTIO", "HUNDRA", "TUSEN"]
