@@ -273,9 +273,8 @@ class PublicGames {
     constructor() {
         this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, function () { currentMenu = new MainMenu() });
         this.joinID = new TextInput({ x: 340, y: 10, w: 200, h: 60, maxLength: 6, textSize: 45, placeHolder: "ID" })
-        this.joinButton = new Button({ x: 550, y: 10, w: 195, h: 60 }, images.buttons.joingame, function () { currentMenu = new OnlineLobby(false) });
+        this.joinButton = new Button({ x: 550, y: 10, w: 195, h: 60 }, images.buttons.joingame, () => { currentMenu = new OnlineLobby(false, this.joinID.value) });
         this.hostButton = new Button({ x: 750, y: 10, w: 195, h: 60 }, images.buttons.hostgame, function () { currentMenu = new OnlineLobby(true) });
-
     }
     draw() {
         c.drawImageFromSpriteSheet(images.menus.lobbymenu);
