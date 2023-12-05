@@ -1493,7 +1493,6 @@ class Player {
                     if (self.pos == 0 && !self.inPrison) {
                         currentMenu = new Bankcheck(turn, "Banken", 200, "Inkomst")
                     }
-                    console.log(self.pos, newPos)
                     if (self.pos == newPos) {
                         clearInterval(timer)
                         board.dices.hidden = true;
