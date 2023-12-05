@@ -71,6 +71,10 @@ function changeColor(playerIdx, from, to) {
     currentMenu.currentMenu.initColors()
 }
 
+function validPlayer(name, color) {
+    
+}
+
 function createHost() {
     const peer = new Peer(generateId(6), { debug: 1 })
     peer.clients = {}
@@ -192,12 +196,13 @@ function connectToHost(hostId) {
 
     peer.on("error", error => {
         if (error.type === "peer-unavailable") currentMenu = new PublicGames()
+        else console.log(error.type)
     })
     return peer
 }
 
 
 window.onload = () => {
-    let params = new URLSearchParams(window.location.search)
-    if (params.has("lobbyId")) currentMenu = new OnlineLobby(false, params.get("lobbyId"))
+    let id = new URLSearchParams(window.location.search).get("lobbyId")
+    if (id) currentMenu = new OnlineLobby(false, id)
 }

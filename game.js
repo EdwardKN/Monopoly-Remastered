@@ -367,7 +367,7 @@ class OnlineLobby{
             this.players.push(
                 {
                     textInput: new TextInput({x:10,y:80 + 48*i,w:300,h:45, maxLength:15,textSize:40}),
-                    colorButton: new Button({x:320,y:82+48*i,w:40,h:40, selectButton:true,disableSelectTexture:true},images.playercolorbuttons.unselected,function(){
+                    colorButton: new Button({x:320,y:82+48*i,w:40,h:40, selectButton:true,disableSelectTexture:true,disableDisabledTexture:true},images.playercolorbuttons.unselected,function(){
                         self.players.forEach((e,index) => {
                             if(index != i){e.colorButton.selected = false;}else{
                                 self.players.forEach((b) => {
@@ -396,9 +396,10 @@ class OnlineLobby{
             );
             let player = this.players[i]
 
-            if (this.client) {
-                player.textInput.htmlElement.onchange = () => this.client.connection.send({ type: 'nameChange', data: player.textInput.value })
-
+            if (i === 0) {
+                let connection = this.client?.connection
+                if (connection) player.textInput.htmlElement.onchange = () => sendMessage(connection, "nameChange", player.textInput.value)
+                
                 player.confirmButton = new Button({
                     x: 370,
                     y: 82 + 48 * i,
@@ -407,11 +408,19 @@ class OnlineLobby{
                 }, images.buttons.yes, () => {
                     let text = player.textInput.htmlElement
                     text.disabled = !text.disabled
-                    player.confirmButton.image = text.disabled ? images.buttons.no : images.buttons.yes
-                    this.client.connection.send({ type: text.disabled ? "select" : "deselect", data: { name: text.value, color: player.selectedColor } })
+                    if (text.disabled) {
+                        player.confirmButton.image = images.buttons.no
+                        player.colorButton.disabled = true
+                    } else {
+                        player.confirmButton.image = images.buttons.yes
+                        player.colorButton.disabled = false
+                    }
+
+                    if (connection) sendMessage(connection, text.disabled ? "select" : "deselect", { name: text.value, color: player.selectedColor })
                 })
+                continue
             }
-            if (i === 0) continue
+
             player.textInput.htmlElement.disabled = true
             player.colorButton.disabled = true
             player.colorButton.disableDisabledTexture = true
@@ -425,14 +434,13 @@ class OnlineLobby{
             player.colorButton.image = images.playercolorbuttons[(player.selectedColor == -1 ? "unselected" : "playercolorbutton" + (player.selectedColor == 0 ? "" : player.selectedColor+1))]
             if(self.currentMenu?.hover){
                 player.colorButton.draw();
-                player.kickButton?.draw()
                 player.confirmButton?.draw()
             }else{
                 player.colorButton.update();
-                player.kickButton?.update()
                 player.confirmButton?.update()
             }
-            
+            if (!(this.currentMenu instanceof ColorSelector)) player.kickButton?.update()
+            else player.kickButton?.draw()  
         })
         
         this.startButton?.update()
@@ -567,14 +575,14 @@ class ColorSelector {
                     };
                 })
                 self.colorButtons.forEach((e, index) => {
-                    e.disabled = self.selectedColors?.length > 0 && (self.selectedColors?.indexOf(index) != -1)
+                    e.disabled = !e.selected && self.selectedColors?.length > 0 && (self.selectedColors?.indexOf(index) != -1)
                 })
 
                 if (currentMenu.host) sendMessageToAll(currentMenu.host.clients, "selectedColors", currentMenu.selectedColors)
                 else if (currentMenu.client) sendMessage(currentMenu.client.connection, "colorChange", current)
                 currentMenu.prev = current
             }))
-            this.colorButtons[i].disabled = this.selectedColors?.length > 0 && (this.selectedColors?.indexOf(i) != -1)
+            this.colorButtons[i].disabled = !this.colorButtons[i].selected && this.selectedColors?.length > 0 && (this.selectedColors?.indexOf(i) != -1)
         }
 
     }
