@@ -660,9 +660,7 @@ function angle360(cx, cy, ex, ey) {
     return theta;
 }
 function sum(a) {
-    var s = 0;
-    for (var i = 0; i < a.length; i++) s += a[i];
-    return s;
+    return a.reduce((partialSum, a) => partialSum + a);
 }
 
 function degToRad(a) {

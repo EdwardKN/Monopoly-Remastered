@@ -517,7 +517,7 @@ class Board {
     nextPlayer() {
         players[turn].rolls = 0;
         turn++;
-        turn = turn % players.length;
+        turn %= players.length;
         if (players[turn].dead) {
             this.nextPlayer();
             return;
@@ -1650,7 +1650,7 @@ class Player {
     teleportTo(newPos, noSteps) {
         newPos = newPos == 0 ? 40 : newPos;
         let direction = Math.sign(newPos);
-        newPos = newPos % 40;
+        newPos %= 40;
         let self = this;
 
         this.animateSteps(Math.abs(newPos), direction, function (steps) {
@@ -1673,7 +1673,7 @@ class Player {
                 if (!currentMenu) {
                     board.boardPieces[self.pos].playersOnBoardPiece.splice(board.boardPieces[self.pos].playersOnBoardPiece.indexOf(self), 1);
                     self.pos += direction;
-                    self.pos = self.pos % 40;
+                    self.pos %= 40;
                     board.boardPieces[self.pos].playersOnBoardPiece.push(self);
                     self.calculateDrawPos();
                     if (self.pos == 0 && !self.inPrison) {
