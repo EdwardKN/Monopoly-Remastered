@@ -29,8 +29,11 @@ function exitGame() {
 }
 
 function startGame(playersToStartGameWith) {
-    window.onbeforeunload = saveGame;
+    if (currentMenu instanceof LobbyMenu || currentMenu.host) window.onbeforeunload = saveGame;
     board = new Board();
+    
+    let colorsToPick = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    playersToStartGameWith.forEach(player => { if (player.color !== -1) colorsToPick.splice(colorsToPick.indexOf(player.color), 1) })
 
     playersToStartGameWith.forEach(player => {
         if (player.color != -1) {
@@ -39,7 +42,6 @@ function startGame(playersToStartGameWith) {
             addRandomPlayer(player.name);
         }
     })
-
 }
 
 function addRandomPlayer(name) {
@@ -565,7 +567,8 @@ class ColorSelector {
                 else if (currentMenu.client) sendMessage(currentMenu.client.connection, "colorChange", current)
                 currentMenu.prev = current
             }))
-            this.colorButtons[i].disabled = !this.colorButtons[i].selected && this.selectedColors?.length > 0 && (this.selectedColors?.indexOf(i) != -1)
+            this.colorButtons[i].disabled = !this.colorButtons[i].selected && this.selectedColors?.length > 0 && (this.selectedColors?.indexOf(i) != -1) && i !== this.player.selectedColor
+            this.colorButtons[i].selected = i === this.player.selectedColor;
         }
 
     }
