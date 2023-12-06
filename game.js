@@ -393,6 +393,7 @@ class OnlineLobby{
                         player.colorButton.disabled = false
                         text.style.backgroundColor = 'white'
                     }
+                    if (this.host) sendPlayers(this.host, undefined, undefined, undefined, text.disabled)
 
                     if (!wrong && !this.hosting) sendMessage(this.client.connection, text.disabled ? "select" : "deselect", { name: text.value, color: player.selectedColor })
                 })

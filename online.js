@@ -29,9 +29,11 @@ function removeClient(peer, id) {
         let prevPlayer = currentMenu.players[i - 1]
         if (i <= 1) continue
         
-        prevPlayer.textInput.htmlElement.value = player.textInput.htmlElement.value
         prevPlayer.selectedColor = player.selectedColor
-        prevPlayer.textInput.htmlElement.setAttribute("placeHolder", player.textInput.htmlElement.getAttribute("placeHolder"))
+        prevPlayer.textInput.htmlElement.value = player.textInput.htmlElement.value
+        prevPlayer.textInput.htmlElement.setAttribute("placeHolder", getPlaceHolder(player))
+        prevPlayer.textInput.htmlElement.style.backgroundColor = player.textInput.htmlElement.style.backgroundColor
+        prevPlayer.kickButton.onClick = player.kickButton.onClick
     }
 
     peer.clients[id].connection.close()
@@ -45,6 +47,7 @@ function removeClient(peer, id) {
 
     delete player.kickButton
     delete peer.clients[id]
+    sendPlayers(peer, undefined, undefined, undefined, undefined)
 }
 
 function removeColor(colorIdx) {
@@ -89,6 +92,15 @@ function validPlayer(player, name, color) {
     return [valid, name, reason]
 }
 
+function waitForOpenConnection(client, callback) {
+    const checkConnection = () => {
+        if (client.connection.open) callback()
+        else requestAnimationFrame(checkConnection) 
+    }
+
+    checkConnection()
+}
+
 function createHost() {
     const peer = new Peer(generateId(6), { debug: 1 })
     peer.clients = {}
@@ -112,7 +124,11 @@ function createHost() {
 
             // Connnection
             peer.clients[id] = { connection: peer.connect(id) }
-            setTimeout(() => { sendMessage(peer.clients[id].connection, "selectedColors", currentMenu.selectedColors); sendPlayers(peer, undefined, undefined, undefined, undefined) }, 1000)
+
+            waitForOpenConnection(peer.clients[id], () => {
+                sendMessage(peer.clients[id].connection, "selectedColors", currentMenu.selectedColors)
+                sendPlayers(peer, undefined, undefined, undefined, undefined)
+            })
         })
         
         x.on('close', () => {
@@ -153,28 +169,40 @@ function createHost() {
     return peer
 }
 
-function sendPlayers(host, _client, text, color, selected) {
-    let players = []
-    let clients = Object.values(host.clients)
+function getPlaceHolder(player) { return player.textInput.htmlElement.getAttribute("placeHolder") }
 
-    let i = 0
-    for (let player of currentMenu.players) {
+function sendPlayers(peer, updatedClient, text, color, selected) {
+    let data_players = []
+    let clients = Object.values(peer.clients)
+
+    for (let i = 0; i < currentMenu.players.length; i++) {
         if (i > clients.length) continue
 
-        players.push({
-            name: (_client === player && text) ? text : player.textInput.value,
-            color: (_client === player && color) ? color : player.selectedColor,
-            placeHolder: player.textInput.htmlElement.getAttribute("placeHolder"),
-            selected: (_client === player && selected) ? selected : player.textInput.htmlElement.disabled,
-        })
-        i++
-    }
-    for (let i = 0; i < clients.length; i++) {
-        let client = clients[i].connection
-        if (_client.connection === client) continue // Dont send to self
+        let player = currentMenu.players[i]
+        let client = peer.clients[getPlaceHolder(player)]
 
-        let data = players.filter(p => p.placeHolder !== client.peer)
-        sendMessage(client, "players", data)
+        if (client && client === updatedClient) {
+            data_players.push({
+                name: text ?? player.textInput.htmlElement.value, // Text can be ''
+                color: color ?? player.selectedColor, // Color can be 0
+                selected: selected ?? player.textInput.htmlElement.disabled, // Selected can be false
+                placeHolder: getPlaceHolder(player)
+            })
+        } else {
+            data_players.push({
+                name: player.textInput.htmlElement.value,
+                color: player.selectedColor,
+                selected: player.textInput.htmlElement.disabled,
+                placeHolder: getPlaceHolder(player)
+            })
+        }
+    }
+
+    for (let client of clients) {
+        if (client === updatedClient) continue // Don't send to updated client
+
+        let data = data_players.filter(player => peer.clients[player.placeHolder] !== client) // Dont include self
+        sendMessage(client.connection, "players", data)
     }
 }
 
@@ -228,6 +256,7 @@ function connectToHost(hostId) {
                     player.textInput.htmlElement.value = newPlayer.name
                     player.selectedColor = newPlayer.color
                     player.textInput.htmlElement.setAttribute("placeHolder", newPlayer.placeHolder)
+                    player.textInput.htmlElement.style.backgroundColor = newPlayer.selected ? "" : "white"
                     if (player.selected) player.confirmButton.onClick(true)
                 }
             }
