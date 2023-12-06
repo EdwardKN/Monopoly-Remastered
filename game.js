@@ -1401,7 +1401,7 @@ class PropertyCard {
         let colorGroupName = board.boardPieces[this.n].info.group;
         let colorGroup = board.getColorGroup(colorGroupName);
 
-        if (colorGroup.length == colorGroup.filter(e => e.owner == players[turn]).length) {
+        if (colorGroup.length == colorGroup.filter(e => e.owner == players[turn]).length || !board.settings.buyHouseGroup) {
             if (players[turn].money < board.boardPieces[this.n].info.housePrice) {
                 return false;
             } else {
@@ -1459,7 +1459,7 @@ class PropertyCard {
     calculateDowngrade() {
         let colorGroupName = board.boardPieces[this.n].info.group;
         let colorGroup = board.getColorGroup(colorGroupName);
-        if (colorGroup.length == colorGroup.filter(e => e.owner == players[turn]).length) {
+        if (colorGroup.length == colorGroup.filter(e => e.owner == players[turn]).length || !board.settings.buyHouseGroup) {
             let highest = !board.settings.evenHouses ? board.boardPieces[this.n].level : colorGroup.sort((a, b) => b.level - a.level)[0].level;
             if (highest == 0) {
                 return false;

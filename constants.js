@@ -1,4 +1,4 @@
-const latestSaveVersion = 2;
+const latestSaveVersion = 3;
 
 const settings = [
     {
@@ -18,6 +18,12 @@ const settings = [
         title: "Dubbel hyra på komplett färggrupp",
         type: "select",
         variable: "doublePay",
+        start: true
+    },
+    {
+        title: "Komplett färggrupp för köp av hus",
+        type: "select",
+        variable: "buyHouseGroup",
         start: true
     },
     {
@@ -42,7 +48,8 @@ const settings = [
         title: "Jämn utbyggnad",
         type: "select",
         variable: "evenHouses",
-        start: true
+        start: true,
+        needed: "buyHouseGroup"
     },
     {
         title: "Endast köpa hus på den man står på",
