@@ -15,7 +15,7 @@ Funktionalitet
 - [x] Huvudmeny
 - [ ] Ljud
 - [x] Animationer
-- [ ] Custom games
+- [x] Custom games
 - [ ] Statistik
 - [ ] OnlineLäge
 - [ ] Bots
