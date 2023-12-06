@@ -30,10 +30,10 @@ function removeClient(peer, id) {
         if (i <= 1) continue
         
         prevPlayer.selectedColor = player.selectedColor
+        prevPlayer.kickButton.onClick = player.kickButton.onClick
         prevPlayer.textInput.htmlElement.value = player.textInput.htmlElement.value
         prevPlayer.textInput.htmlElement.setAttribute("placeHolder", getPlaceHolder(player))
         prevPlayer.textInput.htmlElement.style.backgroundColor = player.textInput.htmlElement.style.backgroundColor
-        prevPlayer.kickButton.onClick = player.kickButton.onClick
     }
 
     peer.clients[id].connection.close()
@@ -269,7 +269,6 @@ function connectToHost(hostId) {
     })
     return peer
 }
-
 
 window.onload = () => {
     let id = new URLSearchParams(window.location.search).get("lobbyId")
