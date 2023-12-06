@@ -501,6 +501,7 @@ class Board {
         this.playerHasRolled = false;
         this.playerIsWalkingTo = false;
         this.done = false;
+        this.money = 0;
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, this.rollDice)
         this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.nextplayer, this.nextPlayer);
@@ -599,6 +600,10 @@ class Board {
 
         c.drawText("Just nu:" + players[turn].name, canvas.width / 2, 30, c.getFontSize("Just nu:" + players[turn].name, 240, 30), "center", players[turn].info.color)
 
+        if (this.settings.giveAllTaxToParking) {
+            c.drawText(this.money + "kr", canvas.width / 2, 60, 20, "center", "gold")
+        }
+
         this.dices.draw();
 
         this.nextPlayerButton.disabled = players[turn].money < 0;
@@ -651,6 +656,7 @@ class PrisonMenu {
     constructor() {
         this.payButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 0), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisonpay, function () {
             players[turn].money -= 50;
+            board.money += board.settings.giveAllToParking ? 50 : 0;
             players[turn].getOutOfPrison();
             currentMenu = undefined;
         });
@@ -792,6 +798,10 @@ class Corner extends BoardPiece {
         if (this.n == 30) {
             currentMenu = new CardDraw("special", 0)
         }
+        if (this.n == 20 && board.settings.giveAllTaxToParking) {
+            players[turn].money += board.money;
+            board.money = 0;
+        }
     }
 }
 
@@ -872,6 +882,7 @@ class BuyableProperty extends BoardPiece {
     }
     buy() {
         players[turn].money -= this.info.price;
+        board.money += board.settings.giveAllToParking ? this.info.price : 0;
         this.owner = players[turn];
         players[turn].ownedPlaces.push(this);
     }
@@ -883,6 +894,7 @@ class BuyableProperty extends BoardPiece {
     upgrade() {
         this.level++;
         players[turn].money -= this.info.housePrice;
+        board.money += board.settings.giveAllToParking ? this.info.housePrice : 0;
     }
     mortgage() {
         this.mortgaged = !this.mortgaged;
@@ -1009,6 +1021,7 @@ class Auction {
 
         if (this.auctionMoney >= this.minimumPay) {
             players[playerIndex].money -= this.auctionMoney;
+            board.money += board.settings.giveAllToParking ? this.auctionMoney : 0;
             this.boardPiece.owner = players[playerIndex];
             players[playerIndex].ownedPlaces.push(this.boardPiece);
         };
@@ -1270,6 +1283,9 @@ class CardDraw {
             players[turn].teleportTo(this.card.teleport);
         } else if (this.card.moneyChange) {
             players[turn].money += this.card.moneyChange;
+            if (this.card.moneyChange < 0) {
+                board.money += board.settings.giveAllToParking ? this.card.moneyChange : 0;
+            }
             players[turn].lastPayment = undefined;
         } else if (this.card.moneyFromPlayers) {
             currentMenu = new Bankcheck(turn, "Motspelare", (this.card.moneyFromPlayers * (players.filter(e => (!e.inPrison || board.settings.prisonpay)).length - 1)), "Present")
@@ -1295,10 +1311,12 @@ class CardDraw {
             players[turn].ownedPlaces.forEach(place => {
                 if (place.level < 5) {
                     players[turn].money -= self.card.properyPrice.house * place.level;
+                    board.money += board.settings.giveAllToParking ? self.card.properyPrice.house * place.level : 0;
                     players[turn].lastPayment = undefined;
 
                 } else {
                     players[turn].money -= self.card.properyPrice.hotel;
+                    board.money += board.settings.giveAllToParking ? self.card.properyPrice.hotel : 0;
                     players[turn].lastPayment = undefined;
                 }
             })
@@ -1306,9 +1324,11 @@ class CardDraw {
             players[turn].goToPrison();
         } else if (this.type == "special" && this.cardId == 2) {
             players[turn].money -= (players[turn].money > 2000 ? 200 : Math.round(players[turn].money / 10));
+            board.money += board.settings.giveAllTaxToParking ? players[turn].money > 2000 ? 200 : Math.round(players[turn].money / 10) : 0;
             players[turn].lastPayment = undefined;
         } else if (this.type == "special" && this.cardId == 3) {
             players[turn].money -= 100;
+            board.money += board.settings.giveAllTaxToParking ? 100 : 0;
             players[turn].lastPayment = undefined;
         }
         if (close) currentMenu = undefined;
@@ -1374,6 +1394,7 @@ class PropertyCard {
                                 board.boardPieces[e.n].level = e.level
                             })
                             players[turn].money -= self.upgradeInfo.price;
+                            board.money += board.settings.giveAllToParking ? self.upgradeInfo.price : 0;
                             currentMenu = undefined;
                         }
                     } else {
@@ -1381,6 +1402,7 @@ class PropertyCard {
                             board.boardPieces[e.n].level = e.level
                         })
                         players[turn].money -= self.upgradeInfo.price;
+                        board.money += board.settings.giveAllToParking ? self.upgradeInfo.price : 0;
                     }
 
                 }
