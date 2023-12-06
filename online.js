@@ -112,7 +112,7 @@ function createHost() {
 
             // Connnection
             peer.clients[id] = { connection: peer.connect(id) }
-            setTimeout(() => sendMessage(peer.clients[id].connection, 'selectedColors', currentMenu.selectedColors), 1000)
+            setTimeout(() => { sendMessage(peer.clients[id].connection, "selectedColors", currentMenu.selectedColors); sendPlayers(peer, undefined, undefined, undefined, undefined) }, 1000)
         })
         
         x.on('close', () => {
@@ -136,6 +136,7 @@ function createHost() {
                 let [valid, name, reason] = validPlayer(player, data.name, data.color)
                 
                 sendMessage(client.connection, "select", { valid: valid, name: name, reason: reason })
+                sendPlayers(peer, client, undefined, undefined, valid)
                 if (!valid) return
 
                 // Update HTML
@@ -145,12 +146,36 @@ function createHost() {
                 for (let p2 of currentMenu.players) if (player !== p2 && p2.selectedColor === data.color) p2.selectedColor = -1
                 sendMessageToAll(peer.clients, "selectedColors", currentMenu.selectedColors, [client])
             }
-            if (type === "nameChange") player.textInput.htmlElement.value = data
-            if (type === "colorChange") player.selectedColor = data
+            if (type === "nameChange") { player.textInput.htmlElement.value = data; sendPlayers(peer, client, data, undefined, undefined) }
+            if (type === "colorChange") { player.selectedColor = data; sendPlayers(peer, client, undefined, data, undefined) }
         })
     })
-
     return peer
+}
+
+function sendPlayers(host, _client, text, color, selected) {
+    let players = []
+    let clients = Object.values(host.clients)
+
+    let i = 0
+    for (let player of currentMenu.players) {
+        if (i > clients.length) continue
+
+        players.push({
+            name: (_client === player && text) ? text : player.textInput.value,
+            color: (_client === player && color) ? color : player.selectedColor,
+            placeHolder: player.textInput.htmlElement.getAttribute("placeHolder"),
+            selected: (_client === player && selected) ? selected : player.textInput.htmlElement.disabled,
+        })
+        i++
+    }
+    for (let i = 0; i < clients.length; i++) {
+        let client = clients[i].connection
+        if (_client.connection === client) continue // Dont send to self
+
+        let data = players.filter(p => p.placeHolder !== client.peer)
+        sendMessage(client, "players", data)
+    }
 }
 
 function connectToHost(hostId) {
@@ -191,6 +216,19 @@ function connectToHost(hostId) {
                 if (currentMenu.currentMenu) {
                     currentMenu.currentMenu.selectedColors = data
                     currentMenu.currentMenu.initColors()
+                }
+            }
+            if (type === "players") {
+                currentMenu.players.splice(1)
+                currentMenu.initPlayers(data.length)
+
+                for (let i = 1; i < data.length + 1; i++) {
+                    let player = currentMenu.players[i]
+                    let newPlayer = data[i - 1]
+                    player.textInput.htmlElement.value = newPlayer.name
+                    player.selectedColor = newPlayer.color
+                    player.textInput.htmlElement.setAttribute("placeHolder", newPlayer.placeHolder)
+                    if (player.selected) player.confirmButton.onClick(true)
                 }
             }
         })

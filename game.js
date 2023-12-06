@@ -323,7 +323,8 @@ class OnlineLobby{
     }
     initPlayers(amount){
         let self = this;
-        for(let i = 0; i<amount; i++){
+        let off = this.players.length
+        for(let i = off; i<amount+off; i++){
             this.players.push(
                 {
                     textInput: new TextInput({x:10,y:80 + 48*i,w:300,h:45, maxLength:15,textSize:40}),
@@ -343,9 +344,9 @@ class OnlineLobby{
                                 }else{
                                     self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30-40,82+48*(i+1),e,self.selectedColors) : undefined;
                                     
-                                    if(self.currentMenu && !self.client){
-                                        self.players[index+1].textInput.w = 230;
-                                        self.players[index+2].textInput.w = 230;
+                                    if(self.currentMenu){
+                                        if (self.players[index + 1]) self.players[index + 1].textInput.w = 230;
+                                        if (self.players[index + 2]) self.players[index + 2].textInput.w = 230;
                                     }
                                 }
                             }
@@ -357,9 +358,15 @@ class OnlineLobby{
             let player = this.players[i]
 
             if (i === 0) {
-                player.textInput.htmlElement.style.backgroundColor = 'white'
-                if (!this.hosting) player.textInput.htmlElement.onchange = () => sendMessage(currentMenu.client.connection, "nameChange", player.textInput.value)
-                
+                player.textInput.htmlElement.style.backgroundColor = "white"
+                player.textInput.htmlElement.oninput = () => {
+                    let text = player.textInput.htmlElement.value
+                    if (this.hosting) sendPlayers(this.host, text)
+                    else sendMessage(currentMenu.client.connection, "nameChange", text)
+                }
+
+                if (this.hosting) player.textInput.htmlElement.setAttribute("placeHolder", this.host.id)
+
                 player.confirmButton = new Button({
                     x: 370,
                     y: 82 + 48 * i,
@@ -387,7 +394,7 @@ class OnlineLobby{
                         text.style.backgroundColor = 'white'
                     }
 
-                    if (!this.hosting) sendMessage(this.client.connection, text.disabled ? "select" : "deselect", { name: text.value, color: player.selectedColor })
+                    if (!wrong && !this.hosting) sendMessage(this.client.connection, text.disabled ? "select" : "deselect", { name: text.value, color: player.selectedColor })
                 })
                 continue
             }
@@ -396,6 +403,9 @@ class OnlineLobby{
             player.colorButton.disabled = true
             player.colorButton.disableDisabledTexture = true
         }
+    }
+    addPlayers(amount) {
+
     }
     draw() {
         c.drawImageFromSpriteSheet(images.menus.lobbymenu);
@@ -544,6 +554,7 @@ class ColorSelector {
                             current = -1
                         }
                     };
+                    if (currentMenu.host) sendPlayers(currentMenu.host)
                 })
                 self.colorButtons.forEach((e, index) => {
                     e.disabled = !e.selected && self.selectedColors?.length > 0 && (self.selectedColors?.indexOf(index) != -1)
