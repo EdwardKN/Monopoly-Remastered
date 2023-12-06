@@ -315,7 +315,6 @@ class LobbyMenu {
             self.settings.forEach((setting, index) => {
                 tmpSettings[settings[index].variable] = setting instanceof Button ? setting.selected : setting.value
             })
-            console.log(tmpSettings)
             startGame(tmp, tmpSettings);
             currentMenu = undefined;
         });
