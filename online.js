@@ -81,10 +81,8 @@ function validPlayer(player, name, color) {
     if (name.length < 3) { valid = false; reason = "Username must be atleast 3 characters long" }
     
     else if (name.length > 15) { valid = false; reason = "Username must be at most 15 characters long" }
-    
-    else if (color === -1) { valid = false; reason = "Must have a selected color" }
-    
-    else if (tempColors.includes(color)) { valid = false; reason = "Color is already taken" }
+        
+    else if (color !== -1 && tempColors.includes(color)) { valid = false; reason = "Color is already taken" }
     
     else if (tempPlayers.some(p => p.textInput.htmlElement.style.backgroundColor === "" &&
         p.textInput.htmlElement.value === name)) { valid = false; reason = "Username is already taken" }
@@ -181,21 +179,23 @@ function sendPlayers(peer, updatedClient, text, color, selected) {
         let player = currentMenu.players[i]
         let client = peer.clients[getPlaceHolder(player)]
 
+        
         if (client && client === updatedClient) {
             data_players.push({
                 name: text ?? player.textInput.htmlElement.value, // Text can be ''
                 color: color ?? player.selectedColor, // Color can be 0
                 selected: selected ?? player.textInput.htmlElement.disabled, // Selected can be false
-                placeHolder: getPlaceHolder(player)
+                placeHolder: getPlaceHolder(player),
             })
         } else {
             data_players.push({
                 name: player.textInput.htmlElement.value,
                 color: player.selectedColor,
                 selected: player.textInput.htmlElement.disabled,
-                placeHolder: getPlaceHolder(player)
+                placeHolder: getPlaceHolder(player),
             })
         }
+        data_players[i].settings = currentMenu.settings.map(e => e.constructor.name === "Button" ? e.selected : e.percentage)
     }
 
     for (let client of clients) {
@@ -259,6 +259,8 @@ function connectToHost(hostId) {
                     player.textInput.htmlElement.style.backgroundColor = newPlayer.selected ? "" : "white"
                     if (player.selected) player.confirmButton.onClick(true)
                 }
+
+                if (currentMenu.currentMenu) player.colorButton.onClick()
             }
         })
     })

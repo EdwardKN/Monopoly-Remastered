@@ -19,11 +19,13 @@ window.addEventListener("resize", fixCanvas);
 renderCanvas.addEventListener("mousemove", function (e) {
     let oldDown = mouse.down;
     let oldWhich = mouse.which;
+    let oldUp = mouse.up;
     mouse = {
         x: e.offsetX / scale,
         y: e.offsetY / scale,
         down: oldDown,
-        which: oldWhich
+        which: oldWhich,
+        up: oldUp
     };
 });
 
@@ -74,18 +76,28 @@ class Slider {
         this.beginningText = (settings?.beginningText == undefined) ? "" : settings?.beginningText;
         this.onChange = (onChange == undefined ? function () { } : onChange);
 
+        this.undefinedTextSize = (settings?.textSize == undefined);
+
+        this.disabled = false;
         this.percentage = 0;
         this.value = 0;
         this.last = this.value;
         this.follow = false;
         buttons.push(this)
+
+        if (this.undefinedTextSize) {
+            this.textSize = c.getFontSize(this.beginningText + this.value + this.unit, this.w - 12, this.h - 4)
+        }
     }
     update() {
         if (this.value !== this.last) {
             this.last = this.value;
             this.onChange();
+            if (this.undefinedTextSize) {
+                this.textSize = c.getFontSize(this.beginningText + this.value + this.unit, this.w - 12, this.h - 4)
+            }
         };
-        this.hover = detectCollision(this.x, this.y, this.w, this.h, mouse.x, mouse.y, 1, 1);
+        this.hover = detectCollision(this.x, this.y, this.w, this.h, mouse.x, mouse.y, 1, 1) && !this.disabled;
         if (mouse.down && this.hover) {
             mouse.down = false;
             this.follow = true;
@@ -115,6 +127,8 @@ class Slider {
 
         c.fillStyle = "black";
         c.fillRect(this.x + (this.percentage) * (this.w - 4), this.y, 4, this.h);
+
+
 
         c.drawText(this.beginningText + this.value + this.unit, this.x + this.w / 2, this.y + this.h - (this.h - this.textSize) / 2 - 2, this.textSize, "center")
     }
@@ -647,9 +661,7 @@ function angle360(cx, cy, ex, ey) {
     return theta;
 }
 function sum(a) {
-    var s = 0;
-    for (var i = 0; i < a.length; i++) s += a[i];
-    return s;
+    return a.reduce((partialSum, a) => partialSum + a);
 }
 
 function degToRad(a) {
@@ -846,4 +858,9 @@ function numberToText(number) {
 
 function getIndexFromObject(obj, key) {
     return Object.keys(obj).indexOf(key)
+}
+
+const divide = (num = 100, n = 4) => {
+    const f = Math.floor(num / n);
+    return [...Array(n)].map((_, i) => i - n + 1 ? f : num - i * f);
 }
