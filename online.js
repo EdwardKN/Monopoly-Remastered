@@ -99,6 +99,49 @@ function waitForOpenConnection(client, callback) {
     checkConnection()
 }
 
+function getPlaceHolder(player) { return player.textInput.htmlElement.getAttribute("placeHolder") }
+
+function sendPlayers(peer, updatedClient, text, color, selected) {
+    let data_players = []
+    let clients = Object.values(peer.clients)
+
+    for (let i = 0; i < currentMenu.players.length; i++) {
+        if (i > clients.length) continue
+
+        let player = currentMenu.players[i]
+        let client = peer.clients[getPlaceHolder(player)]
+
+        
+        if (client && client === updatedClient) {
+            data_players.push({
+                name: text ?? player.textInput.htmlElement.value, // Text can be ''
+                color: color ?? player.selectedColor, // Color can be 0
+                selected: selected ?? player.textInput.htmlElement.disabled, // Selected can be false
+                placeHolder: getPlaceHolder(player),
+            })
+        } else {
+            data_players.push({
+                name: player.textInput.htmlElement.value,
+                color: player.selectedColor,
+                selected: player.textInput.htmlElement.disabled,
+                placeHolder: getPlaceHolder(player),
+            })
+        }
+        data_players[i].settings = currentMenu.settings.map(e => e.constructor.name === "Button" ? e.selected : e.percentage)
+    }
+
+    for (let client of clients) {
+        if (client === updatedClient) continue // Don't send to updated client
+
+        let data = data_players.filter(player => peer.clients[player.placeHolder] !== client) // Dont include self
+        sendMessage(client.connection, "players", {
+            players: data,
+            settings: currentMenu.settings
+            .map(e => e.constructor.name === "Button" ? e.selected : { percentage: e.percentage, value: e.value } ) 
+        })
+    }
+}
+
 function createHost() {
     const peer = new Peer(generateId(6), { debug: 1 })
     peer.clients = {}
@@ -167,49 +210,6 @@ function createHost() {
     return peer
 }
 
-function getPlaceHolder(player) { return player.textInput.htmlElement.getAttribute("placeHolder") }
-
-function sendPlayers(peer, updatedClient, text, color, selected) {
-    let data_players = []
-    let clients = Object.values(peer.clients)
-
-    for (let i = 0; i < currentMenu.players.length; i++) {
-        if (i > clients.length) continue
-
-        let player = currentMenu.players[i]
-        let client = peer.clients[getPlaceHolder(player)]
-
-        
-        if (client && client === updatedClient) {
-            data_players.push({
-                name: text ?? player.textInput.htmlElement.value, // Text can be ''
-                color: color ?? player.selectedColor, // Color can be 0
-                selected: selected ?? player.textInput.htmlElement.disabled, // Selected can be false
-                placeHolder: getPlaceHolder(player),
-            })
-        } else {
-            data_players.push({
-                name: player.textInput.htmlElement.value,
-                color: player.selectedColor,
-                selected: player.textInput.htmlElement.disabled,
-                placeHolder: getPlaceHolder(player),
-            })
-        }
-        data_players[i].settings = currentMenu.settings.map(e => e.constructor.name === "Button" ? e.selected : e.percentage)
-    }
-
-    for (let client of clients) {
-        if (client === updatedClient) continue // Don't send to updated client
-
-        let data = data_players.filter(player => peer.clients[player.placeHolder] !== client) // Dont include self
-        sendMessage(client.connection, "players", {
-            players: data,
-            settings: currentMenu.settings
-            .map(e => e.constructor.name === "Button" ? e.selected : { percentage: e.percentage, value: e.value } ) 
-        })
-    }
-}
-
 function connectToHost(hostId) {
     let id = generateId(6)
     const peer = new Peer(id, { debug: 1 })
@@ -221,6 +221,8 @@ function connectToHost(hostId) {
     peer.on("connection", x => {
         x.on("open", () => {
             console.log("Connected to " + x.peer)
+            currentMenu.players[0].textInput.htmlElement.value = generateId(5) // TEMP
+            currentMenu.players[0].confirmButton.onClick() // TEMP
         })
 
         x.on("close", () => {
@@ -286,6 +288,9 @@ function connectToHost(hostId) {
                     currentMenu.settings[index].disabled = true
                     currentMenu.settings[index].disableDisabledTexture = true
                 })
+            }
+            if (type === "startGame") {
+                startGame(data.players, data.settings)
             }
         })
     })

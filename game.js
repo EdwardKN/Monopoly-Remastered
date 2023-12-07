@@ -30,7 +30,7 @@ function exitGame() {
 
 function startGame(playersToStartGameWith, settings) {
     if (currentMenu instanceof LobbyMenu || currentMenu.host) window.onbeforeunload = saveGame;
-    board = new Board();
+    board = currentMenu instanceof LobbyMenu ? new Board() : new OnlineBoard(currentMenu.hosting, currentMenu.host);
     board.settings = settings;
     
     let colorsToPick = [0, 1, 2, 3, 4, 5, 6, 7, 8]
@@ -299,18 +299,19 @@ class OnlineLobby{
             this.host = createHost()
             this.initPlayers(8)
             this.startButton = new Button({ x: 10, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, () => {
-                let tmp = []
-
+                let tmpPlayers = []
                 for (let i = 0; i <= Object.entries(this.host.clients).length; i++) {
                     let player = this.players[i]
 
-                    tmp.push({
+                    tmpPlayers.push({
                         name: player.textInput.value,
                         color: player.selectedColor
                     })
                 }
 
-                startGame(tmp)
+                let tmpSettings = {}
+                this.settings.forEach((setting, i) => tmpSettings[settings[i].variable] = setting instanceof Button ? setting.selected : setting.value)
+                startGame(tmpPlayers, tmpSettings)
                 currentMenu = undefined
             })
 
@@ -464,6 +465,9 @@ class OnlineLobby{
                 mouse.down = false
                 //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.host.id}`)
                 navigator.clipboard.writeText(this.host.id)
+
+                currentMenu.players[0].textInput.htmlElement.value = "Player 1" // TEMP
+                setTimeout(() => { currentMenu.players[0].confirmButton.onClick()}, 100) // TEMP
             }
         }        
     }
@@ -772,7 +776,7 @@ class Board {
             exitGame();
         }
         this.drawBack();
-
+        console.log(players)
         this.boardPieces.forEach(e => e.draw());
 
         this.boardPieces.forEach(e => { if (e.owner && e.constructor.name == "BuyableProperty") e.drawHouses() })
@@ -829,6 +833,76 @@ class Board {
             }
         }
         c.drawImageFromSpriteSheet(images.static.insideboard, { x: canvas.width / 2 - 286, y: canvas.height / 2 - 143 })
+    }
+}
+
+class OnlineBoard extends Board {
+    constructor(hosting, peer) {
+        super()
+        this.hosting = hosting
+        if (this.hosting) {
+            this.host = peer
+        } else {
+            this.client = peer
+            this.playing = false
+        }
+    }
+
+
+    update() {
+        if (players.filter(e => !e.dead).length == 1) {
+            this.done = true;
+            exitGame();
+        }
+        this.drawBack();
+
+        this.boardPieces.forEach(e => e.draw());
+
+        this.boardPieces.forEach(e => { if (e.owner && e.constructor.name == "BuyableProperty") e.drawHouses() })
+        this.boardPieces.forEach(e => { if (e.hover) { hoverList.push(e.info.name + (e.owner !== undefined ? "(" + e.owner.name + ")" : "")) } });
+
+        c.drawText("Just nu:" + players[turn].name, canvas.width / 2, 30, c.getFontSize("Just nu:" + players[turn].name, 240, 30), "center", players[turn].info.color)
+
+        if (this.settings.giveAllTaxToParking) {
+            c.drawText(this.money + "kr", canvas.width / 2, 60, 20, "center", "gold")
+        }
+
+        this.dices.draw();
+
+        this.nextPlayerButton.disabled = players[turn].money < 0;
+
+
+        if (this.dices.hidden && !currentMenu && (this.playerIsWalkingTo == false)) {
+            this.menuButton.update();
+
+            if (!this.playerHasRolled) {
+                this.rollDiceButton.update();
+            } else {
+                this.nextPlayerButton.update();
+            }
+        }
+
+        for (let i = 20; i >= 0; i--) {
+            if (i < 10) {
+                board.boardPieces[i].playersOnBoardPiece.forEach(e => e.draw());
+            } else {
+                let length = board.boardPieces[i].playersOnBoardPiece.length - 1;
+                for (let i2 = length; i2 >= 0; i2--) {
+                    board.boardPieces[i].playersOnBoardPiece[i2].draw();
+                }
+            }
+        }
+        for (let i = 21; i < 40; i++) {
+            if (i >= 30) {
+                board.boardPieces[i].playersOnBoardPiece.forEach(e => e.draw());
+            } else {
+                let length = board.boardPieces[i].playersOnBoardPiece.length - 1;
+                for (let i2 = length; i2 >= 0; i2--) {
+                    board.boardPieces[i].playersOnBoardPiece[i2].draw();
+                }
+            }
+        }
+
     }
 }
 
