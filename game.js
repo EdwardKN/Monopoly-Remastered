@@ -296,7 +296,7 @@ class OnlineLobby{
         if (this.hosting) {
             this.host = createHost()
             this.initPlayers(8)
-            this.startButton = new Button({ x: 10 + 100, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, () => {
+            this.startButton = new Button({ x: 10, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, () => {
                 let tmp = []
 
                 for (let i = 0; i <= Object.entries(this.host.clients).length; i++) {
@@ -310,6 +310,19 @@ class OnlineLobby{
 
                 startGame(tmp)
                 currentMenu = undefined
+            })
+
+            this.settings = []
+            settings.forEach((setting, index,) => {
+                let length = settings.length;
+                if (setting.type == "select") {
+                    this.settings.push(new Button({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, selectButton: true, text: setting.title, textSize: c.getFontSize(setting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting));
+                    this.settings[index].selected = setting.start;
+                } else if (setting.type == "slider") {
+                    this.settings.push(new Slider({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, from: setting.from, to: setting.to, unit: setting.unit, steps: setting.steps, beginningText: setting.title }))
+                    this.settings[index].percentage = (-setting.from + setting.start) / (-setting.from + setting.to)
+                    this.settings[index].value = setting.start
+                }
             })
         }
         if (!this.hosting) {
@@ -432,12 +445,23 @@ class OnlineLobby{
         this.startButton.disabled = Object.entries(this.host.clients).length === 0 || 
             !this.players.every(player => player.textInput.htmlElement.style.backgroundColor === "")
         this.startButton.update();
+
+        this.settings.forEach((setting, index) => {
+            if (settings[index].needed) {
+                setting.disabled = !this.settings[settings.map(e => e.variable).indexOf(settings[index].needed)].selected;
+                setting.selected = !this.settings[settings.map(e => e.variable).indexOf(settings[index].needed)].selected ? false : setting.selected
+            }
+            setting.update()
+        });
         
-        c.drawText("Id: " + this.host.id, 360, 55, 40)
-        if (detectCollision(360,10,300,100,mouse.x,mouse.y,1,1) && mouse.down) {
-            mouse.down = false
-            //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.host.id}`)
-            navigator.clipboard.writeText(this.host.id)
+        c.drawText("Id: " + this.host.id, 250, canvas.height - 30, 30)
+        if (detectCollision(240, canvas.height - 60, 180, 40,mouse.x,mouse.y,1,1)) {
+            c.drawText("Id: " + this.host.id, 250, canvas.height - 30, 30,"left","blue")
+            if(mouse.down) {
+                mouse.down = false
+                //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.host.id}`)
+                navigator.clipboard.writeText(this.host.id)
+            }
         }        
     }
 }
