@@ -297,9 +297,8 @@ class OnlineLobby{
             this.startButton = new Button({ x: 10 + 100, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, () => {
                 let tmp = []
 
-                for (let i = 0; i < Object.entries(this.host.clients).length; i++) {
+                for (let i = 0; i <= Object.entries(this.host.clients).length; i++) {
                     let player = this.players[i]
-                    if (player.textInput.htmlElement.style.backgroundColor !== '') continue
 
                     tmp.push({
                         name: player.textInput.value,
