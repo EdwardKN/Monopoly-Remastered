@@ -259,6 +259,8 @@ function connectToHost(hostId) {
                     player.textInput.htmlElement.style.backgroundColor = newPlayer.selected ? "" : "white"
                     if (player.selected) player.confirmButton.onClick(true)
                 }
+
+                if (currentMenu.currentMenu) player.colorButton.onClick()
             }
         })
     })
