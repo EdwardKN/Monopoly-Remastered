@@ -293,6 +293,8 @@ class OnlineLobby{
     constructor(hosting,id){
         this.hosting = hosting
         this.players = []
+        this.settings = []
+
         if (this.hosting) {
             this.host = createHost()
             this.initPlayers(8)
@@ -312,23 +314,22 @@ class OnlineLobby{
                 currentMenu = undefined
             })
 
-            this.settings = []
             settings.forEach((setting, index,) => {
                 let length = settings.length;
                 if (setting.type == "select") {
-                    this.settings.push(new Button({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, selectButton: true, text: setting.title, textSize: c.getFontSize(setting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting));
+                    this.settings.push(new Button({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, selectButton: true, text: setting.title, textSize: c.getFontSize(setting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting, () => sendPlayers(this.host)));
                     this.settings[index].selected = setting.start;
                 } else if (setting.type == "slider") {
-                    this.settings.push(new Slider({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, from: setting.from, to: setting.to, unit: setting.unit, steps: setting.steps, beginningText: setting.title }))
+                    this.settings.push(new Slider({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, from: setting.from, to: setting.to, unit: setting.unit, steps: setting.steps, beginningText: setting.title }, () => sendPlayers(this.host)))
                     this.settings[index].percentage = (-setting.from + setting.start) / (-setting.from + setting.to)
                     this.settings[index].value = setting.start
                 }
             })
-        }
-        if (!this.hosting) {
+        } else {
             this.client = connectToHost(id)
             this.initPlayers(1)
         }
+        
         this.selectedColors = []
         this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back, () => {
             if (this.host) Object.values(this.host.clients).forEach(client => client.connection.close())
@@ -373,11 +374,12 @@ class OnlineLobby{
             );
             let player = this.players[i]
 
-            player.textInput.htmlElement.disabled = true
-            player.colorButton.disabled = true
-            player.colorButton.disableDisabledTexture = true
-
-            if (i > 0) continue
+            if (i !== 0) {
+                player.textInput.htmlElement.disabled = true
+                player.colorButton.disabled = true
+                player.colorButton.disableDisabledTexture = true
+                continue
+            }
 
             player.textInput.htmlElement.style.backgroundColor = "white"
             player.textInput.htmlElement.oninput = () => {
@@ -440,19 +442,20 @@ class OnlineLobby{
         })
         
         this.currentMenu?.draw()
-        if (!this.hosting) return
-
-        this.startButton.disabled = Object.entries(this.host.clients).length === 0 || 
-            !this.players.every(player => player.textInput.htmlElement.style.backgroundColor === "")
-        this.startButton.update();
 
         this.settings.forEach((setting, index) => {
-            if (settings[index].needed) {
+            if (this.hosting && settings[index].needed) {
                 setting.disabled = !this.settings[settings.map(e => e.variable).indexOf(settings[index].needed)].selected;
                 setting.selected = !this.settings[settings.map(e => e.variable).indexOf(settings[index].needed)].selected ? false : setting.selected
             }
             setting.update()
         });
+
+        if (!this.hosting) return
+
+        this.startButton.disabled = Object.entries(this.host.clients).length === 0 || 
+            !this.players.every(player => player.textInput.htmlElement.style.backgroundColor === "")
+        this.startButton.update();
         
         c.drawText("Id: " + this.host.id, 250, canvas.height - 30, 30)
         if (detectCollision(240, canvas.height - 60, 180, 40,mouse.x,mouse.y,1,1)) {

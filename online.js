@@ -202,7 +202,11 @@ function sendPlayers(peer, updatedClient, text, color, selected) {
         if (client === updatedClient) continue // Don't send to updated client
 
         let data = data_players.filter(player => peer.clients[player.placeHolder] !== client) // Dont include self
-        sendMessage(client.connection, "players", data)
+        sendMessage(client.connection, "players", {
+            players: data,
+            settings: currentMenu.settings
+            .map(e => e.constructor.name === "Button" ? e.selected : { percentage: e.percentage, value: e.value } ) 
+        })
     }
 }
 
@@ -247,12 +251,15 @@ function connectToHost(hostId) {
                 }
             }
             if (type === "players") {
-                currentMenu.players.splice(1)
-                currentMenu.initPlayers(data.length)
+                const players = data.players
 
-                for (let i = 1; i < data.length + 1; i++) {
+                // Players
+                currentMenu.players.splice(1)
+                currentMenu.initPlayers(players.length)
+
+                for (let i = 1; i < players.length + 1; i++) {
                     let player = currentMenu.players[i]
-                    let newPlayer = data[i - 1]
+                    let newPlayer = players[i - 1]
                     player.textInput.htmlElement.value = newPlayer.name
                     player.selectedColor = newPlayer.color
                     player.textInput.htmlElement.setAttribute("placeHolder", newPlayer.placeHolder)
@@ -260,7 +267,25 @@ function connectToHost(hostId) {
                     if (player.selected) player.confirmButton.onClick(true)
                 }
 
-                if (currentMenu.currentMenu) player.colorButton.onClick()
+                if (currentMenu.currentMenu) player.colorButton.onClick() // Resize the width on htmlElements
+
+                // Settings
+                currentMenu.settings = []
+                let length = data.settings.length
+                data.settings.forEach((setting, index) => {
+                    const origSetting = settings[index]
+
+                    if (typeof setting === "boolean") { // Button
+                        currentMenu.settings.push(new Button({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, selectButton: true, text: origSetting.title, textSize: c.getFontSize(origSetting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting))
+                        currentMenu.settings[index].selected = setting
+                    } else { // Slider
+                        currentMenu.settings.push(new Slider({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, from: origSetting.from, to: origSetting.to, unit: origSetting.unit, steps: origSetting.steps, beginningText: origSetting.title }))
+                        currentMenu.settings[index].percentage = setting.percentage
+                        currentMenu.settings[index].value = setting.value
+                    }
+                    currentMenu.settings[index].disabled = true
+                    currentMenu.settings[index].disableDisabledTexture = true
+                })
             }
         })
     })
