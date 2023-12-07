@@ -179,13 +179,13 @@ function sendPlayers(peer, updatedClient, text, color, selected) {
         let player = currentMenu.players[i]
         let client = peer.clients[getPlaceHolder(player)]
 
+        
         if (client && client === updatedClient) {
             data_players.push({
                 name: text ?? player.textInput.htmlElement.value, // Text can be ''
                 color: color ?? player.selectedColor, // Color can be 0
                 selected: selected ?? player.textInput.htmlElement.disabled, // Selected can be false
                 placeHolder: getPlaceHolder(player),
-                settings: currentMenu.settings
             })
         } else {
             data_players.push({
@@ -193,9 +193,9 @@ function sendPlayers(peer, updatedClient, text, color, selected) {
                 color: player.selectedColor,
                 selected: player.textInput.htmlElement.disabled,
                 placeHolder: getPlaceHolder(player),
-                settings: currentMenu.settings
             })
         }
+        data_players[i].settings = currentMenu.settings.map(e => e.constructor.name === "Button" ? e.selected : e.percentage)
     }
 
     for (let client of clients) {
