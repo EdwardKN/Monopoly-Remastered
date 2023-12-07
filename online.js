@@ -81,10 +81,8 @@ function validPlayer(player, name, color) {
     if (name.length < 3) { valid = false; reason = "Username must be atleast 3 characters long" }
     
     else if (name.length > 15) { valid = false; reason = "Username must be at most 15 characters long" }
-    
-    else if (color === -1) { valid = false; reason = "Must have a selected color" }
-    
-    else if (tempColors.includes(color)) { valid = false; reason = "Color is already taken" }
+        
+    else if (color !== -1 && tempColors.includes(color)) { valid = false; reason = "Color is already taken" }
     
     else if (tempPlayers.some(p => p.textInput.htmlElement.style.backgroundColor === "" &&
         p.textInput.htmlElement.value === name)) { valid = false; reason = "Username is already taken" }

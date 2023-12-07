@@ -407,9 +407,7 @@ class OnlineLobby{
             player.colorButton.disableDisabledTexture = true
         }
     }
-    addPlayers(amount) {
 
-    }
     draw() {
         c.drawImageFromSpriteSheet(images.menus.lobbymenu);
         this.backButton.update();
@@ -427,9 +425,12 @@ class OnlineLobby{
             else player.kickButton?.draw()  
         })
         
-        this.startButton?.update()
         this.currentMenu?.draw()
         if (!this.hosting) return
+
+        this.startButton.disabled = Object.entries(this.host.clients).length === 0 || 
+            !this.players.every(player => player.textInput.htmlElement.style.backgroundColor === "")
+        this.startButton.update();
         
         c.drawText("Id: " + this.host.id, 360, 55, 40)
         if (detectCollision(360,10,300,100,mouse.x,mouse.y,1,1) && mouse.down) {
