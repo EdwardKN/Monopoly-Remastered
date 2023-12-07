@@ -184,14 +184,16 @@ function sendPlayers(peer, updatedClient, text, color, selected) {
                 name: text ?? player.textInput.htmlElement.value, // Text can be ''
                 color: color ?? player.selectedColor, // Color can be 0
                 selected: selected ?? player.textInput.htmlElement.disabled, // Selected can be false
-                placeHolder: getPlaceHolder(player)
+                placeHolder: getPlaceHolder(player),
+                settings: currentMenu.settings
             })
         } else {
             data_players.push({
                 name: player.textInput.htmlElement.value,
                 color: player.selectedColor,
                 selected: player.textInput.htmlElement.disabled,
-                placeHolder: getPlaceHolder(player)
+                placeHolder: getPlaceHolder(player),
+                settings: currentMenu.settings
             })
         }
     }
