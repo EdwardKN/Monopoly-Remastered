@@ -82,6 +82,7 @@ class Slider {
         this.value = 0;
         this.last = this.value;
         this.follow = false;
+        this.disabled = false;
         buttons.push(this)
 
         if (this.undefinedTextSize) {
@@ -96,7 +97,7 @@ class Slider {
                 this.textSize = c.getFontSize(this.beginningText + this.value + this.unit, this.w - 12, this.h - 4)
             }
         };
-        this.hover = detectCollision(this.x, this.y, this.w, this.h, mouse.x, mouse.y, 1, 1);
+        this.hover = detectCollision(this.x, this.y, this.w, this.h, mouse.x, mouse.y, 1, 1) && !this.disabled;
         if (mouse.down && this.hover) {
             mouse.down = false;
             this.follow = true;
