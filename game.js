@@ -359,52 +359,52 @@ class OnlineLobby{
             );
             let player = this.players[i]
 
-            if (i === 0) {
-                player.textInput.htmlElement.style.backgroundColor = "white"
-                player.textInput.htmlElement.oninput = () => {
-                    let text = player.textInput.htmlElement.value
-                    if (this.hosting) sendPlayers(this.host, text)
-                    else sendMessage(currentMenu.client.connection, "nameChange", text)
-                }
-
-                if (this.hosting) player.textInput.htmlElement.setAttribute("placeHolder", this.host.id)
-
-                player.confirmButton = new Button({
-                    x: 370,
-                    y: 82 + 48 * i,
-                    w: 40,
-                    h: 40
-                }, images.buttons.yes, (wrong) => {
-                    if (!wrong && this.host) {
-                        let [valid, name, reason] = validPlayer(player, player.textInput.value, player.selectedColor)
-                        if (!valid) {
-                            if (reason === "Color is already taken") player.selectedColor = -1
-                            player.confirmButton.onClick(true)
-                            alert(reason)
-                        } else player.textInput.htmlElement.value = name
-                    }
-
-                    let text = player.textInput.htmlElement
-                    text.disabled = !text.disabled
-                    if (text.disabled) {
-                        player.confirmButton.image = images.buttons.no
-                        player.colorButton.disabled = true
-                        text.style.backgroundColor = ''
-                    } else {
-                        player.confirmButton.image = images.buttons.yes
-                        player.colorButton.disabled = false
-                        text.style.backgroundColor = 'white'
-                    }
-                    if (this.host) sendPlayers(this.host, undefined, undefined, undefined, text.disabled)
-
-                    if (!wrong && !this.hosting) sendMessage(this.client.connection, text.disabled ? "select" : "deselect", { name: text.value, color: player.selectedColor })
-                })
-                continue
-            }
-
             player.textInput.htmlElement.disabled = true
             player.colorButton.disabled = true
             player.colorButton.disableDisabledTexture = true
+
+            if (i > 0) continue
+
+            player.textInput.htmlElement.style.backgroundColor = "white"
+            player.textInput.htmlElement.oninput = () => {
+                let text = player.textInput.htmlElement.value
+                if (this.hosting) sendPlayers(this.host, text)
+                else sendMessage(currentMenu.client.connection, "nameChange", text)
+            }
+
+            if (this.hosting) player.textInput.htmlElement.setAttribute("placeHolder", this.host.id)
+
+            player.confirmButton = new Button({
+                x: 370,
+                y: 82 + 48 * i,
+                w: 40,
+                h: 40
+            }, images.buttons.yes, (wrong) => {
+                if (!wrong && this.host) {
+                    let [valid, name, reason] = validPlayer(player, player.textInput.value, player.selectedColor)
+                    if (!valid) {
+                        if (reason === "Color is already taken") player.selectedColor = -1
+                        player.confirmButton.onClick(true)
+                        alert(reason)
+                    } else player.textInput.htmlElement.value = name
+                }
+
+                let text = player.textInput.htmlElement
+                text.disabled = !text.disabled
+                
+                if (text.disabled) {
+                    player.confirmButton.image = images.buttons.no
+                    player.colorButton.disabled = true
+                    text.style.backgroundColor = ''
+                } else {
+                    player.confirmButton.image = images.buttons.yes
+                    player.colorButton.disabled = false
+                    text.style.backgroundColor = 'white'
+                }
+
+                if (this.host) sendPlayers(this.host, undefined, undefined, undefined, text.disabled)
+                if (!wrong && !this.hosting) sendMessage(this.client.connection, text.disabled ? "select" : "deselect", { name: text.value, color: player.selectedColor })
+            })
         }
     }
     addPlayers(amount) {
