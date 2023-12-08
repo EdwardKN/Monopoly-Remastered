@@ -148,9 +148,9 @@ function resetReady() {
 
 function readyUp() {
     if (!board.hosting) sendMessage(board.client.connection, "ready")
-    else allReadyCheck()
+    else addReady()
 }
-function addReady(){
+function addReady() {
     board.readyPlayers++
     if (board.readyPlayers === Object.entries(peer.clients).length + 1) {
         board.ready = true

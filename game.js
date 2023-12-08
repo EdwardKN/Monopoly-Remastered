@@ -875,8 +875,8 @@ class OnlineBoard extends Board {
         }
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(1, 1)
-            let dice2 = randomIntFromRange(5, 5)
+            let dice1 = randomIntFromRange(1, 6)
+            let dice2 = randomIntFromRange(1, 6)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll(this.host.clients, "throwDices", { dice1: dice1, dice2: dice2 })
@@ -1142,7 +1142,7 @@ class BuyableProperty extends BoardPiece {
         if (this.owner == undefined && players[turn].playing) {
             this.openCard();
             readyUp();
-        } else if (this.owner != players[turn] && !this.mortgaged) {
+        } else if (this.owner != undefined && this.owner != players[turn] && !this.mortgaged) {
             this.payRent();
         } else {
             readyUp();
@@ -1183,7 +1183,7 @@ class BuyableProperty extends BoardPiece {
         players[turn].money += this.info.housePrice / 2;
     }
     payRent() {
-        if (!(!this.owner.inPrison || board.settings.prisonpay)) return
+        if (!(!this?.owner?.inPrison || board.settings.prisonpay)) return
         let colorGroup = board.getColorGroup(this.info.group);
         currentMenu = new Bankcheck(players.indexOf(this.owner), turn, this.info.rent[this.level] * ((colorGroup.length == colorGroup.filter(e => e.owner == this.owner).length && board.settings.doublePay) ? 2 : 1), "Hyra")
         players[turn].lastPayment = this.owner;
