@@ -148,11 +148,18 @@ function resetReady() {
 
 function readyUp() {
     if (!board.hosting) sendMessage(board.client.connection, "ready")
-    else board.readyPlayers++;
+    else allReadyCheck()
+}
+function addReady(){
+    board.readyPlayers++
+    if (board.readyPlayers === Object.entries(peer.clients).length + 1) {
+        board.ready = true
+        sendMessageToAll(peer.clients, "ready")
+    }
 }
 
+const peer = new Peer(generateId(6), { debug: 1 })
 function createHost() {
-    const peer = new Peer(generateId(6), { debug: 1 })
     peer.clients = {}
 
     peer.on('connection', x => {
@@ -197,11 +204,7 @@ function createHost() {
 
 
             if (type === "ready") {
-                board.readyPlayers++
-                if (board.readyPlayers === Object.entries(peer.clients).length + 1) {
-                    board.ready = true
-                    sendMessageToAll(peer.clients, "ready")
-                }
+                addReady()
             }
             if (type === "requestDiceRoll") {
                 board.rollDiceButton.onClick()
