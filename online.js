@@ -1,7 +1,7 @@
 function generateId(length) {
     const ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     let id = ""
-    for (let _ = 0; _ < length; _++) { 
+    for (let _ = 0; _ < length; _++) {
         id += ALPHABET[Math.floor(Math.random() * ALPHABET.length)]
     }
     return id
@@ -28,7 +28,7 @@ function removeClient(peer, id) {
         let player = currentMenu.players[i]
         let prevPlayer = currentMenu.players[i - 1]
         if (i <= 1) continue
-        
+
         prevPlayer.selectedColor = player.selectedColor
         prevPlayer.kickButton.onClick = player.kickButton.onClick
         prevPlayer.textInput.htmlElement.value = player.textInput.htmlElement.value
@@ -38,7 +38,7 @@ function removeClient(peer, id) {
 
     peer.clients[id].connection.close()
     let player = currentMenu.players[values.length]
-    
+
     removeColor(player.selectedColor)
     player.selectedColor = -1
     player.textInput.htmlElement.value = ""
@@ -79,11 +79,11 @@ function validPlayer(player, name, color) {
     let reason = ""
     name = name.trim()
     if (name.length < 3) { valid = false; reason = "Username must be atleast 3 characters long" }
-    
+
     else if (name.length > 15) { valid = false; reason = "Username must be at most 15 characters long" }
-        
+
     else if (color !== -1 && tempColors.includes(color)) { valid = false; reason = "Color is already taken" }
-    
+
     else if (tempPlayers.some(p => p.textInput.htmlElement.style.backgroundColor === "" &&
         p.textInput.htmlElement.value === name)) { valid = false; reason = "Username is already taken" }
 
@@ -93,7 +93,7 @@ function validPlayer(player, name, color) {
 function waitForOpenConnection(client, callback) {
     const checkConnection = () => {
         if (client.connection.open) callback()
-        else requestAnimationFrame(checkConnection) 
+        else requestAnimationFrame(checkConnection)
     }
 
     checkConnection()
@@ -111,7 +111,7 @@ function sendPlayers(peer, updatedClient, text, color, selected) {
         let player = currentMenu.players[i]
         let client = peer.clients[getPlaceHolder(player)]
 
-        
+
         if (client && client === updatedClient) {
             data_players.push({
                 name: text ?? player.textInput.htmlElement.value, // Text can be ''
@@ -137,7 +137,7 @@ function sendPlayers(peer, updatedClient, text, color, selected) {
         sendMessage(client.connection, "players", {
             players: data,
             settings: currentMenu.settings
-            .map(e => e.constructor.name === "Button" ? e.selected : { percentage: e.percentage, value: e.value } ) 
+                .map(e => e.constructor.name === "Button" ? e.selected : { percentage: e.percentage, value: e.value })
         })
     }
 }
@@ -180,16 +180,16 @@ function createHost() {
                 sendPlayers(peer, undefined, undefined, undefined, undefined)
             })
         })
-        
+
         x.on('close', () => {
             removeClient(peer, id)
         })
-    
+
         x.on('data', (response) => {
             const client = peer.clients[id] //
             const idx = getIndexFromObject(peer.clients, id) + 1
             let player
-            if (currentMenu instanceof OnlineLobby) player = currentMenu.players[idx] 
+            if (currentMenu instanceof OnlineLobby) player = currentMenu.players[idx]
             const type = response.type
             const data = response.data
             console.log(response)
@@ -220,7 +220,7 @@ function createHost() {
             }
             if (type === 'select') {
                 let [valid, name, reason] = validPlayer(player, data.name, data.color)
-                
+
                 sendMessage(client.connection, "select", { valid: valid, name: name, reason: reason })
                 sendPlayers(peer, client, undefined, undefined, valid)
                 if (!valid) return
@@ -274,11 +274,13 @@ function connectToHost(hostId) {
             }
             if (type === "throwDices") {
                 board.rollDice(data.dice1, data.dice2)
+                resetReady();
             }
             if (type === "nextPlayer") {
                 board.nextPlayer()
+                resetReady();
             }
-            if(type === "buyProperty"){
+            if (type === "buyProperty") {
                 board.boardPieces[data].buy(false);
             }
 
@@ -335,7 +337,7 @@ function connectToHost(hostId) {
                     currentMenu.settings[index].disableDisabledTexture = true
                 })
             }
-            
+
         })
     })
 

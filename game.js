@@ -301,8 +301,6 @@ class PublicGames {
 }
 
 /*
-dBuyproperty,
-Payrent
 Community chest
 Chance
 Prison
@@ -314,8 +312,8 @@ Sellhouse
 Auction
 Trade
 */
-class OnlineLobby{
-    constructor(hosting,id){
+class OnlineLobby {
+    constructor(hosting, id) {
         this.hosting = hosting
         this.players = []
         this.settings = []
@@ -355,47 +353,47 @@ class OnlineLobby{
             this.client = connectToHost(id)
             this.initPlayers(1)
         }
-        
+
         this.selectedColors = []
-        this.backButton = new Button({x:10,y:10,w:325,h:60},images.buttons.back, () => {
+        this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, () => {
             if (this.host) Object.values(this.host.clients).forEach(client => client.connection.close())
             else if (this.client) this.client.connection.close()
             currentMenu = new PublicGames()
         })
         this.prev = -1
     }
-    initPlayers(amount){
+    initPlayers(amount) {
         let self = this;
         let off = this.players.length
-        for(let i = off; i<amount+off; i++){
+        for (let i = off; i < amount + off; i++) {
             this.players.push(
                 {
-                    textInput: new TextInput({x:10,y:80 + 48*i,w:300,h:45, maxLength:15,textSize:40}),
-                    colorButton: new Button({x:320,y:82+48*i,w:40,h:40, selectButton:true,disableSelectTexture:true,disableDisabledTexture:true},images.playercolorbuttons.unselected,function(){
-                        self.players.forEach((e,index) => {
-                            if(index != i){e.colorButton.selected = false;}else{
+                    textInput: new TextInput({ x: 10, y: 80 + 48 * i, w: 300, h: 45, maxLength: 15, textSize: 40 }),
+                    colorButton: new Button({ x: 320, y: 82 + 48 * i, w: 40, h: 40, selectButton: true, disableSelectTexture: true, disableDisabledTexture: true }, images.playercolorbuttons.unselected, function () {
+                        self.players.forEach((e, index) => {
+                            if (index != i) { e.colorButton.selected = false; } else {
                                 self.players.forEach((b) => {
                                     b.textInput.w = 300;
                                 })
-                                if(index >= 4){
-                                    self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30-40,-62+48*(i+1),e,self.selectedColors) : undefined;
-                                   
-                                    if(self.currentMenu){
-                                        self.players[index-1].textInput.w = 230;
-                                        self.players[index-2].textInput.w = 230;
+                                if (index >= 4) {
+                                    self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30 - 40, -62 + 48 * (i + 1), e, self.selectedColors) : undefined;
+
+                                    if (self.currentMenu) {
+                                        self.players[index - 1].textInput.w = 230;
+                                        self.players[index - 2].textInput.w = 230;
                                     }
-                                }else{
-                                    self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30-40,82+48*(i+1),e,self.selectedColors) : undefined;
-                                    
-                                    if(self.currentMenu){
+                                } else {
+                                    self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30 - 40, 82 + 48 * (i + 1), e, self.selectedColors) : undefined;
+
+                                    if (self.currentMenu) {
                                         if (self.players[index + 1]) self.players[index + 1].textInput.w = 230;
                                         if (self.players[index + 2]) self.players[index + 2].textInput.w = 230;
                                     }
                                 }
                             }
-                        }); 
+                        });
                     }),
-                    selectedColor:-1
+                    selectedColor: -1
                 }
             );
             let player = this.players[i]
@@ -433,7 +431,7 @@ class OnlineLobby{
 
                 let text = player.textInput.htmlElement
                 text.disabled = !text.disabled
-                
+
                 if (text.disabled) {
                     player.confirmButton.image = images.buttons.no
                     player.colorButton.disabled = true
@@ -453,20 +451,20 @@ class OnlineLobby{
     draw() {
         c.drawImageFromSpriteSheet(images.menus.lobbymenu);
         this.backButton.update();
-        this.players.forEach(player =>{
+        this.players.forEach(player => {
             player.textInput.draw();
-            player.colorButton.image = images.playercolorbuttons[(player.selectedColor == -1 ? "unselected" : "playercolorbutton" + (player.selectedColor == 0 ? "" : player.selectedColor+1))]
-            if(self.currentMenu?.hover){
+            player.colorButton.image = images.playercolorbuttons[(player.selectedColor == -1 ? "unselected" : "playercolorbutton" + (player.selectedColor == 0 ? "" : player.selectedColor + 1))]
+            if (self.currentMenu?.hover) {
                 player.colorButton.draw();
                 player.confirmButton?.draw()
-            }else{
+            } else {
                 player.colorButton.update();
                 player.confirmButton?.update()
             }
             if (!(this.currentMenu instanceof ColorSelector)) player.kickButton?.update()
-            else player.kickButton?.draw()  
+            else player.kickButton?.draw()
         })
-        
+
         this.currentMenu?.draw()
 
         this.settings.forEach((setting, index) => {
@@ -479,22 +477,22 @@ class OnlineLobby{
 
         if (!this.hosting) return
 
-        this.startButton.disabled = Object.entries(this.host.clients).length === 0 || 
+        this.startButton.disabled = Object.entries(this.host.clients).length === 0 ||
             !this.players.every(player => player.textInput.htmlElement.style.backgroundColor === "")
         this.startButton.update();
-        
+
         c.drawText("Id: " + this.host.id, 250, canvas.height - 30, 30)
-        if (detectCollision(240, canvas.height - 60, 180, 40,mouse.x,mouse.y,1,1)) {
-            c.drawText("Id: " + this.host.id, 250, canvas.height - 30, 30,"left","blue")
-            if(mouse.down) {
+        if (detectCollision(240, canvas.height - 60, 180, 40, mouse.x, mouse.y, 1, 1)) {
+            c.drawText("Id: " + this.host.id, 250, canvas.height - 30, 30, "left", "blue")
+            if (mouse.down) {
                 mouse.down = false
                 //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.host.id}`)
                 navigator.clipboard.writeText(this.host.id)
 
                 currentMenu.players[0].textInput.htmlElement.value = "Player 1" // TEMP
-                setTimeout(() => { currentMenu.players[0].confirmButton.onClick()}, 100) // TEMP
+                setTimeout(() => { currentMenu.players[0].confirmButton.onClick() }, 100) // TEMP
             }
-        }        
+        }
     }
 }
 class LobbyMenu {
@@ -821,13 +819,13 @@ class Board {
 
         if (this.dices.hidden && !currentMenu && (this.playerIsWalkingTo == false)) {
             this.menuButton.update();
-            if(players[turn].playing && board.ready){
+            if (players[turn].playing && board.ready) {
                 if (!this.playerHasRolled) {
                     this.rollDiceButton.update();
                 } else {
                     this.nextPlayerButton.update();
                 }
-            } 
+            }
         }
 
         for (let i = 20; i >= 0; i--) {
@@ -877,8 +875,8 @@ class OnlineBoard extends Board {
         }
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(1, 6)
-            let dice2 = randomIntFromRange(1, 6)
+            let dice1 = randomIntFromRange(1, 1)
+            let dice2 = randomIntFromRange(5, 5)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll(this.host.clients, "throwDices", { dice1: dice1, dice2: dice2 })
@@ -901,7 +899,7 @@ class OnlineBoard extends Board {
         board.playerHasRolled = true;
     }
 
-    updateOnlineBoard(){
+    updateOnlineBoard() {
 
     }
 
@@ -1061,6 +1059,7 @@ class Corner extends BoardPiece {
         })
     }
     step() {
+        readyUp();
         if (this.n == 30) {
             currentMenu = new CardDraw("special", 0)
         }
@@ -1142,20 +1141,23 @@ class BuyableProperty extends BoardPiece {
     step() {
         if (this.owner == undefined && players[turn].playing) {
             this.openCard();
+            readyUp();
         } else if (this.owner != players[turn] && !this.mortgaged) {
             this.payRent();
+        } else {
+            readyUp();
         }
     }
     buy(request = true) {
-        if(request){
+        if (request) {
             if (board.hosting) {
                 sendMessageToAll(board.host.clients, "buyProperty", this.n)
             } else {
                 sendMessage(board.client.connection, "requestBuyProperty", this.n)
             }
         }
-        
-        
+
+
         players[turn].money -= this.info.price;
         board.money += board.settings.giveAllToParking ? this.info.price : 0;
         this.owner = players[turn];
@@ -1181,7 +1183,6 @@ class BuyableProperty extends BoardPiece {
         players[turn].money += this.info.housePrice / 2;
     }
     payRent() {
-        if(!players[turn].playing) return;
         if (!(!this.owner.inPrison || board.settings.prisonpay)) return
         let colorGroup = board.getColorGroup(this.info.group);
         currentMenu = new Bankcheck(players.indexOf(this.owner), turn, this.info.rent[this.level] * ((colorGroup.length == colorGroup.filter(e => e.owner == this.owner).length && board.settings.doublePay) ? 2 : 1), "Hyra")
@@ -1192,9 +1193,12 @@ class Station extends BuyableProperty {
     step() {
         if (this.owner == undefined && players[turn].playing) {
             this.openCard();
+            readyUp();
         } else if (this.owner != players[turn] && players[turn].playing) {
             this.level = (this.owner.ownedPlaces.filter(e => e.constructor.name == "Station").length) - 1;
             this.payRent();
+        } else {
+            readyUp();
         }
     }
 }
@@ -1446,6 +1450,7 @@ class Bankcheck {
             this.doCard();
         }
         if (this.xPos < -512) {
+            readyUp();
             currentMenu = undefined;
         }
 
@@ -1631,7 +1636,7 @@ class PropertyCard {
         this.hasUpgradeButtons = !(board.boardPieces[this.n] instanceof Station || board.boardPieces[this.n] instanceof Utility);
 
         this.auctionButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 97, 0), y: canvas.height / 2 + 100, w: 97, h: 40 }, images.buttons.auction, function () { players[turn].hasBought = true; currentMenu = new Auction(self.n) });
-        this.buyButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 97, 1), y: canvas.height / 2 + 100, w: 97, h: 40 }, images.buttons.buythislawn, function (n) { 
+        this.buyButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 97, 1), y: canvas.height / 2 + 100, w: 97, h: 40 }, images.buttons.buythislawn, function (n) {
             self.buyThis();
         });
 
@@ -1867,7 +1872,7 @@ class PropertyCard {
 }
 
 class Player {
-    constructor(color, name,playing = true) {
+    constructor(color, name, playing = true) {
         this.color = color;
         this.pos = 0;
         this.money = board.settings.startMoney;
@@ -1957,8 +1962,10 @@ class Player {
         this.animateSteps(Math.abs(newPos), direction, function (steps) {
             if (board.boardPieces[self.pos]?.step) {
                 board.boardPieces[self.pos].step((noSteps ? undefined : steps));
+            } else {
+                readyUp();
             }
-            readyUp();
+
         });
     }
     animateSteps(newPos, direction, onStep) {
