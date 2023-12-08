@@ -709,6 +709,7 @@ class Board {
         this.playerIsWalkingTo = false;
         this.done = false;
         this.money = 0;
+        this.ready = true
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, this.rollDice)
         this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.nextplayer, this.nextPlayer);
@@ -900,16 +901,6 @@ class OnlineBoard extends Board {
 
 
 }
-/*
-Client:
-* Player positions
-* Player money
-* BoardPieces - Owners, houses,
-* Menu button
-* Next Player button
-* Throw dices button
-* Draw*/
-
 
 class PrisonMenu {
     constructor() {
@@ -1143,7 +1134,7 @@ class BuyableProperty extends BoardPiece {
             readyUp();
         }
     }
-    buy(request = true) {
+    buy(request = false) {
         if (request) {
             if (board.hosting) {
                 sendMessageToAll("buyProperty", this.n)
@@ -1487,13 +1478,13 @@ class Bankcheck {
 }
 
 class CardDraw {
-    constructor(type, cardId) {
+    constructor(type, cardId, rigged) {
         this.yPos = canvas.height;
         this.animationStep = 0;
 
         this.type = type;
         if (this.type !== "special" && this.type !== "textSpecial") {
-            this.cardId = randomIntFromRange(0, (this.type == "community") ? 12 : 13);
+            this.cardId = rigged ?? randomIntFromRange(0, (this.type == "community") ? 12 : 13);
 
             this.card = ((this.type == "community") ? communitycards[this.cardId] : chanceCards[this.cardId])
         } else if (this.type !== "textSpecial") {
@@ -1690,7 +1681,7 @@ class PropertyCard {
 
     };
     buyThis() {
-        board.boardPieces[this.n].buy()
+        board.boardPieces[this.n].buy(board instanceof OnlineBoard)
         this.closeCard();
     }
     sellThis() {
@@ -2080,8 +2071,8 @@ class Dice {
                 setTimeout(rollAnimation, counter);
             } else {
                 setTimeout(() => {
-                    board.dices.dice1 = rigged1
-                    board.dices.dice2 = rigged2
+                    if (rigged1) board.dices.dice1 = rigged1
+                    if (rigged2) board.dices.dice2 = rigged2
                     callback(rigged1 ?? self.dice1, rigged2 ?? self.dice2);
                 }, 1000);
             }

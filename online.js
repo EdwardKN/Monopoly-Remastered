@@ -17,6 +17,7 @@ function sendMessage(connection, _type, _data) {
 }
 
 function sendMessageToAll(_type, _data, exceptions = []) {
+    if (board instanceof Board) return
     for (let client of Object.values(peer.clients)) {
         if (!exceptions.includes(client)) sendMessage(client.connection, _type, _data)
     }
@@ -149,15 +150,18 @@ function sendPlayers(settings = {}) {
     }
 }
 function resetReady() {
+    if (board instanceof Board) return
     board.readyPlayers = 0
     board.ready = false
 }
 
 function readyUp() {
+    if (board instanceof Board) return
     if (!board.hosting) sendMessage(board.peer.connection, "ready")
     else addReady()
 }
 function addReady() {
+    if (board instanceof Board) return
     board.readyPlayers++
     if (board.readyPlayers === Object.entries(peer.clients).length + 1) {
         board.ready = true
