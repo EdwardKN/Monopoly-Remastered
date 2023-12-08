@@ -301,9 +301,8 @@ class PublicGames {
 }
 
 /*
-Ready system
+dBuyproperty,
 Payrent
-Buyproperty,
 Community chest
 Chance
 Prison
@@ -822,7 +821,7 @@ class Board {
 
         if (this.dices.hidden && !currentMenu && (this.playerIsWalkingTo == false)) {
             this.menuButton.update();
-            if(players[turn].playing){
+            if(players[turn].playing && board.ready){
                 if (!this.playerHasRolled) {
                     this.rollDiceButton.update();
                 } else {
@@ -1147,11 +1146,21 @@ class BuyableProperty extends BoardPiece {
             this.payRent();
         }
     }
-    buy() {
+    buy(request = true) {
+        if(request){
+            if (board.hosting) {
+                sendMessageToAll(board.host.clients, "buyProperty", this.n)
+            } else {
+                sendMessage(board.client.connection, "requestBuyProperty", this.n)
+            }
+        }
+        
+        
         players[turn].money -= this.info.price;
         board.money += board.settings.giveAllToParking ? this.info.price : 0;
         this.owner = players[turn];
         players[turn].ownedPlaces.push(this);
+        players[turn].hasBought = true;
     }
     sell() {
         players[turn].money += this.mortgaged ? 0 : this.info.price / 2;
@@ -1622,7 +1631,9 @@ class PropertyCard {
         this.hasUpgradeButtons = !(board.boardPieces[this.n] instanceof Station || board.boardPieces[this.n] instanceof Utility);
 
         this.auctionButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 97, 0), y: canvas.height / 2 + 100, w: 97, h: 40 }, images.buttons.auction, function () { players[turn].hasBought = true; currentMenu = new Auction(self.n) });
-        this.buyButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 97, 1), y: canvas.height / 2 + 100, w: 97, h: 40 }, images.buttons.buythislawn, function () { self.buyThis(); });
+        this.buyButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 97, 1), y: canvas.height / 2 + 100, w: 97, h: 40 }, images.buttons.buythislawn, function (n) { 
+            self.buyThis();
+        });
 
         if (!this.hasUpgradeButtons) {
             this.sellButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 40, 0), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj" }, images.buttons.sellbutton, function () { self.sellThis() })
@@ -1680,7 +1691,6 @@ class PropertyCard {
     };
     buyThis() {
         board.boardPieces[this.n].buy()
-        players[turn].hasBought = true;
         this.closeCard();
     }
     sellThis() {

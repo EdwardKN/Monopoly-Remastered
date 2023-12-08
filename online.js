@@ -209,6 +209,9 @@ function createHost() {
             if (type === "requestNextPlayer") {
                 board.nextPlayerButton.onClick()
             }
+            if (type === "requestBuyProperty") {
+                board.boardPieces[data].buy();
+            }
 
             if (type === 'deselect') {
                 removeColor(data.color)
@@ -274,6 +277,9 @@ function connectToHost(hostId) {
             }
             if (type === "nextPlayer") {
                 board.nextPlayer()
+            }
+            if(type === "buyProperty"){
+                board.boardPieces[data].buy(false);
             }
 
             if (type === "select") {
