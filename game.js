@@ -30,7 +30,7 @@ function exitGame() {
 
 function startGame(playersToStartGameWith, settings) {
     if (currentMenu instanceof LobbyMenu) window.onbeforeunload = saveGame;
-    board = currentMenu instanceof LobbyMenu ? new Board() : new OnlineBoard(currentMenu.hosting, currentMenu.host || currentMenu.client);
+    board = currentMenu instanceof LobbyMenu ? new Board() : new OnlineBoard(currentMenu.hosting, currentMenu.peer);
     board.settings = settings;
 
     let colorsToPick = [0, 1, 2, 3, 4, 5, 6, 7, 8]
@@ -48,7 +48,7 @@ function startGame(playersToStartGameWith, settings) {
     })
     if (board.hosting) {
         for (let i = 1; i < clientPlayers.length; i++) {
-            sendMessage(Object.values(board.host.clients)[i - 1].connection, "startGame", { players: clientPlayers, settings: settings, index: i })
+            sendMessage(Object.values(board.peer.clients)[i - 1].connection, "startGame", { players: clientPlayers, settings: settings, index: i })
         }
         players[0].playing = true
     }
@@ -319,11 +319,11 @@ class OnlineLobby {
         this.settings = []
 
         if (this.hosting) {
-            this.host = createHost()
+            this.peer = createHost()
             this.initPlayers(8)
             this.startButton = new Button({ x: 10, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, () => {
                 let tmpPlayers = []
-                for (let i = 0; i <= Object.entries(this.host.clients).length; i++) {
+                for (let i = 0; i <= Object.entries(this.peer.clients).length; i++) {
                     let player = this.players[i]
 
                     tmpPlayers.push({
@@ -341,23 +341,23 @@ class OnlineLobby {
             settings.forEach((setting, index,) => {
                 let length = settings.length;
                 if (setting.type == "select") {
-                    this.settings.push(new Button({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, selectButton: true, text: setting.title, textSize: c.getFontSize(setting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting, () => sendPlayers(this.host)));
+                    this.settings.push(new Button({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, selectButton: true, text: setting.title, textSize: c.getFontSize(setting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting, () => sendPlayers(this.peer)));
                     this.settings[index].selected = setting.start;
                 } else if (setting.type == "slider") {
-                    this.settings.push(new Slider({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, from: setting.from, to: setting.to, unit: setting.unit, steps: setting.steps, beginningText: setting.title }, () => sendPlayers(this.host)))
+                    this.settings.push(new Slider({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, from: setting.from, to: setting.to, unit: setting.unit, steps: setting.steps, beginningText: setting.title }, () => sendPlayers(this.peer)))
                     this.settings[index].percentage = (-setting.from + setting.start) / (-setting.from + setting.to)
                     this.settings[index].value = setting.start
                 }
             })
         } else {
-            this.client = connectToHost(id)
+            this.peer = connectToHost(id)
             this.initPlayers(1)
         }
 
         this.selectedColors = []
         this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, () => {
-            if (this.host) Object.values(this.host.clients).forEach(client => client.connection.close())
-            else if (this.client) this.client.connection.close()
+            if (this.hosting) Object.values(this.peer.clients).forEach(client => client.connection.close())
+            else this.peer.connection.close()
             currentMenu = new PublicGames()
         })
         this.prev = -1
@@ -408,11 +408,11 @@ class OnlineLobby {
             player.textInput.htmlElement.style.backgroundColor = "white"
             player.textInput.htmlElement.oninput = () => {
                 let text = player.textInput.htmlElement.value
-                if (this.hosting) sendPlayers(this.host, text)
-                else sendMessage(currentMenu.client.connection, "nameChange", text)
+                if (this.hosting) sendPlayers(this.peer, text)
+                else sendMessage(currentMenu.peer.connection, "nameChange", text)
             }
 
-            if (this.hosting) player.textInput.htmlElement.setAttribute("placeHolder", this.host.id)
+            if (this.hosting) player.textInput.htmlElement.setAttribute("placeHolder", this.peer.id)
 
             player.confirmButton = new Button({
                 x: 370,
@@ -420,7 +420,7 @@ class OnlineLobby {
                 w: 40,
                 h: 40
             }, images.buttons.yes, (wrong) => {
-                if (!wrong && this.host) {
+                if (!wrong && this.hosting) {
                     let [valid, name, reason] = validPlayer(player, player.textInput.value, player.selectedColor)
                     if (!valid) {
                         if (reason === "Color is already taken") player.selectedColor = -1
@@ -442,8 +442,8 @@ class OnlineLobby {
                     text.style.backgroundColor = 'white'
                 }
 
-                if (this.host) sendPlayers(this.host, undefined, undefined, undefined, text.disabled)
-                if (!wrong && !this.hosting) sendMessage(this.client.connection, text.disabled ? "select" : "deselect", { name: text.value, color: player.selectedColor })
+                if (this.hosting) sendPlayers(this.peer, undefined, undefined, undefined, text.disabled)
+                if (!wrong && !this.hosting) sendMessage(this.peer.connection, text.disabled ? "select" : "deselect", { name: text.value, color: player.selectedColor })
             })
         }
     }
@@ -477,17 +477,17 @@ class OnlineLobby {
 
         if (!this.hosting) return
 
-        this.startButton.disabled = Object.entries(this.host.clients).length === 0 ||
+        this.startButton.disabled = Object.entries(this.peer.clients).length === 0 ||
             !this.players.every(player => player.textInput.htmlElement.style.backgroundColor === "")
         this.startButton.update();
 
-        c.drawText("Id: " + this.host.id, 250, canvas.height - 30, 30)
+        c.drawText("Id: " + this.peer.id, 250, canvas.height - 30, 30)
         if (detectCollision(240, canvas.height - 60, 180, 40, mouse.x, mouse.y, 1, 1)) {
-            c.drawText("Id: " + this.host.id, 250, canvas.height - 30, 30, "left", "blue")
+            c.drawText("Id: " + this.peer.id, 250, canvas.height - 30, 30, "left", "blue")
             if (mouse.down) {
                 mouse.down = false
                 //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.host.id}`)
-                navigator.clipboard.writeText(this.host.id)
+                navigator.clipboard.writeText(this.peer.id)
 
                 currentMenu.players[0].textInput.htmlElement.value = "Player 1" // TEMP
                 setTimeout(() => { currentMenu.players[0].confirmButton.onClick() }, 100) // TEMP
@@ -636,14 +636,14 @@ class ColorSelector {
                             current = -1
                         }
                     };
-                    if (currentMenu.host) sendPlayers(currentMenu.host)
+                    if (currentMenu.hosting) sendPlayers(currentMenu.peer)
                 })
                 self.colorButtons.forEach((e, index) => {
                     e.disabled = !e.selected && self.selectedColors?.length > 0 && (self.selectedColors?.indexOf(index) != -1)
                 })
 
-                if (currentMenu.host) sendMessageToAll(currentMenu.host.clients, "selectedColors", currentMenu.selectedColors)
-                else if (currentMenu.client) sendMessage(currentMenu.client.connection, "colorChange", current)
+                if (currentMenu.hosting) sendMessageToAll(currentMenu.peer.clients, "selectedColors", currentMenu.selectedColors)
+                else sendMessage(currentMenu.peer.connection, "colorChange", current)
                 currentMenu.prev = current
             }))
             this.colorButtons[i].disabled = !this.colorButtons[i].selected && this.selectedColors?.length > 0 && (this.selectedColors?.indexOf(i) != -1) && i !== this.player.selectedColor
@@ -867,29 +867,24 @@ class OnlineBoard extends Board {
         this.hosting = hosting
         this.ready = true
         this.readyPlayers = 0
-
-        if (this.hosting) {
-            this.host = peer
-        } else {
-            this.client = peer
-        }
+        this.peer = peer
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
             let dice1 = randomIntFromRange(1, 6)
             let dice2 = randomIntFromRange(1, 6)
             if (this.hosting) {
                 resetReady()
-                sendMessageToAll(this.host.clients, "throwDices", { dice1: dice1, dice2: dice2 })
+                sendMessageToAll(this.peer.clients, "throwDices", { dice1: dice1, dice2: dice2 })
                 this.rollDice(dice1, dice2)
-            } else sendMessage(this.client.connection, "requestDiceRoll")
+            } else sendMessage(this.peer.connection, "requestDiceRoll")
         })
         this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.nextplayer, () => {
             if (this.hosting) {
                 resetReady()
-                sendMessageToAll(this.host.clients, "nextPlayer")
+                sendMessageToAll(this.peer.clients, "nextPlayer")
                 this.nextPlayer()
             } else {
-                sendMessage(this.client.connection, "requestNextPlayer")
+                sendMessage(this.peer.connection, "requestNextPlayer")
             }
         });
 
@@ -1151,9 +1146,9 @@ class BuyableProperty extends BoardPiece {
     buy(request = true) {
         if (request) {
             if (board.hosting) {
-                sendMessageToAll(board.host.clients, "buyProperty", this.n)
+                sendMessageToAll(board.peer.clients, "buyProperty", this.n)
             } else {
-                sendMessage(board.client.connection, "requestBuyProperty", this.n)
+                sendMessage(board.peer.connection, "requestBuyProperty", this.n)
             }
         }
 

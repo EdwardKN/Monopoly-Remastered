@@ -147,7 +147,7 @@ function resetReady() {
 }
 
 function readyUp() {
-    if (!board.hosting) sendMessage(board.client.connection, "ready")
+    if (!board.hosting) sendMessage(board.peer.connection, "ready")
     else addReady()
 }
 function addReady() {
