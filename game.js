@@ -29,25 +29,35 @@ function exitGame() {
 }
 
 function startGame(playersToStartGameWith, settings) {
-    if (currentMenu instanceof LobbyMenu || currentMenu.host) window.onbeforeunload = saveGame;
-    board = currentMenu instanceof LobbyMenu ? new Board() : new OnlineBoard(currentMenu.hosting, currentMenu.host);
+    if (currentMenu instanceof LobbyMenu) window.onbeforeunload = saveGame;
+    board = currentMenu instanceof LobbyMenu ? new Board() : new OnlineBoard(currentMenu.hosting, currentMenu.host || currentMenu.client);
     board.settings = settings;
-    
+
     let colorsToPick = [0, 1, 2, 3, 4, 5, 6, 7, 8]
     playersToStartGameWith.forEach(player => { if (player.color !== -1) colorsToPick.splice(colorsToPick.indexOf(player.color), 1) })
 
-    playersToStartGameWith.forEach(player => {
+    let clientPlayers = []
+    playersToStartGameWith.forEach((player, i) => {
         if (player.color != -1) {
-            players.push(new Player(player.color, player.name));
+            players.push(new Player(player.color, player.name, currentMenu instanceof LobbyMenu));
+            clientPlayers.push({ name: player.name, color: player.color })
         } else {
             addRandomPlayer(player.name);
+            clientPlayers.push({ name: player.name, color: players[players.length - 1].color })
         }
     })
+    if (board.hosting) {
+        for (let i = 1; i < clientPlayers.length; i++) {
+            sendMessage(Object.values(board.host.clients)[i - 1].connection, "startGame", { players: clientPlayers, settings: settings, index: i })
+        }
+        players[0].playing = true
+    }
+    else currentMenu = undefined
 }
 
-function addRandomPlayer(name) {
+function addRandomPlayer(name, i) {
     let random = randomIntFromRange(0, colorsToPick.length - 1);
-    players.push(new Player(colorsToPick[random], name));
+    players.push(new Player(colorsToPick[random], name, currentMenu instanceof LobbyMenu));
     colorsToPick.splice(random, 1);
 }
 
@@ -289,6 +299,22 @@ class PublicGames {
         this.hostButton.update();
     }
 }
+
+/*
+Ready system
+Payrent
+Buyproperty,
+Community chest
+Chance
+Prison
+Sellproperty
+Mortgage
+Unmortgage
+Buyhouse
+Sellhouse
+Auction
+Trade
+*/
 class OnlineLobby{
     constructor(hosting,id){
         this.hosting = hosting
@@ -710,6 +736,8 @@ class Board {
         if (players[turn].inPrison) {
             currentMenu = new PrisonMenu();
         }
+        readyUp();
+
     }
     getColorGroup(group) {
         return this.boardPieces.filter(e => e?.info?.group == group);
@@ -776,7 +804,6 @@ class Board {
             exitGame();
         }
         this.drawBack();
-        console.log(players)
         this.boardPieces.forEach(e => e.draw());
 
         this.boardPieces.forEach(e => { if (e.owner && e.constructor.name == "BuyableProperty") e.drawHouses() })
@@ -795,12 +822,13 @@ class Board {
 
         if (this.dices.hidden && !currentMenu && (this.playerIsWalkingTo == false)) {
             this.menuButton.update();
-
-            if (!this.playerHasRolled) {
-                this.rollDiceButton.update();
-            } else {
-                this.nextPlayerButton.update();
-            }
+            if(players[turn].playing){
+                if (!this.playerHasRolled) {
+                    this.rollDiceButton.update();
+                } else {
+                    this.nextPlayerButton.update();
+                }
+            } 
         }
 
         for (let i = 20; i >= 0; i--) {
@@ -840,71 +868,56 @@ class OnlineBoard extends Board {
     constructor(hosting, peer) {
         super()
         this.hosting = hosting
+        this.ready = true
+        this.readyPlayers = 0
+
         if (this.hosting) {
             this.host = peer
         } else {
             this.client = peer
-            this.playing = false
         }
+
+        this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
+            let dice1 = randomIntFromRange(1, 6)
+            let dice2 = randomIntFromRange(1, 6)
+            if (this.hosting) {
+                resetReady()
+                sendMessageToAll(this.host.clients, "throwDices", { dice1: dice1, dice2: dice2 })
+                this.rollDice(dice1, dice2)
+            } else sendMessage(this.client.connection, "requestDiceRoll")
+        })
+        this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.nextplayer, () => {
+            if (this.hosting) {
+                resetReady()
+                sendMessageToAll(this.host.clients, "nextPlayer")
+                this.nextPlayer()
+            } else {
+                sendMessage(this.client.connection, "requestNextPlayer")
+            }
+        });
+
+    }
+    rollDice(rigged1, rigged2) {
+        players[turn].rollDice(rigged1, rigged2);
+        board.playerHasRolled = true;
+    }
+
+    updateOnlineBoard(){
+
     }
 
 
-    update() {
-        if (players.filter(e => !e.dead).length == 1) {
-            this.done = true;
-            exitGame();
-        }
-        this.drawBack();
-
-        this.boardPieces.forEach(e => e.draw());
-
-        this.boardPieces.forEach(e => { if (e.owner && e.constructor.name == "BuyableProperty") e.drawHouses() })
-        this.boardPieces.forEach(e => { if (e.hover) { hoverList.push(e.info.name + (e.owner !== undefined ? "(" + e.owner.name + ")" : "")) } });
-
-        c.drawText("Just nu:" + players[turn].name, canvas.width / 2, 30, c.getFontSize("Just nu:" + players[turn].name, 240, 30), "center", players[turn].info.color)
-
-        if (this.settings.giveAllTaxToParking) {
-            c.drawText(this.money + "kr", canvas.width / 2, 60, 20, "center", "gold")
-        }
-
-        this.dices.draw();
-
-        this.nextPlayerButton.disabled = players[turn].money < 0;
-
-
-        if (this.dices.hidden && !currentMenu && (this.playerIsWalkingTo == false)) {
-            this.menuButton.update();
-
-            if (!this.playerHasRolled) {
-                this.rollDiceButton.update();
-            } else {
-                this.nextPlayerButton.update();
-            }
-        }
-
-        for (let i = 20; i >= 0; i--) {
-            if (i < 10) {
-                board.boardPieces[i].playersOnBoardPiece.forEach(e => e.draw());
-            } else {
-                let length = board.boardPieces[i].playersOnBoardPiece.length - 1;
-                for (let i2 = length; i2 >= 0; i2--) {
-                    board.boardPieces[i].playersOnBoardPiece[i2].draw();
-                }
-            }
-        }
-        for (let i = 21; i < 40; i++) {
-            if (i >= 30) {
-                board.boardPieces[i].playersOnBoardPiece.forEach(e => e.draw());
-            } else {
-                let length = board.boardPieces[i].playersOnBoardPiece.length - 1;
-                for (let i2 = length; i2 >= 0; i2--) {
-                    board.boardPieces[i].playersOnBoardPiece[i2].draw();
-                }
-            }
-        }
-
-    }
 }
+/*
+Client:
+* Player positions
+* Player money
+* BoardPieces - Owners, houses,
+* Menu button
+* Next Player button
+* Throw dices button
+* Draw*/
+
 
 class PrisonMenu {
     constructor() {
@@ -1007,7 +1020,7 @@ class BoardPiece {
 
     draw() {
         let isometricMouse = { x: to_grid_coordinate(mouse.x, mouse.y).x, y: to_grid_coordinate(mouse.x, mouse.y).y }
-        this.hover = (this.info.price && !currentMenu && board.dices.hidden && ((Math.floor(this.n / 10) === 0 || Math.floor(this.n / 10) === 2) && isometricMouse.x > this.drawX + 64 && isometricMouse.x < this.drawX + 128 && isometricMouse.y > this.drawY - 64 && isometricMouse.y < this.drawY + 64 ||
+        this.hover = (players[turn].playing && this.info.price && !currentMenu && board.dices.hidden && ((Math.floor(this.n / 10) === 0 || Math.floor(this.n / 10) === 2) && isometricMouse.x > this.drawX + 64 && isometricMouse.x < this.drawX + 128 && isometricMouse.y > this.drawY - 64 && isometricMouse.y < this.drawY + 64 ||
             (Math.floor(this.n / 10) === 1 || Math.floor(this.n / 10) === 3) && isometricMouse.x > this.drawX + 32 && isometricMouse.x < this.drawX + 128 + 32 && isometricMouse.y > this.drawY - 32 && isometricMouse.y < this.drawY + 32
         ));
         if (this.hover && mouse.down) {
@@ -1128,7 +1141,7 @@ class BuyableProperty extends BoardPiece {
         currentMenu = new PropertyCard(this.n);
     }
     step() {
-        if (this.owner == undefined) {
+        if (this.owner == undefined && players[turn].playing) {
             this.openCard();
         } else if (this.owner != players[turn] && !this.mortgaged) {
             this.payRent();
@@ -1159,6 +1172,7 @@ class BuyableProperty extends BoardPiece {
         players[turn].money += this.info.housePrice / 2;
     }
     payRent() {
+        if(!players[turn].playing) return;
         if (!(!this.owner.inPrison || board.settings.prisonpay)) return
         let colorGroup = board.getColorGroup(this.info.group);
         currentMenu = new Bankcheck(players.indexOf(this.owner), turn, this.info.rent[this.level] * ((colorGroup.length == colorGroup.filter(e => e.owner == this.owner).length && board.settings.doublePay) ? 2 : 1), "Hyra")
@@ -1167,9 +1181,9 @@ class BuyableProperty extends BoardPiece {
 }
 class Station extends BuyableProperty {
     step() {
-        if (this.owner == undefined) {
+        if (this.owner == undefined && players[turn].playing) {
             this.openCard();
-        } else if (this.owner != players[turn]) {
+        } else if (this.owner != players[turn] && players[turn].playing) {
             this.level = (this.owner.ownedPlaces.filter(e => e.constructor.name == "Station").length) - 1;
             this.payRent();
         }
@@ -1177,7 +1191,7 @@ class Station extends BuyableProperty {
 }
 class Utility extends BuyableProperty {
     step(steps) {
-        if (this.owner == undefined) {
+        if (this.owner == undefined && players[turn].playing) {
             this.openCard();
         } else if (this.owner != players[turn]) {
             if (!(!this.owner.inPrison || board.settings.prisonpay)) return
@@ -1843,7 +1857,7 @@ class PropertyCard {
 }
 
 class Player {
-    constructor(color, name) {
+    constructor(color, name,playing = true) {
         this.color = color;
         this.pos = 0;
         this.money = board.settings.startMoney;
@@ -1857,6 +1871,7 @@ class Player {
         this.hasBought = false;
         this.dead = false;
         this.laps = 0;
+        this.playing = playing;
 
         this.moneyShowerThing = new Money(this);
 
@@ -1933,6 +1948,7 @@ class Player {
             if (board.boardPieces[self.pos]?.step) {
                 board.boardPieces[self.pos].step((noSteps ? undefined : steps));
             }
+            readyUp();
         });
     }
     animateSteps(newPos, direction, onStep) {
@@ -1984,7 +2000,7 @@ class Player {
         this.inPrison = false;
     }
 
-    rollDice() {
+    rollDice(rigged1, rigged2) {
         let self = this;
         this.hasBought = false;
 
@@ -1998,9 +2014,10 @@ class Player {
                 }
             }
             self.teleportTo(self.pos + dice1 + dice2);
-        })
+        }, rigged1, rigged2)
     }
 }
+
 class Money {
     constructor(player) {
         this.player = player;
@@ -2037,7 +2054,7 @@ class Dice {
         this.dice2Type = 0;
         this.hidden = true;
     }
-    roll(callback) {
+    roll(callback, rigged1, rigged2) {
         let self = this;
 
         this.hidden = false;
@@ -2046,12 +2063,14 @@ class Dice {
 
         let rollAnimation = function () {
             if (counter < 500) {
-                self.randomizeDice();
+                self.randomizeDice(rigged1, rigged2);
                 counter *= 1.2;
                 setTimeout(rollAnimation, counter);
             } else {
                 setTimeout(() => {
-                    callback(self.dice1, self.dice2);
+                    board.dices.dice1 = rigged1
+                    board.dices.dice2 = rigged2
+                    callback(rigged1 ?? self.dice1, rigged2 ?? self.dice2);
                 }, 1000);
             }
 

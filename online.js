@@ -141,6 +141,15 @@ function sendPlayers(peer, updatedClient, text, color, selected) {
         })
     }
 }
+function resetReady() {
+    board.readyPlayers = 0
+    board.ready = false
+}
+
+function readyUp() {
+    if (!board.hosting) sendMessage(board.client.connection, "ready")
+    else board.readyPlayers++;
+}
 
 function createHost() {
     const peer = new Peer(generateId(6), { debug: 1 })
@@ -177,12 +186,29 @@ function createHost() {
         })
     
         x.on('data', (response) => {
-            const client = peer.clients[id]
+            const client = peer.clients[id] //
             const idx = getIndexFromObject(peer.clients, id) + 1
-            const player = currentMenu.players[idx]
+            let player
+            if (currentMenu instanceof OnlineLobby) player = currentMenu.players[idx] 
             const type = response.type
             const data = response.data
             console.log(response)
+
+
+
+            if (type === "ready") {
+                board.readyPlayers++
+                if (board.readyPlayers === Object.entries(peer.clients).length + 1) {
+                    board.ready = true
+                    sendMessageToAll(peer.clients, "ready")
+                }
+            }
+            if (type === "requestDiceRoll") {
+                board.rollDiceButton.onClick()
+            }
+            if (type === "requestNextPlayer") {
+                board.nextPlayerButton.onClick()
+            }
 
             if (type === 'deselect') {
                 removeColor(data.color)
@@ -231,10 +257,24 @@ function connectToHost(hostId) {
         })
 
         x.on("data", (response) => {
-            const player = currentMenu.players[0]
+            const player = currentMenu?.players[0]
             const type = response.type
             const data = response.data
             console.log(response)
+
+            if (type === "ready") {
+                board.ready = true
+            }
+            if (type === "startGame") {
+                startGame(data.players, data.settings)
+                players[data.index].playing = true
+            }
+            if (type === "throwDices") {
+                board.rollDice(data.dice1, data.dice2)
+            }
+            if (type === "nextPlayer") {
+                board.nextPlayer()
+            }
 
             if (type === "select") {
                 if (!data.valid) {
@@ -289,9 +329,7 @@ function connectToHost(hostId) {
                     currentMenu.settings[index].disableDisabledTexture = true
                 })
             }
-            if (type === "startGame") {
-                startGame(data.players, data.settings)
-            }
+            
         })
     })
 
