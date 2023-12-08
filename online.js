@@ -1,3 +1,5 @@
+const peer = new Peer(generateId(6), { debug: 1 })
+
 function generateId(length) {
     const ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     let id = ""
@@ -14,13 +16,13 @@ function sendMessage(connection, _type, _data) {
     })
 }
 
-function sendMessageToAll(clients, _type, _data, exceptions = []) {
-    for (let client of Object.values(clients)) {
+function sendMessageToAll(_type, _data, exceptions = []) {
+    for (let client of Object.values(peer.clients)) {
         if (!exceptions.includes(client)) sendMessage(client.connection, _type, _data)
     }
 }
 
-function removeClient(peer, id) {
+function removeClient(id) {
     const idx = getIndexFromObject(peer.clients, id) + 1
     let values = Object.values(peer.clients)
 
@@ -47,7 +49,7 @@ function removeClient(peer, id) {
 
     delete player.kickButton
     delete peer.clients[id]
-    sendPlayers(peer, undefined, undefined, undefined, undefined)
+    sendPlayers()
 }
 
 function removeColor(colorIdx) {
@@ -101,7 +103,12 @@ function waitForOpenConnection(client, callback) {
 
 function getPlaceHolder(player) { return player.textInput.htmlElement.getAttribute("placeHolder") }
 
-function sendPlayers(peer, updatedClient, text, color, selected) {
+function sendPlayers(settings = {}) {
+    let updatedClient = settings.client
+    let text = settings.name
+    let color = settings.color
+    let selected = settings.selected
+
     let data_players = []
     let clients = Object.values(peer.clients)
 
@@ -154,11 +161,10 @@ function addReady() {
     board.readyPlayers++
     if (board.readyPlayers === Object.entries(peer.clients).length + 1) {
         board.ready = true
-        sendMessageToAll(peer.clients, "ready")
+        sendMessageToAll("ready")
     }
 }
 
-const peer = new Peer(generateId(6), { debug: 1 })
 function createHost() {
     peer.clients = {}
 
@@ -177,19 +183,19 @@ function createHost() {
                 y: 82 + 48 * idx,
                 w: 40,
                 h: 40
-            }, images.buttons.no, () => removeClient(peer, id))
+            }, images.buttons.no, () => removeClient(id))
 
             // Connnection
             peer.clients[id] = { connection: peer.connect(id) }
 
             waitForOpenConnection(peer.clients[id], () => {
                 sendMessage(peer.clients[id].connection, "selectedColors", currentMenu.selectedColors)
-                sendPlayers(peer, undefined, undefined, undefined, undefined)
+                sendPlayers()
             })
         })
 
         x.on('close', () => {
-            removeClient(peer, id)
+            removeClient(id)
         })
 
         x.on('data', (response) => {
@@ -219,13 +225,13 @@ function createHost() {
             if (type === 'deselect') {
                 removeColor(data.color)
                 player.textInput.htmlElement.style.backgroundColor = 'white'
-                sendMessageToAll(peer.clients, "selectedColors", currentMenu.selectedColors)
+                sendMessageToAll("selectedColors", currentMenu.selectedColors)
             }
             if (type === 'select') {
                 let [valid, name, reason] = validPlayer(player, data.name, data.color)
 
                 sendMessage(client.connection, "select", { valid: valid, name: name, reason: reason })
-                sendPlayers(peer, client, undefined, undefined, valid)
+                sendPlayers({ client: client, selected: valid })
                 if (!valid) return
 
                 // Update HTML
@@ -233,18 +239,17 @@ function createHost() {
                 player.textInput.htmlElement.style.backgroundColor = ""
                 addColor(data.color)
                 for (let p2 of currentMenu.players) if (player !== p2 && p2.selectedColor === data.color) p2.selectedColor = -1
-                sendMessageToAll(peer.clients, "selectedColors", currentMenu.selectedColors, [client])
+                sendMessageToAll("selectedColors", currentMenu.selectedColors, [client])
             }
-            if (type === "nameChange") { player.textInput.htmlElement.value = data; sendPlayers(peer, client, data, undefined, undefined) }
-            if (type === "colorChange") { player.selectedColor = data; sendPlayers(peer, client, undefined, data, undefined) }
+            if (type === "nameChange") { player.textInput.htmlElement.value = data; sendPlayers({ client: client, name: data }) }
+            if (type === "colorChange") { player.selectedColor = data; sendPlayers({ client: client, color: data }) }
         })
     })
     return peer
 }
 
 function connectToHost(hostId) {
-    let id = generateId(6)
-    const peer = new Peer(id, { debug: 1 })
+    const peer = new Peer(generateId(6), { debug: 1 })
 
     peer.on("open", id => {
         peer.connection = peer.connect(hostId)

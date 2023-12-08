@@ -642,7 +642,7 @@ class ColorSelector {
                     e.disabled = !e.selected && self.selectedColors?.length > 0 && (self.selectedColors?.indexOf(index) != -1)
                 })
 
-                if (currentMenu.hosting) sendMessageToAll(currentMenu.peer.clients, "selectedColors", currentMenu.selectedColors)
+                if (currentMenu.hosting) sendMessageToAll("selectedColors", currentMenu.selectedColors)
                 else sendMessage(currentMenu.peer.connection, "colorChange", current)
                 currentMenu.prev = current
             }))
@@ -874,14 +874,14 @@ class OnlineBoard extends Board {
             let dice2 = randomIntFromRange(1, 6)
             if (this.hosting) {
                 resetReady()
-                sendMessageToAll(this.peer.clients, "throwDices", { dice1: dice1, dice2: dice2 })
+                sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
                 this.rollDice(dice1, dice2)
             } else sendMessage(this.peer.connection, "requestDiceRoll")
         })
         this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.nextplayer, () => {
             if (this.hosting) {
                 resetReady()
-                sendMessageToAll(this.peer.clients, "nextPlayer")
+                sendMessageToAll("nextPlayer")
                 this.nextPlayer()
             } else {
                 sendMessage(this.peer.connection, "requestNextPlayer")
@@ -1146,7 +1146,7 @@ class BuyableProperty extends BoardPiece {
     buy(request = true) {
         if (request) {
             if (board.hosting) {
-                sendMessageToAll(board.peer.clients, "buyProperty", this.n)
+                sendMessageToAll("buyProperty", this.n)
             } else {
                 sendMessage(board.peer.connection, "requestBuyProperty", this.n)
             }
