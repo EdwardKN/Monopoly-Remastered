@@ -218,6 +218,15 @@ function createHost() {
             if (type === "ready") {
                 addReady()
             }
+            if (type === "requestBuyPrison") {
+                new PrisonMenu().payButton.onClick();
+            }
+            if (type === "requestRollPrison") {
+                new PrisonMenu().rollDiceButton.onClick();
+            }
+            if (type === "requestprisonCardPay") {
+                new PrisonMenu().cardButton.onClick();
+            }
             if (type === "requestCloseCard") {
                 currentMenu.okayButton.onClick();
             }
@@ -289,15 +298,23 @@ function connectToHost(hostId) {
             const data = response.data
             console.log(response)
 
+            if (type === "ready") {
+                board.ready = true
+            }
+            if (type === "buyPrison") {
+                new PrisonMenu().payButton.onClick(false);
+            }
+            if (type === "rollPrison") {
+                new PrisonMenu().rollDiceButton.onClick(false, data.rigged1, data.rigged2);
+            }
+            if (type === "prisonCardPay") {
+                new PrisonMenu().cardButton.onClick(false);
+            }
             if (type === "closeCard") {
                 currentMenu.okayButton.onClick(false);
             }
-
             if (type === "saveCardId") {
                 board.cardId = data
-            }
-            if (type === "ready") {
-                board.ready = true
             }
             if (type === "startGame") {
                 startGame(data.players, data.settings)
