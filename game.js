@@ -727,7 +727,7 @@ class Board {
             return;
         };
         board.playerHasRolled = false;
-        if (players[turn].inPrison) {
+        if (players[turn].inPrison && players[turn].playing) {
             currentMenu = new PrisonMenu();
         }
         readyUp();
@@ -868,8 +868,8 @@ class OnlineBoard extends Board {
         this.cardId
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(1, 6)
-            let dice2 = randomIntFromRange(1, 6)
+            let dice1 = randomIntFromRange(4, 4)
+            let dice2 = randomIntFromRange(3, 3)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
@@ -901,13 +901,29 @@ class OnlineBoard extends Board {
 
 class PrisonMenu {
     constructor() {
-        this.payButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 0), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisonpay, function () {
+        this.payButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 0), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisonpay, function (request = true) {
+            if (request && board instanceof OnlineBoard) {
+                if (board.hosting) {
+                    sendMessageToAll("buyPrison")
+                } else {
+                    sendMessage(board.peer.connection, "requestBuyPrison")
+                    return
+                }
+            }
             players[turn].money -= 50;
             board.money += board.settings.giveAllToParking ? 50 : 0;
             players[turn].getOutOfPrison();
             currentMenu = undefined;
         });
-        this.rollDiceButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 1), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisonrolldice, function () {
+        this.rollDiceButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 1), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisonrolldice, function (request = true, rigged1 = randomIntFromRange(1, 6), rigged2 = randomIntFromRange(1, 6)) {
+            if (request && board instanceof OnlineBoard) {
+                if (board.hosting) {
+                    sendMessageToAll("rollPrison", { rigged1: rigged1, rigged2: rigged2 })
+                } else {
+                    sendMessage(board.peer.connection, "requestRollPrison")
+                    return
+                }
+            }
             board.dices.roll(function (dice1, dice2) {
                 if (dice1 == dice2) {
                     players[turn].getOutOfPrison();
@@ -922,10 +938,18 @@ class PrisonMenu {
 
                     }
                 }
-            })
+            }, rigged1, rigged2)
             currentMenu = undefined;
         });
         this.cardButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 2), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisongetoutofjail, function () {
+            if (request && board instanceof OnlineBoard) {
+                if (board.hosting) {
+                    sendMessageToAll("prisonCardPay")
+                } else {
+                    sendMessage(board.peer.connection, "requestPrisonCardPay")
+                    return
+                }
+            }
             players[turn].getOutOfPrison();
             players[turn].prisonCards--;
             currentMenu = undefined;
@@ -1189,7 +1213,7 @@ class Utility extends BuyableProperty {
         if (this.owner == undefined) {
             this.openCard();
         } else if (this.owner != players[turn]) {
-            if (!(!this.owner.inPrison || board.settings.prisonpay)) return
+            if (!(!this.owner?.inPrison || board.settings.prisonpay)) return
             let amount = this.owner.ownedPlaces.filter(e => e.constructor.name == "Utility").length;
             if (steps == undefined) {
                 let self = this;
