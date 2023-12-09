@@ -215,7 +215,6 @@ function createHost() {
             const data = response.data
             console.log(response)
 
-
             if (type === "requestCommunityCard") {
                 let rigged = randomIntFromRange(0, 12)
                 board.cardId = rigged
@@ -240,6 +239,9 @@ function createHost() {
             }
             if (type === "requestSellProperty") {
                 board.boardPieces[data].sell(true)
+            }
+            if (type === "requestMortgage") {
+                board.boardPieces[data].mortgage(true)
             }
 
             if (type === 'deselect') {
@@ -329,6 +331,9 @@ function connectToHost(hostId) {
             }
             if (type === "sellProperty") {
                 board.boardPieces[data].sell()
+            }
+            if (type === "mortgage") {
+                board.boardPieces[data].mortgage()
             }
 
             if (type === "select") {

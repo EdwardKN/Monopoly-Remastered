@@ -301,12 +301,11 @@ class PublicGames {
 }
 
 /*
-Sellproperty
-Mortgage
-Unmortgage
 Buyhouse
-Prison
 Sellhouse
+
+Prison
+
 Auction
 Trade
 */
@@ -870,8 +869,8 @@ class OnlineBoard extends Board {
         this.cardId
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(4, 4)
-            let dice2 = randomIntFromRange(3, 3)
+            let dice1 = randomIntFromRange(2, 2)
+            let dice2 = randomIntFromRange(6, 6)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
@@ -1137,6 +1136,7 @@ class BuyableProperty extends BoardPiece {
                 sendMessageToAll("buyProperty", this.n)
             } else {
                 sendMessage(board.peer.connection, "requestBuyProperty", this.n)
+                return
             }
         }
 
@@ -1150,7 +1150,10 @@ class BuyableProperty extends BoardPiece {
     sell(request = false) {
         if (request) {
             if (board.hosting) sendMessageToAll("sellProperty", this.n)
-            else sendMessage(board.peer.connection, "requestSellProperty", this.n)
+            else {
+                sendMessage(board.peer.connection, "requestSellProperty", this.n)
+                return
+            }
         }
 
         players[turn].money += this.mortgaged ? 0 : this.info.price / 2;
@@ -1162,7 +1165,15 @@ class BuyableProperty extends BoardPiece {
         players[turn].money -= this.info.housePrice;
         board.money += board.settings.giveAllToParking ? this.info.housePrice : 0;
     }
-    mortgage() {
+    mortgage(request = false) {
+        if (request) {
+            if (board.hosting) sendMessageToAll("mortgage", this.n)
+            else {
+                sendMessage(board.peer.connection, "requestMortgage", this.n)
+                return
+            }
+        }
+
         this.mortgaged = !this.mortgaged;
         players[turn].money += (this.mortgaged ? this.info.price / 2 : -(this.info.price / 2) * 1.1)
     }
@@ -1649,10 +1660,10 @@ class PropertyCard {
 
         if (!this.hasUpgradeButtons) {
             this.sellButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 40, 0), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj" }, images.buttons.sellbutton, function () { self.sellThis() })
-            this.mortgageButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 40, 1), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Inteckna" }, images.buttons.mortgage, function () { board.boardPieces[self.n].mortgage() })
+            this.mortgageButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 40, 1), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Inteckna" }, images.buttons.mortgage, function () { board.boardPieces[self.n].mortgage(board instanceof OnlineBoard) })
         } else {
             this.sellButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 0), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj" }, images.buttons.sellbutton, function () { self.sellThis() })
-            this.mortgageButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 1), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Inteckna" }, images.buttons.mortgage, function () { board.boardPieces[self.n].mortgage() })
+            this.mortgageButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 1), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Inteckna" }, images.buttons.mortgage, function () { board.boardPieces[self.n].mortgage(board instanceof OnlineBoard) })
             this.downgradeButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 2), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj Hus" }, images.buttons.arrowdown, function () {
                 if (self.downgradeInfo?.index) {
                     board.boardPieces[self.downgradeInfo.index].downgrade()
@@ -1931,6 +1942,7 @@ class Player {
     }
 
     draw() {
+        this.money = Math.round(this.money)
         if (players[turn].laps < board.settings.roundsBeforePurchase) this.hasBought = true
         this.calculateDrawPos();
         let coord = to_screen_coordinate(this.drawX, this.drawY);
