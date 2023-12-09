@@ -870,12 +870,14 @@ class OnlineBoard extends Board {
         this.cardId
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(4, 4)
+            let dice1 = randomIntFromRange(1, 1)
             let dice2 = randomIntFromRange(3, 3)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
                 this.rollDice(dice1, dice2)
+                board.cardId = randomIntFromRange(0, 1000000);
+                sendMessageToAll("saveCardId", board.cardId);
             } else sendMessage(this.peer.connection, "requestDiceRoll")
         })
         this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.nextplayer, () => {
@@ -1217,27 +1219,12 @@ class Utility extends BuyableProperty {
 }
 class Community extends BoardPiece {
     step() {
-        if (board.hosting === undefined || board.cardId !== undefined) { currentMenu = new CardDraw("community"); return }
-        
-        if (board.hosting) {
-            let rigged = randomIntFromRange(0, 12)
-            board.cardId = rigged
-            sendMessageToAll("saveCardId", { cardId: rigged, pos: this.n, type: "community" })
-            currentMenu = new CardDraw("community")
-        } else sendMessage(board.peer.connection, "requestCommunityCard")
+        currentMenu = new CardDraw("community");
     }
 }
 class Chance extends BoardPiece {
     step() {
-        if (board.hosting === undefined) { currentMenu = new CardDraw("chance"); return }
-        
-        if (board.hosting) {
-            if (board.cardId !== undefined) { currentMenu = new CardDraw("chance"); return }
-            let rigged = randomIntFromRange(0, 13)
-            board.cardId = rigged
-            sendMessageToAll("saveCardId", { cardId: rigged, pos: this.n, type: "chance" })
-            currentMenu = new CardDraw("chance")
-        } else if (board.cardId === undefined && players[turn].playing) sendMessage(board.peer.connection, "requestChanceCard", this.n)
+        currentMenu = new CardDraw("chance");
     }
 }
 class IncomeTax extends BoardPiece {
@@ -1501,7 +1488,7 @@ class CardDraw {
 
         this.type = type;
         if (this.type !== "special" && this.type !== "textSpecial") {
-            this.cardId = board.cardId ?? randomIntFromRange(0, (this.type == "community") ? 12 : 13);
+            this.cardId = board.cardId == undefined ? randomIntFromRange(0, (this.type == "community") ? 12 : 13) : (board.cardId % ((this.type == "community") ? 12 : 13));
 
             this.card = ((this.type == "community") ? communitycards[this.cardId] : chanceCards[this.cardId])
         } else if (this.type !== "textSpecial") {
@@ -1517,10 +1504,13 @@ class CardDraw {
             x: canvas.width / 2 + 256 - 22, y: canvas.height / 2 - 128 + 4, w: 18, h: 18, invertedHitbox: { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 }, disableHover: true
         }, images.buttons.exitCardTrans, () => currentMenu = undefined)
 
-        this.okayButton = new Button({ x: canvas.width / 2 - 100, y: 330, w: 200, h: 60, invertedHitbox: { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 } }, images.buttons.okej, function () {
+        this.okayButton = new Button({ x: canvas.width / 2 - 100, y: 330, w: 200, h: 60, invertedHitbox: { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 } }, images.buttons.okej, function (request = true) {
             self.animationStep = 3
             board.cardId = undefined
-            readyUp()
+            if (request && board instanceof OnlineBoard) {
+                if (board.hosting) sendMessageToAll("closeCard")
+                else sendMessage(board.peer.connection, "requestCloseCard")
+            }
         })
 
     }
@@ -1537,10 +1527,12 @@ class CardDraw {
         }
 
         if (this.animationStep == 2) {
-            this.okayButton?.update();
-            if (this.type == "textSpecial") {
-                this.closeButton.update();
-                this.okayButton.invertedHitbox = undefined;
+            if (board.ready && players[turn].playing) {
+                this.okayButton?.update();
+                if (this.type == "textSpecial") {
+                    this.closeButton.update();
+                    this.okayButton.invertedHitbox = undefined;
+                }
             }
         } else if (this.animationStep == 0) {
             this.yPos -= 1 - (canvas.height / 2 - 250 - this.yPos) / 20;
@@ -1552,6 +1544,7 @@ class CardDraw {
             if (this.yPos > canvas.height / 2 - 128) {
                 this.yPos = canvas.height / 2 - 128;
                 this.animationStep = 2;
+                readyUp();
             }
         } else if (this.animationStep == 3) {
             this.yPos -= 1 - (canvas.height / 2 - 250 - this.yPos) / 20;
