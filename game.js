@@ -869,10 +869,11 @@ class OnlineBoard extends Board {
         this.ready = true
         this.readyPlayers = 0
         this.peer = peer
+        this.cardId
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(1, 6)
-            let dice2 = randomIntFromRange(1, 6)
+            let dice1 = randomIntFromRange(1, 1)
+            let dice2 = randomIntFromRange(1, 1)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
@@ -884,9 +885,7 @@ class OnlineBoard extends Board {
                 resetReady()
                 sendMessageToAll("nextPlayer")
                 this.nextPlayer()
-            } else {
-                sendMessage(this.peer.connection, "requestNextPlayer")
-            }
+            } else sendMessage(this.peer.connection, "requestNextPlayer")
         });
 
     }
@@ -1215,12 +1214,26 @@ class Utility extends BuyableProperty {
 }
 class Community extends BoardPiece {
     step() {
-        currentMenu = new CardDraw("community");
+        if (board.hosting === undefined || board.cardId !== undefined) { currentMenu = new CardDraw("community"); return }
+        
+        if (board.hosting) {
+            let rigged = randomIntFromRange(0, 12)
+            board.cardId = rigged
+            sendMessageToAll("saveCardId", rigged)
+            currentMenu = new CardDraw("community")
+        } else sendMessage(board.peer.connection, "requestCommunityCard", this.n)
     }
 }
 class Chance extends BoardPiece {
     step() {
-        currentMenu = new CardDraw("chance");
+        if (board.hosting === undefined || board.cardId !== undefined) { currentMenu = new CardDraw("chance"); return }
+        
+        if (board.hosting) {
+            let rigged = randomIntFromRange(0, 13)
+            board.cardId = rigged
+            sendMessageToAll("saveCardId", rigged)
+            currentMenu = new CardDraw("chance")
+        } else sendMessage(board.peer.connection, "requestChanceCard", this.n)
     }
 }
 class IncomeTax extends BoardPiece {
@@ -1478,13 +1491,13 @@ class Bankcheck {
 }
 
 class CardDraw {
-    constructor(type, cardId, rigged) {
+    constructor(type, cardId) {
         this.yPos = canvas.height;
         this.animationStep = 0;
 
         this.type = type;
         if (this.type !== "special" && this.type !== "textSpecial") {
-            this.cardId = rigged ?? randomIntFromRange(0, (this.type == "community") ? 12 : 13);
+            this.cardId = board.cardId ?? randomIntFromRange(0, (this.type == "community") ? 12 : 13);
 
             this.card = ((this.type == "community") ? communitycards[this.cardId] : chanceCards[this.cardId])
         } else if (this.type !== "textSpecial") {
@@ -1500,7 +1513,11 @@ class CardDraw {
             x: canvas.width / 2 + 256 - 22, y: canvas.height / 2 - 128 + 4, w: 18, h: 18, invertedHitbox: { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 }, disableHover: true
         }, images.buttons.exitCardTrans, () => currentMenu = undefined)
 
-        this.okayButton = new Button({ x: canvas.width / 2 - 100, y: 330, w: 200, h: 60, invertedHitbox: { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 } }, images.buttons.okej, function () { self.animationStep = 3 })
+        this.okayButton = new Button({ x: canvas.width / 2 - 100, y: 330, w: 200, h: 60, invertedHitbox: { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 } }, images.buttons.okej, function () {
+            self.animationStep = 3
+            board.cardId = undefined
+            readyUp()
+        })
 
     }
     draw() {
@@ -1516,7 +1533,7 @@ class CardDraw {
         }
 
         if (this.animationStep == 2) {
-            this.okayButton.update();
+            this.okayButton?.update();
             if (this.type == "textSpecial") {
                 this.closeButton.update();
                 this.okayButton.invertedHitbox = undefined;

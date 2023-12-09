@@ -16,10 +16,11 @@ function sendMessage(connection, _type, _data) {
     })
 }
 
-function sendMessageToAll(_type, _data, exceptions = []) {
-    if (board instanceof Board) return
+function sendMessageToAll(_type, _data, exceptions = [], exceptionType = undefined, exceptionData = undefined) {
+    if (board?.constructor.name === 'Board') return
     for (let client of Object.values(peer.clients)) {
         if (!exceptions.includes(client)) sendMessage(client.connection, _type, _data)
+        else if (exceptionType) sendMessage(client.connection, exceptionType, exceptionData)
     }
 }
 
@@ -150,20 +151,23 @@ function sendPlayers(settings = {}) {
     }
 }
 function resetReady() {
-    if (board instanceof Board) return
-    board.readyPlayers = 0
+    if (board.constructor.name === 'Board') return
+
+    board.readyPlayers = 
     board.ready = false
 }
 
 function readyUp() {
-    if (board instanceof Board) return
-    if (!board.hosting) sendMessage(board.peer.connection, "ready")
-    else addReady()
+    if (board.constructor.name === 'Board') return
+
+    if (board.hosting) addReady()
+    else sendMessage(board.peer.connection, "ready")
 }
 function addReady() {
-    if (board instanceof Board) return
+    if (board.constructor.name === 'Board') return
+
     board.readyPlayers++
-    if (board.readyPlayers === Object.entries(peer.clients).length + 1) {
+    if (board.readyPlayers === (Object.entries(peer.clients).length + 1)) {
         board.ready = true
         sendMessageToAll("ready")
     }
@@ -212,7 +216,16 @@ function createHost() {
             console.log(response)
 
 
-
+            if (type === "requestCommunityCard") {
+                let rigged = randomIntFromRange(0, 12)
+                board.cardId = rigged
+                sendMessageToAll("saveCardId", rigged, [client], "communityCard", rigged)
+            }
+            if (type === "requestChanceCard") {
+                let rigged = randomIntFromRange(0, 13)
+                board.cardId = rigged
+                sendMessageToAll("saveCardId", rigged, [client], "chanceCard", rigged)
+            }
             if (type === "ready") {
                 addReady()
             }
@@ -272,11 +285,21 @@ function connectToHost(hostId) {
         })
 
         x.on("data", (response) => {
-            const player = currentMenu?.players[0]
+            let player
+            if (currentMenu instanceof OnlineLobby) player = currentMenu.players[0]
             const type = response.type
             const data = response.data
             console.log(response)
 
+            if (type === "saveCardId") board.cardId = data
+            if (type === "communityCard") {
+                board.cardId = data
+                currentMenu = new CardDraw("community")
+            }
+            if (type === "chanceCard") {
+                board.cardId = data
+                currentMenu = new CardDraw("chance")
+            }
             if (type === "ready") {
                 board.ready = true
             }
