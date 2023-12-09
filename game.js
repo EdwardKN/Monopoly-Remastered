@@ -868,8 +868,8 @@ class OnlineBoard extends Board {
         this.cardId
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(4, 4)
-            let dice2 = randomIntFromRange(3, 3)
+            let dice1 = randomIntFromRange(2, 2)
+            let dice2 = randomIntFromRange(2, 2)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
@@ -902,28 +902,16 @@ class OnlineBoard extends Board {
 class PrisonMenu {
     constructor() {
         this.payButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 0), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisonpay, function (request = true) {
-            if (request && board instanceof OnlineBoard) {
-                if (board.hosting) {
-                    sendMessageToAll("buyPrison")
-                } else {
-                    sendMessage(board.peer.connection, "requestBuyPrison")
-                    return
-                }
-            }
+            if (requestAction("buyPrison", undefined, request)) return
+            
             players[turn].money -= 50;
             board.money += board.settings.giveAllToParking ? 50 : 0;
             players[turn].getOutOfPrison();
             currentMenu = undefined;
         });
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 1), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisonrolldice, function (request = true, rigged1 = randomIntFromRange(1, 6), rigged2 = randomIntFromRange(1, 6)) {
-            if (request && board instanceof OnlineBoard) {
-                if (board.hosting) {
-                    sendMessageToAll("rollPrison", { rigged1: rigged1, rigged2: rigged2 })
-                } else {
-                    sendMessage(board.peer.connection, "requestRollPrison")
-                    return
-                }
-            }
+            if (requestAction("rollPrison", { rigged1: rigged1, rigged2: rigged2 }, request)) return
+
             board.dices.roll(function (dice1, dice2) {
                 if (dice1 == dice2) {
                     players[turn].getOutOfPrison();
@@ -941,15 +929,9 @@ class PrisonMenu {
             }, rigged1, rigged2)
             currentMenu = undefined;
         });
-        this.cardButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 2), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisongetoutofjail, function () {
-            if (request && board instanceof OnlineBoard) {
-                if (board.hosting) {
-                    sendMessageToAll("prisonCardPay")
-                } else {
-                    sendMessage(board.peer.connection, "requestPrisonCardPay")
-                    return
-                }
-            }
+        this.cardButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 2), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisongetoutofjail, function (request = true) {
+            if (requestAction("prisonCardPay", undefined, request)) return
+
             players[turn].getOutOfPrison();
             players[turn].prisonCards--;
             currentMenu = undefined;
@@ -1523,10 +1505,7 @@ class CardDraw {
         this.okayButton = new Button({ x: canvas.width / 2 - 100, y: 330, w: 200, h: 60, invertedHitbox: { x: canvas.width / 2 - 256, y: canvas.height / 2 - 128, w: 512, h: 256 } }, images.buttons.okej, function (request = true) {
             self.animationStep = 3
             board.cardId = undefined
-            if (request && board instanceof OnlineBoard) {
-                if (board.hosting) sendMessageToAll("closeCard")
-                else sendMessage(board.peer.connection, "requestCloseCard")
-            }
+            requestAction("closeCard", undefined, request)
         })
 
     }
@@ -1662,13 +1641,16 @@ class PropertyCard {
         } else {
             this.sellButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 0), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj" }, images.buttons.sellbutton, function () { self.sellThis() })
             this.mortgageButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 1), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Inteckna" }, images.buttons.mortgage, function () { board.boardPieces[self.n].mortgage() })
-            this.downgradeButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 2), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj Hus" }, images.buttons.arrowdown, function () {
+            this.downgradeButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 2), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj Hus" }, images.buttons.arrowdown, function (request = true) {
                 if (self.downgradeInfo?.index) {
+                    if (requestAction("downgradeProperty", self.n, request)) return
                     board.boardPieces[self.downgradeInfo.index].downgrade()
                 } else {
-                    if (-self.downgradeInfo.price > board.boardPieces[self.n].info.housePrice) {
+                    if (-self.downgradeInfo.price > board.boardPieces[self.n].info.housePrice && players[turn].playing) {
                         currentMenu = new CardDraw("textSpecial", "Matchen har slut på hus och^du måste nedgradera några^gator mer än en nivå.^Detta kommer att ge dig " + -self.downgradeInfo.price * 0.9 + "kr^Är du säker på att du vill^göra detta?")
                         currentMenu.useCard = function () {
+                            if (requestAction("downgradeProperty", self.n, request)) return
+
                             self.downgradeInfo.values.forEach(e => {
                                 board.boardPieces[e.n].level = e.level
                             })
@@ -1676,6 +1658,8 @@ class PropertyCard {
                             currentMenu = undefined;
                         }
                     } else {
+                        if (requestAction("downgradeProperty", self.n, request)) return
+
                         self.downgradeInfo.values.forEach(e => {
                             board.boardPieces[e.n].level = e.level
                         })
@@ -1729,7 +1713,7 @@ class PropertyCard {
         let colorGroupName = board.boardPieces[this.n].info.group;
         let colorGroup = board.getColorGroup(colorGroupName);
 
-        if (colorGroup.length == colorGroup.filter(e => e.owner == players[turn]).length || !board.settings.buyHouseGroup) {
+        if (colorGroup.length == colorGroup.filter(e => e.owner == players[turn] && !e.mortgaged).length || !board.settings.buyHouseGroup) {
             if (players[turn].money < board.boardPieces[this.n].info.housePrice) {
                 return false;
             } else {
@@ -1873,7 +1857,7 @@ class PropertyCard {
                 if (this.hasUpgradeButtons) {
                     this.upgradeInfo = this.calculateUpgrade();
                     this.downgradeInfo = this.calculateDowngrade();
-                    this.upgradeButton.disabled = (!this.upgradeInfo || (board.settings.houseOnStanding ? !(players[turn].pos == this.n) : false));
+                    this.upgradeButton.disabled = board.boardPieces[this.n].mortgaged || (!this.upgradeInfo || (board.settings.houseOnStanding ? !(players[turn].pos == this.n) : false));
                     this.downgradeButton.disabled = !this.downgradeInfo || (board.settings.houseOnStanding ? !(players[turn].pos == this.n) : false);
                     this.downgradeButton.update();
                     this.upgradeButton.update();

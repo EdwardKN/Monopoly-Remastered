@@ -224,7 +224,7 @@ function createHost() {
             if (type === "requestRollPrison") {
                 new PrisonMenu().rollDiceButton.onClick();
             }
-            if (type === "requestprisonCardPay") {
+            if (type === "requestPrisonCardPay") {
                 new PrisonMenu().cardButton.onClick();
             }
             if (type === "requestCloseCard") {
@@ -249,6 +249,12 @@ function createHost() {
                 let p = new PropertyCard(data)
                 p.upgradeInfo = p.calculateUpgrade()
                 p.upgradeButton.onClick()
+                delete p
+            }
+            if (type === "requestDowngradeProperty") {
+                let p = new PropertyCard(data)
+                p.downgradeInfo = p.calculateDowngrade()
+                p.downgradeButton.onClick()
                 delete p
             }
 
@@ -347,6 +353,12 @@ function connectToHost(hostId) {
                 let p = new PropertyCard(data)
                 p.upgradeInfo = p.calculateUpgrade()
                 p.upgradeButton.onClick(false)
+                delete p
+            }
+            if (type === "downgradeProperty") {
+                let p = new PropertyCard(data)
+                p.downgradeInfo = p.calculateDowngrade()
+                p.downgradeButton.onClick(false)
                 delete p
             }
  

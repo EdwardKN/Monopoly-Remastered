@@ -864,3 +864,7 @@ const divide = (num = 100, n = 4) => {
     const f = Math.floor(num / n);
     return [...Array(n)].map((_, i) => i - n + 1 ? f : num - i * f);
 }
+
+String.prototype.capitalize = function () {
+    return this.charAt(0).toUpperCase() + this.slice(1)
+}
