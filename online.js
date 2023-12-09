@@ -219,12 +219,12 @@ function createHost() {
             if (type === "requestCommunityCard") {
                 let rigged = randomIntFromRange(0, 12)
                 board.cardId = rigged
-                sendMessageToAll("saveCardId", rigged, [client], "communityCard", rigged)
+                sendMessageToAll("saveCardId", { cardId: rigged, pos: players[turn].pos, type: "community" }, [client], "communityCard", rigged)
             }
             if (type === "requestChanceCard") {
                 let rigged = randomIntFromRange(0, 13)
                 board.cardId = rigged
-                sendMessageToAll("saveCardId", rigged, [client], "chanceCard", rigged)
+                sendMessageToAll("saveCardId", { cardId: rigged, pos: players[turn].pos, type: "chance" }, [client], "chanceCard", rigged)
             }
             if (type === "ready") {
                 addReady()
@@ -236,7 +236,10 @@ function createHost() {
                 board.nextPlayerButton.onClick()
             }
             if (type === "requestBuyProperty") {
-                board.boardPieces[data].buy();
+                board.boardPieces[data].buy(true);
+            }
+            if (type === "requestSellProperty") {
+                board.boardPieces[data].sell(true)
             }
 
             if (type === 'deselect') {
@@ -291,7 +294,13 @@ function connectToHost(hostId) {
             const data = response.data
             console.log(response)
 
-            if (type === "saveCardId") board.cardId = data
+            if (type === "saveCardId") {
+                board.cardId = data.cardId
+                if (players[turn].pos === data.pos) {
+                    if (data.type === "chance") currentMenu = new CardDraw("chance")
+                    else currentMenu = new CardDraw("community")
+                }
+            }
             if (type === "communityCard") {
                 board.cardId = data
                 currentMenu = new CardDraw("community")
@@ -316,7 +325,10 @@ function connectToHost(hostId) {
                 resetReady();
             }
             if (type === "buyProperty") {
-                board.boardPieces[data].buy(false);
+                board.boardPieces[data].buy();
+            }
+            if (type === "sellProperty") {
+                board.boardPieces[data].sell()
             }
 
             if (type === "select") {

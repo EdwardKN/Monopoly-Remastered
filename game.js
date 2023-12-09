@@ -301,13 +301,11 @@ class PublicGames {
 }
 
 /*
-Community chest
-Chance
-Prison
 Sellproperty
 Mortgage
 Unmortgage
 Buyhouse
+Prison
 Sellhouse
 Auction
 Trade
@@ -872,8 +870,8 @@ class OnlineBoard extends Board {
         this.cardId
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(1, 1)
-            let dice2 = randomIntFromRange(1, 1)
+            let dice1 = randomIntFromRange(4, 4)
+            let dice2 = randomIntFromRange(3, 3)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
@@ -1149,7 +1147,12 @@ class BuyableProperty extends BoardPiece {
         players[turn].ownedPlaces.push(this);
         players[turn].hasBought = true;
     }
-    sell() {
+    sell(request = false) {
+        if (request) {
+            if (board.hosting) sendMessageToAll("sellProperty", this.n)
+            else sendMessage(board.peer.connection, "requestSellProperty", this.n)
+        }
+
         players[turn].money += this.mortgaged ? 0 : this.info.price / 2;
         this.owner = undefined;
         players[turn].ownedPlaces.splice(players[turn].ownedPlaces.indexOf(this), 1);
@@ -1219,21 +1222,22 @@ class Community extends BoardPiece {
         if (board.hosting) {
             let rigged = randomIntFromRange(0, 12)
             board.cardId = rigged
-            sendMessageToAll("saveCardId", rigged)
+            sendMessageToAll("saveCardId", { cardId: rigged, pos: this.n, type: "community" })
             currentMenu = new CardDraw("community")
-        } else sendMessage(board.peer.connection, "requestCommunityCard", this.n)
+        } else sendMessage(board.peer.connection, "requestCommunityCard")
     }
 }
 class Chance extends BoardPiece {
     step() {
-        if (board.hosting === undefined || board.cardId !== undefined) { currentMenu = new CardDraw("chance"); return }
+        if (board.hosting === undefined) { currentMenu = new CardDraw("chance"); return }
         
         if (board.hosting) {
+            if (board.cardId !== undefined) { currentMenu = new CardDraw("chance"); return }
             let rigged = randomIntFromRange(0, 13)
             board.cardId = rigged
-            sendMessageToAll("saveCardId", rigged)
+            sendMessageToAll("saveCardId", { cardId: rigged, pos: this.n, type: "chance" })
             currentMenu = new CardDraw("chance")
-        } else sendMessage(board.peer.connection, "requestChanceCard", this.n)
+        } else if (board.cardId === undefined && players[turn].playing) sendMessage(board.peer.connection, "requestChanceCard", this.n)
     }
 }
 class IncomeTax extends BoardPiece {
@@ -1702,7 +1706,7 @@ class PropertyCard {
         this.closeCard();
     }
     sellThis() {
-        board.boardPieces[this.n].sell()
+        board.boardPieces[this.n].sell(board instanceof OnlineBoard)
         this.closeCard();
     }
 
