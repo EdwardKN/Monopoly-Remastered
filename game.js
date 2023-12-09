@@ -301,7 +301,6 @@ class PublicGames {
 }
 
 /*
-Buyhouse
 Sellhouse
 
 Prison
@@ -869,8 +868,8 @@ class OnlineBoard extends Board {
         this.cardId
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(4, 4)
-            let dice2 = randomIntFromRange(3, 3)
+            let dice1 = randomIntFromRange(1, 6)
+            let dice2 = randomIntFromRange(1, 6)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
@@ -1132,15 +1131,8 @@ class BuyableProperty extends BoardPiece {
             readyUp();
         }
     }
-    buy(request = false) {
-        if (request) {
-            if (board.hosting) {
-                sendMessageToAll("buyProperty", this.n)
-            } else {
-                sendMessage(board.peer.connection, "requestBuyProperty", this.n)
-                return
-            }
-        }
+    buy(request = true) {
+        if (requestAction("buyProperty", this.n, request)) return
 
 
         players[turn].money -= this.info.price;
@@ -1149,14 +1141,8 @@ class BuyableProperty extends BoardPiece {
         players[turn].ownedPlaces.push(this);
         players[turn].hasBought = true;
     }
-    sell(request = false) {
-        if (request) {
-            if (board.hosting) sendMessageToAll("sellProperty", this.n)
-            else {
-                sendMessage(board.peer.connection, "requestSellProperty", this.n)
-                return
-            }
-        }
+    sell(request = true) {
+        if (requestAction("sellProperty", this.n, request)) return
 
         players[turn].money += this.mortgaged ? 0 : this.info.price / 2;
         this.owner = undefined;
@@ -1167,14 +1153,8 @@ class BuyableProperty extends BoardPiece {
         players[turn].money -= this.info.housePrice;
         board.money += board.settings.giveAllToParking ? this.info.housePrice : 0;
     }
-    mortgage(request = false) {
-        if (request) {
-            if (board.hosting) sendMessageToAll("mortgage", this.n)
-            else {
-                sendMessage(board.peer.connection, "requestMortgage", this.n)
-                return
-            }
-        }
+    mortgage(request = true) {
+        if (requestAction("mortgageProperty", this.n, request)) return
 
         this.mortgaged = !this.mortgaged;
         players[turn].money += (this.mortgaged ? this.info.price / 2 : -(this.info.price / 2) * 1.1)
@@ -1205,7 +1185,8 @@ class Station extends BuyableProperty {
 }
 class Utility extends BuyableProperty {
     step(steps) {
-        if (this.owner == undefined && players[turn].playing) {
+        if (!players[turn].playing) return
+        if (this.owner == undefined) {
             this.openCard();
         } else if (this.owner != players[turn]) {
             if (!(!this.owner.inPrison || board.settings.prisonpay)) return
@@ -1653,10 +1634,10 @@ class PropertyCard {
 
         if (!this.hasUpgradeButtons) {
             this.sellButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 40, 0), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj" }, images.buttons.sellbutton, function () { self.sellThis() })
-            this.mortgageButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 40, 1), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Inteckna" }, images.buttons.mortgage, function () { board.boardPieces[self.n].mortgage(board instanceof OnlineBoard) })
+            this.mortgageButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 40, 1), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Inteckna" }, images.buttons.mortgage, function () { board.boardPieces[self.n].mortgage() })
         } else {
             this.sellButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 0), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj" }, images.buttons.sellbutton, function () { self.sellThis() })
-            this.mortgageButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 1), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Inteckna" }, images.buttons.mortgage, function () { board.boardPieces[self.n].mortgage(board instanceof OnlineBoard) })
+            this.mortgageButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 1), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Inteckna" }, images.buttons.mortgage, function () { board.boardPieces[self.n].mortgage() })
             this.downgradeButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 2), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj Hus" }, images.buttons.arrowdown, function () {
                 if (self.downgradeInfo?.index) {
                     board.boardPieces[self.downgradeInfo.index].downgrade()
@@ -1678,21 +1659,27 @@ class PropertyCard {
                     }
                 }
             })
-            this.upgradeButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 3), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Köp Hus" }, images.buttons.arrowup, function () {
+            this.upgradeButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 3), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Köp Hus" }, images.buttons.arrowup, function (request = true) {
                 if (self.upgradeInfo?.index) {
-                    board.boardPieces[self.upgradeInfo.index].upgrade()
+                    if (requestAction("upgradeProperty", self.n, request)) return
+                    board.boardPieces[self.upgradeInfo.index].upgrade(board instanceof OnlineBoard)
                 } else {
-                    if (self.upgradeInfo.price > board.boardPieces[self.n].info.housePrice) {
+                    if (self.upgradeInfo.price > board.boardPieces[self.n].info.housePrice && players[turn].playing) {
                         currentMenu = new CardDraw("textSpecial", "Matchen har slut på hus och^du måste uppgradera några^gator till hotell.^Detta kommer att kosta " + self.upgradeInfo.price + "kr^Är du säker på att du vill^göra detta?")
                         currentMenu.useCard = function () {
+                            if (requestAction("upgradeProperty", self.n, request)) return
+
                             self.upgradeInfo.values.forEach(e => {
                                 board.boardPieces[e.n].level = e.level
                             })
                             players[turn].money -= self.upgradeInfo.price;
                             board.money += board.settings.giveAllToParking ? self.upgradeInfo.price : 0;
                             currentMenu = undefined;
+                            
                         }
                     } else {
+                        if (requestAction("upgradeProperty", self.n, request)) return
+
                         self.upgradeInfo.values.forEach(e => {
                             board.boardPieces[e.n].level = e.level
                         })
@@ -1706,11 +1693,11 @@ class PropertyCard {
 
     };
     buyThis() {
-        board.boardPieces[this.n].buy(board instanceof OnlineBoard)
+        board.boardPieces[this.n].buy()
         this.closeCard();
     }
     sellThis() {
-        board.boardPieces[this.n].sell(board instanceof OnlineBoard)
+        board.boardPieces[this.n].sell()
         this.closeCard();
     }
 

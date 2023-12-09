@@ -228,13 +228,19 @@ function createHost() {
                 board.nextPlayerButton.onClick()
             }
             if (type === "requestBuyProperty") {
-                board.boardPieces[data].buy(true);
+                board.boardPieces[data].buy();
             }
             if (type === "requestSellProperty") {
-                board.boardPieces[data].sell(true)
+                board.boardPieces[data].sell()
             }
-            if (type === "requestMortgage") {
-                board.boardPieces[data].mortgage(true)
+            if (type === "requestMortgageProperty") {
+                board.boardPieces[data].mortgage()
+            }
+            if (type === "requestUpgradeProperty") {
+                let p = new PropertyCard(data)
+                p.upgradeInfo = p.calculateUpgrade()
+                p.upgradeButton.onClick()
+                delete p
             }
 
             if (type === 'deselect') {
@@ -290,7 +296,7 @@ function connectToHost(hostId) {
             console.log(response)
 
             if (type === "closeCard") {
-                currentMenu.okayButton.onClick(false);
+                currentMenu?.okayButton?.onClick(false);
             }
 
             if (type === "saveCardId") {
@@ -312,15 +318,21 @@ function connectToHost(hostId) {
                 resetReady();
             }
             if (type === "buyProperty") {
-                board.boardPieces[data].buy();
+                board.boardPieces[data].buy(false);
             }
             if (type === "sellProperty") {
-                board.boardPieces[data].sell()
+                board.boardPieces[data].sell(false)
             }
-            if (type === "mortgage") {
-                board.boardPieces[data].mortgage()
+            if (type === "mortgageProperty") {
+                board.boardPieces[data].mortgage(false)
             }
-
+            if (type === "upgradeProperty") {
+                let p = new PropertyCard(data)
+                p.upgradeInfo = p.calculateUpgrade()
+                p.upgradeButton.onClick(false)
+                delete p
+            }
+ 
             if (type === "select") {
                 if (!data.valid) {
                     if (data.reason === "Color is already taken") player.selectedColor = -1
@@ -388,4 +400,16 @@ function connectToHost(hostId) {
 window.onload = () => {
     let id = new URLSearchParams(window.location.search).get("lobbyId")
     if (id) currentMenu = new OnlineLobby(false, id)
+}
+
+function requestAction(type, data, request = true) {
+    if (request && board instanceof OnlineBoard) {
+        if (board.hosting) {
+            sendMessageToAll(type, data)
+            return false
+        } else {
+            sendMessage(board.peer.connection, "request" + type.capitalize(), data)
+            return true
+        }
+    }
 }
