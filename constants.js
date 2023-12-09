@@ -1,365 +1,285 @@
-var images = {
-    plates:[
-        "brown",
-        "light_blue",
-        "pink",
-        "orange",
-        "red",
-        "yellow",
-        "green",
-        "blue",
-        "chest",
-        "incometax",
-        "train",
-        "chance",
-        "chance2",
-        "chance3",
-        "electric",
-        "water",
-        "supertax",
-        "mortgaged",
-        "electricmortgaged",
-        "trainmortgaged",
-        "watermortgaged"
-    ],
-    corners:[
-        "go",
-        "prison",
-        "parking",
-        "gotoprison"
-    ],
-    static:[
-        "insideboard",
-        "realbackground"
-    ],
-    players:[
-        "player",
-        "player2",
-        "player3",
-        "player4",
-        "player5",
-        "player6",
-        "player7",
-        "player8",
-        "blueowned",
-        "greenowned",
-        "lightblueowned",
-        "orangeowned",
-        "pinkowned",
-        "purpleowned",
-        "redowned",
-        "yellowowned"
-    ],
-    dices:[
-        "dices"
-    ],
-    cards:[
-        "browncard1",
-        "browncard2",
-        "lightbluecard1",
-        "lightbluecard2",
-        "lightbluecard3",
-        "pinkcard1",
-        "pinkcard2",
-        "pinkcard3",
-        "orangecard1",
-        "orangecard2",
-        "orangecard3",
-        "redcard1",
-        "redcard2",
-        "redcard3",
-        "yellowcard1",
-        "yellowcard2",
-        "yellowcard3",
-        "greencard1",
-        "greencard2",
-        "greencard3",
-        "bluecard1",
-        "bluecard2",
-        "southstation",
-        "northstation",
-        "centralstation",
-        "eaststation",
-        "electricitycard",
-        "waterworkscard",
-        "mortgageoverlay"
-    ],
-    buttons:[
-        "exitCard",
-        "rolldice",
-        "nextplayer",
-        "buythislawn",
-        "auction",
-        "arrowup",
-        "arrowdown",
-        "mortgage",
-        "sellbutton",
-        "playerborder",
-        "okej",
-        "prisonrolldice",
-        "prisonpay",
-        "prisongetoutofjail",
-        "menu",
-        "no",
-        "yes",
-        "statbutton",
-        "antilising",
-        "fullscreen",
-        "music",
-        "startauction",
-        "auction+2",
-        "auction+10",
-        "auction+100",
-        "exitauction",
-        "accept",
-        "tradingcityname",
-        "local",
-        "load",
-        "online",
-        "credits",
-        "back",
-        "start",
-        "bot",
-        "joingame",
-        "hostgame"
-    ],
-    "community card and chance card":[
-        "emptychancecard",
-        "emptycommunitycard",
-        "specialempty",
-        "betalahushotellc",
-        "fa10kravallaandraspelarec",
-        "fa10krc",
-        "fa20krc",
-        "fa50kravallaandraspelarec",
-        "fa50krc",
-        "fa100krc",
-        "fa200krc",
-        "forlora25krc",
-        "forlora50krc",
-        "gatillfinkanc",
-        "gatillstartc",
-        "lamnafinkangratisc",
+const latestSaveVersion = 3;
 
-        "betalahushotell",
-        "fa50kravallaandraspelare",
-        "lamnafinkangratis",
-        "gatillstart",
-        "gatillsimrishamn",
-        "gatillsodrastationen",
-        "gatillnarmstatagstation",
-        "gatillnarmstaanlaggning",
-        "gatillmalmo",
-        "gatillfinkan",
-        "gabaktresteg",
-        "fa150kr",
-        "fa50kr",
-        "gatillhassleholm",
-        "gatillfinkanS",
-        "illegaldices",
-        "payincometax",
-        "payrichtax"
-    ],
-    menus:[
-        "prisonmenu",
-        "exitmenu",
-        "auctionmenubackground",
-        "tradingmenu",
-        "mainmenu",
-        "lobbymenu"
-    ],
-    buildings:[
-        "hotel",
-        "house"
-    ],
-    playercolorbuttons:[
-        "playercolorbutton",
-        "playercolorbutton2",
-        "playercolorbutton3",
-        "playercolorbutton4",
-        "playercolorbutton5",
-        "playercolorbutton6",
-        "playercolorbutton7",
-        "playercolorbutton8",
-        "unselected",
+const settings = [
+    {
+        title: "Ge alla skattepengar till fri parkering",
+        type: "select",
+        variable: "giveAllTaxToParking",
+        start: false
+    },
+    {
+        title: "Ge alla bankpengar till fri parkering",
+        type: "select",
+        variable: "giveAllToParking",
+        needed: "giveAllTaxToParking",
+        start: false
+    },
+    {
+        title: "Dubbel hyra på komplett färggrupp",
+        type: "select",
+        variable: "doublePay",
+        start: true
+    },
+    {
+        title: "Komplett färggrupp för köp av hus",
+        type: "select",
+        variable: "buyHouseGroup",
+        start: true
+    },
+    {
+        title: "Auktioner",
+        type: "select",
+        variable: "auctions",
+        start: true
+    },
+    {
+        title: "Få/förlora pengar i fängelset",
+        type: "select",
+        variable: "prisonpay",
+        start: true
+    },
+    {
+        title: "Möjlighet att inteckna",
+        type: "select",
+        variable: "canMortgage",
+        start: true
+    },
+    {
+        title: "Jämn utbyggnad",
+        type: "select",
+        variable: "evenHouses",
+        start: true,
+        needed: "buyHouseGroup"
+    },
+    {
+        title: "Endast köpa hus på den man står på",
+        type: "select",
+        variable: "houseOnStanding",
+        start: false
+    },
+    {
+        title: "Startkapital: ",
+        type: "slider",
+        variable: "startMoney",
+        start: 1400,
+        unit: "kr",
+        from: 0,
+        to: 3000,
+        steps: 100
+    },
+    {
+        title: "Antal varv innan köp: ",
+        type: "slider",
+        variable: "roundsBeforePurchase",
+        start: 0,
+        from: 0,
+        to: 5,
+        steps: 1
+    },
+    {
+        title: "Lägsta bud på auktioner(% av gatupris): ",
+        type: "slider",
+        variable: "lowestAuction",
+        start: 50,
+        from: 0,
+        to: 100,
+        steps: 10,
+        unit: "%"
+    },
+    {
+        title: "Max antal hus: ",
+        type: "slider",
+        variable: "maxHouses",
+        start: 32,
+        from: 1,
+        to: 88,
+        steps: 1
+    },
+    {
+        title: "Max antal hotell: ",
+        type: "slider",
+        variable: "maxHotels",
+        start: 12,
+        from: 1,
+        to: 22,
+        steps: 1
+    }
+]
 
-    ]
-
-}
 const playerInfo = [
     {
-        color:"red",
-        img:"player",
-        ownedImg:"redowned"
+        color: "red",
+        img: "player",
+        ownedImg: "redowned"
     },
     {
-        color:"pink",
-        img:"player2",
-        ownedImg:"pinkowned"
+        color: "pink",
+        img: "player2",
+        ownedImg: "pinkowned"
     },
     {
-        color:"purple",
-        img:"player3",
-        ownedImg:"purpleowned"
+        color: "purple",
+        img: "player3",
+        ownedImg: "purpleowned"
     },
     {
-        color:"blue",
-        img:"player4",
-        ownedImg:"blueowned"
+        color: "blue",
+        img: "player4",
+        ownedImg: "blueowned"
     },
     {
-        color:"lightblue",
-        img:"player5",
-        ownedImg:"lightblueowned"
+        color: "lightblue",
+        img: "player5",
+        ownedImg: "lightblueowned"
     },
     {
-        color:"green",
-        img:"player6",
-        ownedImg:"greenowned"
+        color: "green",
+        img: "player6",
+        ownedImg: "greenowned"
     },
     {
-        color:"yellow",
-        img:"player7",
-        ownedImg:"yellowowned"
+        color: "yellow",
+        img: "player7",
+        ownedImg: "yellowowned"
     },
     {
-        color:"orange",
-        img:"player8",
-        ownedImg:"orangeowned"
+        color: "orange",
+        img: "player8",
+        ownedImg: "orangeowned"
     }
 ]
 
 const specialCards = [
     {
-        img:"gatillfinkanS"
+        img: "gatillfinkanS"
     },
     {
-        img:"illegaldices"
+        img: "illegaldices"
     },
     {
-        img:"payincometax"
+        img: "payincometax"
     },
     {
-        img:"payrichtax"
+        img: "payrichtax"
     }
 ]
 
 const communitycards = [
     {
-        teleport:0,
-        img:"gatillstartc"
+        teleport: 0,
+        img: "gatillstartc"
     },
     {
-        type:"gotoprison",
-        img:"gatillfinkanc"
+        type: "gotoprison",
+        img: "gatillfinkanc"
     },
     {
-        properyPrice:{
-            house:40,
-            hotel:115
+        properyPrice: {
+            house: 40,
+            hotel: 115
         },
-        img:"betalahushotellc"
+        img: "betalahushotellc"
     },
     {
-        type:"getprisoncard",
-        img:"lamnafinkangratisc"
+        type: "getprisoncard",
+        img: "lamnafinkangratisc"
     },
     {
-        moneyFromPlayers:10,
-        img:"fa10kravallaandraspelarec"
+        moneyFromPlayers: 10,
+        img: "fa10kravallaandraspelarec"
     },
     {
-        moneyFromPlayers:50,
-        img:"fa50kravallaandraspelarec"
+        moneyFromPlayers: 50,
+        img: "fa50kravallaandraspelarec"
     },
     {
-        moneyChange:10,
-        img:"fa10krc"
+        moneyChange: 10,
+        img: "fa10krc"
     },
     {
-        moneyChange:20,
-        img:"fa20krc"
+        moneyChange: 20,
+        img: "fa20krc"
     },
     {
-        moneyChange:50,
-        img:"fa50krc"
+        moneyChange: 50,
+        img: "fa50krc"
     },
     {
-        moneyChange:100,
-        img:"fa100krc"
+        moneyChange: 100,
+        img: "fa100krc"
     },
     {
-        moneyChange:200,
-        img:"fa200krc"
+        moneyChange: 200,
+        img: "fa200krc"
     },
     {
-        moneyChange:-25,
-        img:"forlora25krc"
+        moneyChange: -25,
+        img: "forlora25krc"
     },
     {
-        moneyChange:-50,
-        img:"forlora50krc"
+        moneyChange: -50,
+        img: "forlora50krc"
     }
 ]
 const chanceCards = [
     {
-        properyPrice:{
-            house:25,
-            hotel:100
+        properyPrice: {
+            house: 25,
+            hotel: 100
         },
-        img:"betalahushotell"
+        img: "betalahushotell"
     },
     {
-        moneyChange:50,
-        img:"fa50kr"
+        moneyChange: 50,
+        img: "fa50kr"
     },
     {
-        moneyFromPlayers:50,
-        img:"fa50kravallaandraspelare"
+        moneyFromPlayers: 50,
+        img: "fa50kravallaandraspelare"
     },
     {
-        moneyChange:150,
-        img:"fa150kr"
+        moneyChange: 150,
+        img: "fa150kr"
     },
     {
-        steps:-3,
-        img:"gabaktresteg"
+        steps: -3,
+        img: "gabaktresteg"
     },
     {
-        type:"gotoprison",
-        img:"gatillfinkan"
+        type: "gotoprison",
+        img: "gatillfinkan"
     },
     {
-        teleport:24,
-        img:"gatillhassleholm"
+        teleport: 24,
+        img: "gatillhassleholm"
     },
     {
-        teleport:39,
-        img:"gatillmalmo"
+        teleport: 39,
+        img: "gatillmalmo"
     },
     {
-        gotoClosest:"Utility",
-        img:"gatillnarmstaanlaggning"
+        gotoClosest: "Utility",
+        img: "gatillnarmstaanlaggning"
     },
     {
-        gotoClosest:"Station",
-        img:"gatillnarmstatagstation"
+        gotoClosest: "Station",
+        img: "gatillnarmstatagstation"
     },
     {
-        teleport:11,
-        img:"gatillsimrishamn"
+        teleport: 11,
+        img: "gatillsimrishamn"
     },
     {
-        teleport:5,
-        img:"gatillsodrastationen"
+        teleport: 5,
+        img: "gatillsodrastationen"
     },
     {
-        teleport:0,
-        img:"gatillstart"
+        teleport: 0,
+        img: "gatillstart"
     },
     {
-        type:"getprisoncard",
-        img:"lamnafinkangratis"
+        type: "getprisoncard",
+        img: "lamnafinkangratis"
     }
 ]
 const pieces = [
@@ -375,7 +295,7 @@ const pieces = [
         group: "brown",
         img: "brown",
         mortgaged: "mortgaged",
-        card:"browncard1",
+        card: "browncard1",
         color: "#795548"
     },
     {
@@ -391,7 +311,7 @@ const pieces = [
         group: "brown",
         img: "brown",
         mortgaged: "mortgaged",
-        card:"browncard2",
+        card: "browncard2",
         color: "#795548"
     },
     {
@@ -402,11 +322,11 @@ const pieces = [
     {
         name: "Södra stationen",
         price: 200,
-        rent:[25, 50, 100, 200],
+        rent: [25, 50, 100, 200],
         type: "station",
         img: "train",
         mortgaged: "trainmortgaged",
-        card:"southstation",
+        card: "southstation",
         color: "black"
     },
     {
@@ -417,7 +337,7 @@ const pieces = [
         group: "light blue",
         img: "light_blue",
         mortgaged: "mortgaged",
-        card:"lightbluecard1",
+        card: "lightbluecard1",
         color: "#81d4fa"
     },
     {
@@ -433,7 +353,7 @@ const pieces = [
         group: "light blue",
         img: "light_blue",
         mortgaged: "mortgaged",
-        card:"lightbluecard2",
+        card: "lightbluecard2",
         color: "#81d4fa"
     },
     {
@@ -444,7 +364,7 @@ const pieces = [
         group: "light blue",
         img: "light_blue",
         mortgaged: "mortgaged",
-        card:"lightbluecard3",
+        card: "lightbluecard3",
         color: "#81d4fa"
     },
     {
@@ -459,7 +379,7 @@ const pieces = [
         group: "pink",
         img: "pink",
         mortgaged: "mortgaged",
-        card:"pinkcard1",
+        card: "pinkcard1",
         color: "#e91e63"
     },
     {
@@ -468,7 +388,7 @@ const pieces = [
         type: "utility",
         img: "electric",
         mortgaged: "electricmortgaged",
-        card:"electricitycard",
+        card: "electricitycard",
         color: "black"
     },
     {
@@ -479,7 +399,7 @@ const pieces = [
         group: "pink",
         img: "pink",
         mortgaged: "mortgaged",
-        card:"pinkcard3",
+        card: "pinkcard3",
         color: "#e91e63"
     },
     {
@@ -490,17 +410,17 @@ const pieces = [
         group: "pink",
         img: "pink",
         mortgaged: "mortgaged",
-        card:"pinkcard2",
+        card: "pinkcard2",
         color: "#e91e63"
     },
     {
         name: "Östra Stationen",
         price: 200,
-        rent:[25, 50, 100, 200],
+        rent: [25, 50, 100, 200],
         type: "station",
         img: "train",
         mortgaged: "trainmortgaged",
-        card:"eaststation",
+        card: "eaststation",
         color: "black"
     },
     {
@@ -511,7 +431,7 @@ const pieces = [
         group: "orange",
         img: "orange",
         mortgaged: "mortgaged",
-        card:"orangecard1",
+        card: "orangecard1",
         color: "#ffa000"
     },
     {
@@ -527,7 +447,7 @@ const pieces = [
         group: "orange",
         img: "orange",
         mortgaged: "mortgaged",
-        card:"orangecard2",
+        card: "orangecard2",
         color: "#ffa000"
     },
     {
@@ -538,7 +458,7 @@ const pieces = [
         group: "orange",
         img: "orange",
         mortgaged: "mortgaged",
-        card:"orangecard3",
+        card: "orangecard3",
         color: "#ffa000"
     },
     {
@@ -553,7 +473,7 @@ const pieces = [
         group: "red",
         img: "red",
         mortgaged: "mortgaged",
-        card:"redcard1",
+        card: "redcard1",
         color: "#e51c23"
     },
     {
@@ -569,7 +489,7 @@ const pieces = [
         group: "red",
         img: "red",
         mortgaged: "mortgaged",
-        card:"redcard2",
+        card: "redcard2",
         color: "#e51c23"
     },
     {
@@ -580,17 +500,17 @@ const pieces = [
         group: "red",
         img: "red",
         mortgaged: "mortgaged",
-        card:"redcard3",
+        card: "redcard3",
         color: "#e51c23"
     },
     {
         name: "Centralstationen",
         price: 200,
-        rent:[25, 50, 100, 200],
+        rent: [25, 50, 100, 200],
         type: "station",
         img: "train",
         mortgaged: "trainmortgaged",
-        card:"centralstation",
+        card: "centralstation",
         color: "black"
     },
     {
@@ -601,7 +521,7 @@ const pieces = [
         group: "yellow",
         img: "yellow",
         mortgaged: "mortgaged",
-        card:"yellowcard1",
+        card: "yellowcard1",
         color: "#ffeb3b"
     },
     {
@@ -612,7 +532,7 @@ const pieces = [
         group: "yellow",
         img: "yellow",
         mortgaged: "mortgaged",
-        card:"yellowcard2",
+        card: "yellowcard2",
         color: "#ffeb3b"
     },
     {
@@ -621,7 +541,7 @@ const pieces = [
         type: "utility",
         img: "water",
         mortgaged: "watermortgaged",
-        card:"waterworkscard",
+        card: "waterworkscard",
         color: "black"
     },
     {
@@ -632,7 +552,7 @@ const pieces = [
         group: "yellow",
         img: "yellow",
         mortgaged: "mortgaged",
-        card:"yellowcard3",
+        card: "yellowcard3",
         color: "#ffeb3b"
     },
     {
@@ -647,7 +567,7 @@ const pieces = [
         group: "green",
         img: "green",
         mortgaged: "mortgaged",
-        card:"greencard1",
+        card: "greencard1",
         color: "#42bd41"
     },
     {
@@ -658,7 +578,7 @@ const pieces = [
         group: "green",
         img: "green",
         mortgaged: "mortgaged",
-        card:"greencard2",
+        card: "greencard2",
         color: "#42bd41"
     },
     {
@@ -674,17 +594,17 @@ const pieces = [
         group: "green",
         img: "green",
         mortgaged: "mortgaged",
-        card:"greencard3",
+        card: "greencard3",
         color: "#42bd41"
     },
     {
         name: "Norra stationen",
         price: 200,
-        rent:[25, 50, 100, 200],
+        rent: [25, 50, 100, 200],
         type: "station",
         img: "train",
         mortgaged: "trainmortgaged",
-        card:"northstation",
+        card: "northstation",
         color: "black"
     },
     {
@@ -700,7 +620,7 @@ const pieces = [
         group: "blue",
         img: "blue",
         mortgaged: "mortgaged",
-        card:"bluecard1",
+        card: "bluecard1",
         color: "#0288d1"
     },
     {
@@ -717,7 +637,7 @@ const pieces = [
         group: "blue",
         img: "blue",
         mortgaged: "mortgaged",
-        card:"bluecard2",
+        card: "bluecard2",
         color: "#0288d1"
     }
 ]

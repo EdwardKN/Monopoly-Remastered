@@ -19,11 +19,13 @@ window.addEventListener("resize", fixCanvas);
 renderCanvas.addEventListener("mousemove", function (e) {
     let oldDown = mouse.down;
     let oldWhich = mouse.which;
+    let oldUp = mouse.up;
     mouse = {
         x: e.offsetX / scale,
         y: e.offsetY / scale,
         down: oldDown,
-        which:oldWhich
+        which: oldWhich,
+        up: oldUp
     };
 });
 
@@ -60,8 +62,8 @@ function fixCanvas() {
 var buttons = [];
 var textInputs = [];
 
-class Slider{
-    constructor(settings,onChange){
+class Slider {
+    constructor(settings, onChange) {
         this.x = settings?.x;
         this.y = settings?.y;
         this.w = settings?.w;
@@ -72,57 +74,73 @@ class Slider{
         this.textSize = (settings?.textSize == undefined) ? this.h : settings?.textSize;
         this.unit = (settings?.unit == undefined) ? "" : settings?.unit;
         this.beginningText = (settings?.beginningText == undefined) ? "" : settings?.beginningText;
-        this.onChange = (onChange == undefined ? function(){} : onChange);
-        
+        this.onChange = (onChange == undefined ? function () { } : onChange);
+
+        this.undefinedTextSize = (settings?.textSize == undefined);
+
         this.percentage = 0;
         this.value = 0;
         this.last = this.value;
         this.follow = false;
+        this.disabled = false;
         buttons.push(this)
+
+        if (this.undefinedTextSize) {
+            this.textSize = c.getFontSize(this.beginningText + this.value + this.unit, this.w - 12, this.h - 4)
+        }
     }
-    update(){
+    update() {
         if (this.value !== this.last) {
             this.last = this.value;
             this.onChange();
+            if (this.undefinedTextSize) {
+                this.textSize = c.getFontSize(this.beginningText + this.value + this.unit, this.w - 12, this.h - 4)
+            }
         };
-        this.hover = detectCollision(this.x, this.y, this.w, this.h, mouse.x, mouse.y, 1, 1); 
-        if(mouse.down && this.hover){
+        this.hover = detectCollision(this.x, this.y, this.w, this.h, mouse.x, mouse.y, 1, 1) && !this.disabled;
+        if (mouse.down && this.hover) {
             mouse.down = false;
             this.follow = true;
         };
-        if(mouse.up){
+        if (mouse.up) {
             this.follow = false;
         };
 
-        if(this.follow){
+        if (this.follow) {
             this.percentage = Math.max(Math.min((mouse.x - 2 - (this.x)) / (this.w - 4), 1), 0);
             this.value = Math.round((((this.to - this.from) * this.percentage) + this.from) / this.steps) * this.steps;
+            if (this.value > this.to) {
+                this.value = this.to;
+            };
+
         };
         this.draw();
 
 
     }
-    draw(){
+    draw() {
         c.fillStyle = "white";
-        c.fillRect(this.x,this.y,this.w,this.h);
-        c.strokeStyle ="black";
+        c.fillRect(this.x, this.y, this.w, this.h);
+        c.strokeStyle = "black";
         c.lineWidth = 4;
-        c.strokeRect(this.x,this.y,this.w,this.h);
+        c.strokeRect(this.x, this.y, this.w, this.h);
 
         c.fillStyle = "black";
-        c.fillRect(this.x + (this.percentage)*(this.w-4),this.y, 4,this.h);
+        c.fillRect(this.x + (this.percentage) * (this.w - 4), this.y, 4, this.h);
 
-        c.drawText(this.beginningText + this.value + this.unit,this.x + this.w/2,this.y+this.h - (this.h-this.textSize)/2 - 2,this.textSize,"center")
+
+
+        c.drawText(this.beginningText + this.value + this.unit, this.x + this.w / 2, this.y + this.h - (this.h - this.textSize) / 2 - 2, this.textSize, "center")
     }
 }
-class TextInput{
-    constructor(settings,onChange){
+class TextInput {
+    constructor(settings, onChange) {
         this.x = settings?.x;
         this.y = settings?.y;
         this.w = settings?.w;
         this.h = settings?.h;
         this.textSize = (settings?.textSize == undefined) ? this.h : settings?.textSize;
-        this.onChange = (onChange == undefined ? function(){} : onChange);
+        this.onChange = (onChange == undefined ? function () { } : onChange);
 
         this.maxLength = settings?.maxLength == undefined ? 100 : settings.maxLength;
         this.placeHolder = settings?.placeHolder;
@@ -130,39 +148,39 @@ class TextInput{
         this.htmlElement = document.createElement("input");
 
         this.htmlElement.addEventListener("mousemove", e => {
-            mouse.x = 10000;
-            mouse.y = 10000;
-        })
+            mouse.x = Infinity;
+            mouse.y = Infinity;
+        });
 
-        document.body.appendChild(this.htmlElement)
+        document.body.appendChild(this.htmlElement);
         this.oldvalue = this.htmlElement.value;
 
-        this.htmlElement.style.position = "absolute"
+        this.htmlElement.style.position = "absolute";
 
-        this.htmlElement.style.padding = "0px"
+        this.htmlElement.style.padding = "0px";
         this.htmlElement.style.zIndex = 100;
-        this.htmlElement.style.fontFamily = "Verdanai"
-        this.htmlElement.placeholder = this.placeHolder != undefined ? this.placeHolder : ""
+        this.htmlElement.style.fontFamily = "Verdanai";
+        this.htmlElement.placeholder = this.placeHolder != undefined ? this.placeHolder : "";
 
         textInputs.push(this);
     }
-    draw(){
-        this.htmlElement.style.display = "inline"
+    draw() {
+        this.htmlElement.style.display = "inline";
         this.htmlElement.style.left = this.x * scale + (window.innerWidth - renderCanvas.width) / 2 + "px";
-        this.htmlElement.style.top = this.y * scale+ (window.innerHeight - renderCanvas.height) / 2 + "px";
-        this.htmlElement.style.width = this.w * scale + "px";
-        this.htmlElement.style.height = this.h * scale + "px";
+        this.htmlElement.style.top = this.y * scale + (window.innerHeight - renderCanvas.height) / 2 + "px";
+        this.htmlElement.style.width = this.w * scale - 10 * scale / 2 + "px";
+        this.htmlElement.style.height = this.h * scale - 10 * scale / 2 + "px";
 
-        this.htmlElement.style.fontSize = this.textSize + "px"
+        this.htmlElement.style.fontSize = this.textSize * scale + "px";
         this.htmlElement.maxLength = this.maxLength;
-        this.htmlElement.style.border = 5 * scale / 2 + "px solid black "
-        
+        this.htmlElement.style.border = 5 * scale / 2 + "px solid black ";
+
         this.value = this.htmlElement.value;
     }
 }
 
 class Button {
-    constructor(settings, image, onClick,onRightClick) {
+    constructor(settings, image, onClick, onRightClick) {
         this.x = settings?.x;
         this.y = settings?.y;
         this.w = settings?.w;
@@ -200,12 +218,13 @@ class Button {
         if (detectCollision(this.x, this.y, this.w, this.h, mouse.x, mouse.y, 1, 1)) {
             this.hover = true;
         }
-        if(this.invertedHitbox != undefined && this.invertedHitbox != false && !detectCollision(this.invertedHitbox.x,this.invertedHitbox.y,this.invertedHitbox.w,this.invertedHitbox.h,mouse.x, mouse.y, 1, 1)){
+        if (this.invertedHitbox != undefined && this.invertedHitbox != false && !detectCollision(this.invertedHitbox.x, this.invertedHitbox.y, this.invertedHitbox.w, this.invertedHitbox.h, mouse.x, mouse.y, 1, 1)) {
             this.invertedHover = true;
         }
         if ((this.hover || this.invertedHover) && mouse.down && !this.disabled) {
             mouse.down = false;
             this.selected = !this.selected;
+            this.hover = false;
             this.onClick();
         }
         if (this.hover && mouse.rightDown && !this.disabled) {
@@ -213,45 +232,55 @@ class Button {
         }
 
         this.draw()
-        
+
     }
     draw() {
         let cropAdder = (this.hover && !this.disableHover) ? this.w : 0;
-        cropAdder = (this.disabled) ? (this.disableDisabledTexture ? 0 : this.w*2) : cropAdder;
-        cropAdder += ((this.selectButton == undefined )? 0 : (this.selected ? ((this.disableSelectTexture == undefined) ? this.w*2 : this.w) : 0));
-        c.drawRotatedImageFromSpriteSheet(this.image,{
-            x:this.x,
-            y:this.y,
-            w:this.w,
-            h:this.h,
-            cropX:cropAdder,
-            cropW:this.w,
-            mirrored:this.mirrored
+        cropAdder = (this.disabled) ? (this.disableDisabledTexture ? 0 : this.w * 2) : cropAdder;
+        cropAdder += ((this.selectButton == undefined) ? 0 : (this.selected ? ((this.disableSelectTexture == undefined) ? this.w * 2 : this.w) : 0));
+        c.drawRotatedImageFromSpriteSheet(this.image, {
+            x: this.x,
+            y: this.y,
+            w: this.w,
+            h: this.h,
+            cropX: cropAdder,
+            cropW: this.w,
+            mirrored: this.mirrored
         })
-        if(this.hover && !this.disabled){
+        if (this.hover && !this.disabled) {
             hoverList.push(this.hoverText);
         }
-        c.drawText(this.text,this.x + this.w/2, this.y+this.textSize, this.textSize,"center",this.color)
+        c.drawText(this.text, this.x + this.w / 2, this.y + this.textSize, this.textSize, "center", this.color)
     };
 }
 
 
 var spritesheet;
 var spritesheetImage;
+var images = {};
 
 var f = new FontFace('verdanai', 'url(./verdanai.ttf)');
 f.load().then(function (font) { document.fonts.add(font); });
 
-CanvasRenderingContext2D.prototype.drawText = function(text,x,y,fontSize,align,color,shadow){
-    this.font =  fontSize + "px " + "verdanai";
+var g = new FontFace('handwritten', 'url(./handwritten.ttf)');
+g.load().then(function (font) { document.fonts.add(font); });
+
+CanvasRenderingContext2D.prototype.getFontSize = function (text, maxWidth, maxHeight) {
+    c.font = "10px verdanai"
+    let width = c.measureText(text).width
+    return (1 / width) * maxWidth * 10 > maxHeight ? maxHeight : (1 / width) * maxWidth * 10;
+}
+
+CanvasRenderingContext2D.prototype.drawText = function (text, x, y, fontSize, align, color, shadow) {
+    this.font = fontSize + "px verdanai";
     this.fillStyle = "gray";
     this.shadowBlur = (shadow?.blur == undefined ? 0 : shadow?.blur);
-    this.shadowColor = (shadow?.color == undefined ? "white": shadow?.color);
+    this.shadowColor = (shadow?.color == undefined ? "white" : shadow?.color);
     this.textAlign = (align != undefined) ? align : "left";
-    this.fillText(text,x,y)
+    this.fillText(text, x, y)
     this.shadowBlur = 0;
     this.fillStyle = (color !== undefined ? color : "black");
-    this.fillText(text,x-1,y-1)
+    this.fillText(text, x - 1, y - 1)
 }
 
 
@@ -262,33 +291,30 @@ async function loadSpriteSheet() {
     spritesheetImage.src = "./images/texture.png";
 }
 
-async function loadImages(imageObject) {
+async function loadImages() {
     await loadSpriteSheet();
-    Object.entries(imageObject).forEach((imageList, i) => {  
-        let tmpList = {};
-        imageList[1].forEach((image,index) => {
-            let src = imageList[0] + "/" + image + ".png";
-            tmpList[image] = (spritesheet.frames[spritesheet.frames.map(function (e) { return e.filename; }).indexOf(src)]).frame;
-        })
-        images[imageList[0]] = tmpList;
+    spritesheet.frames.forEach((frame, i) => {
+        let tmp = frame.filename.replaceAll(".png", "").split("/");
+        images[tmp[0]] = images[tmp[0]] ?? {}
+        images[tmp[0]][tmp[1]] = frame.frame;
     });
 }
 
-CanvasRenderingContext2D.prototype.drawImageFromSpriteSheet = function (frame,settingsOverride) {
+CanvasRenderingContext2D.prototype.drawImageFromSpriteSheet = function (frame, settingsOverride) {
     if (!frame) { return }
     let settings = {
-        x:0,
-        y:0,
-        w:frame.w,
-        h:frame.h,
-        cropX:0,
-        cropY:0,
-        cropW:frame.w,
-        cropH:frame.h
+        x: 0,
+        y: 0,
+        w: frame.w,
+        h: frame.h,
+        cropX: 0,
+        cropY: 0,
+        cropW: frame.w,
+        cropH: frame.h
     };
-    if(settingsOverride){
+    if (settingsOverride) {
         let tmp = Object.entries(settingsOverride);
-        if(tmp.length){
+        if (tmp.length) {
             tmp.forEach(setting => {
                 settings[setting[0]] = setting[1];
             })
@@ -298,23 +324,23 @@ CanvasRenderingContext2D.prototype.drawImageFromSpriteSheet = function (frame,se
     this.drawImage(spritesheetImage, Math.floor(settings.cropX + frame.x), Math.floor(settings.cropY + frame.y), Math.floor(settings.cropW), Math.floor(settings.cropH), Math.floor(settings.x), Math.floor(settings.y), Math.floor(settings.w), Math.floor(settings.h));
 }
 
-CanvasRenderingContext2D.prototype.drawRotatedImageFromSpriteSheet = function(frame,settingsOverride) {
+CanvasRenderingContext2D.prototype.drawRotatedImageFromSpriteSheet = function (frame, settingsOverride) {
     if (!frame) { return }
     let settings = {
-        x:0,
-        y:0,
-        w:frame.w,
-        h:frame.h,
-        rotation:0,
-        mirrored:false,
-        cropX:0,
-        cropY:0,
-        cropW:frame.w,
-        cropH:frame.h
+        x: 0,
+        y: 0,
+        w: frame.w,
+        h: frame.h,
+        rotation: 0,
+        mirrored: false,
+        cropX: 0,
+        cropY: 0,
+        cropW: frame.w,
+        cropH: frame.h
     };
-    if(settingsOverride){
+    if (settingsOverride) {
         let tmp = Object.entries(settingsOverride);
-        if(tmp.length){
+        if (tmp.length) {
             tmp.forEach(setting => {
                 settings[setting[0]] = setting[1];
             })
@@ -335,36 +361,36 @@ CanvasRenderingContext2D.prototype.drawRotatedImageFromSpriteSheet = function(fr
         this.scale(-1, 1);
     }
 
-    this.drawImageFromSpriteSheet(frame,{x:-settings.w / 2,y:-settings.h/2, w:settings.w, h:settings.h, cropX:settings.cropX, cropY:settings.cropY, cropW:settings.cropW, cropH:settings.cropH});
+    this.drawImageFromSpriteSheet(frame, { x: -settings.w / 2, y: -settings.h / 2, w: settings.w, h: settings.h, cropX: settings.cropX, cropY: settings.cropY, cropW: settings.cropW, cropH: settings.cropH });
 
     this.restore();
 }
 
-CanvasRenderingContext2D.prototype.drawIsometricImage = function(frame,settingsOverride) {
+CanvasRenderingContext2D.prototype.drawIsometricImage = function (frame, settingsOverride) {
     if (!frame) { return }
     let settings = {
-        x:0,
-        y:0,
-        w:frame.w,
-        h:frame.h,
-        rotation:0,
-        mirrored:false,
-        cropX:0,
-        cropY:0,
-        cropW:frame.w,
-        cropH:frame.h,
-        offsetX:0,
-        offsetY:0
+        x: 0,
+        y: 0,
+        w: frame.w,
+        h: frame.h,
+        rotation: 0,
+        mirrored: false,
+        cropX: 0,
+        cropY: 0,
+        cropW: frame.w,
+        cropH: frame.h,
+        offsetX: 0,
+        offsetY: 0
     };
-    if(settingsOverride){
+    if (settingsOverride) {
         let tmp = Object.entries(settingsOverride);
-        if(tmp.length){
+        if (tmp.length) {
             tmp.forEach(setting => {
                 settings[setting[0]] = setting[1];
             })
         }
     }
-    this.drawRotatedImageFromSpriteSheet(frame,{x:to_screen_coordinate(settings.x, settings.y).x  + settings.offsetX, y:to_screen_coordinate(settings.x, settings.y).y + settings.offsetY, w:settings.w, h:settings.h, rotation:settings.rotation, mirrored:settings.mirrored, cropX:settings.cropX, cropY:settings.cropY, cropW:settings.cropW, cropH:settings.cropH})
+    this.drawRotatedImageFromSpriteSheet(frame, { x: to_screen_coordinate(settings.x, settings.y).x + settings.offsetX, y: to_screen_coordinate(settings.x, settings.y).y + settings.offsetY, w: settings.w, h: settings.h, rotation: settings.rotation, mirrored: settings.mirrored, cropX: settings.cropX, cropY: settings.cropY, cropW: settings.cropW, cropH: settings.cropH })
 }
 
 
@@ -416,9 +442,9 @@ function distance(x1, y1, x2, y2) {
 function drawLine(from, to, co) {
     c.lineWidth = 2;
     c.beginPath();
-    c.moveTo(from.x * tileSize, from.y * tileSize);
-    c.lineTo(to.x * tileSize, to.y * tileSize);
-    c.strokeStyle = co
+    c.moveTo(from.x, from.y);
+    c.lineTo(to.x, to.y);
+    c.strokeStyle = co == undefined ? "black" : co;
     c.stroke();
 }
 
@@ -614,8 +640,8 @@ window.addEventListener('keyup', function (e) {
 })
 
 Number.prototype.clamp = function (min, max) {
-    if(this < min) return min;
-    if(this > max) return max;
+    if (this < min) return min;
+    if (this > max) return max;
     return this;
 };
 
@@ -628,22 +654,20 @@ function angle(cx, cy, ex, ey) {
     var theta = Math.atan2(dy, dx); // range (-PI, PI]
     theta *= 180 / Math.PI; // rads to degs, range (-180, 180]
     return theta;
-  }
+}
 function angle360(cx, cy, ex, ey) {
     var theta = angle(cx, cy, ex, ey); // range (-180, 180]
     if (theta < 0) theta = 360 + theta; // range [0, 360)
     return theta;
-  }
-  function sum(a) {
-    var s = 0;
-    for (var i = 0; i < a.length; i++) s += a[i];
-    return s;
-} 
+}
+function sum(a) {
+    return a.reduce((partialSum, a) => partialSum + a);
+}
 
 function degToRad(a) {
     return Math.PI / 180 * a;
 }
-  function meanAngleDeg(a) {
+function meanAngleDeg(a) {
     let tmp = 180 / Math.PI * Math.atan2(
         sum(a.map(degToRad).map(Math.sin)) / a.length,
         sum(a.map(degToRad).map(Math.cos)) / a.length
@@ -700,14 +724,15 @@ function to_grid_coordinate(x, y) {
     }
 }
 
-function splitPoints(ammount,totalW,w,i){
+function splitPoints(ammount, totalW, w, i) {
     return (totalW / ammount - w) / 2 + totalW / ammount * i
 }
 
 
 var times = [];
 var fps = 60;
-var deltaTime = 1;
+var deltaTime = 0;
+var updateDelta = false;
 
 function refreshLoop() {
     window.requestAnimationFrame(function () {
@@ -717,58 +742,121 @@ function refreshLoop() {
         }
         times.push(now);
         fps = times.length;
-        //deltaTime = 60 / fps;
+        deltaTime = updateDelta ? 60 / fps : 1;
         refreshLoop();
     });
 }
 refreshLoop();
 
-const measureText = (() => {
-    var data, w, size = 500; // for higher accuracy increase this size in pixels.
-    let tmp = 120/size;
-
-    const isColumnEmpty = x => {
-        var idx = x, h = size * 2;
-        while (h--) {
-            if (data[idx]) { return false }
-            idx += can.width;
-        }
-        return true;
-    }
-    const can = document.createElement("canvas");
-    const ctx = can.getContext('2d' , {willReadFrequently: true});
-    return ({ text, font, baseSize = size }) => {
-        size = baseSize;
-        can.height = size * 2;
-        font = size + "px " + font;
-        if (text.trim() === "") { return }
-        ctx.font = font;
-        can.width = (w = ctx.measureText(text).width) + 8;
-        ctx.font = font;
-        ctx.textBaseline = "middle";
-        ctx.textAlign = "left";
-        ctx.fillText(text, 0, size);
-        data = new Uint32Array(ctx.getImageData(0, 0, can.width, can.height,).data.buffer);
-        var left, right;
-        var lIdx = 0, rIdx = can.width - 1;
-        while (lIdx < rIdx) {
-            if (left === undefined && !isColumnEmpty(lIdx)) { left = lIdx }
-            if (right === undefined && !isColumnEmpty(rIdx)) { right = rIdx }
-            if (right !== undefined && left !== undefined) { break }
-            lIdx += 1;
-            rIdx -= 1;
-        }
-        data = undefined; // release RAM held
-        can.width = 1; // release RAM held
-        return right - left >= 1 ? {
-            left, right, rightOffset: w - right, width: (right - left)*tmp,
-            measuredWidth: w, font, baseSize
-        } : undefined;
-    }
-})();
+setTimeout(() => { updateDelta = true; }, 1000);
 
 var findClosest = function (x, arr) {
-    var indexArr = arr.map(function(k) { return Math.abs(k - x) })
+    var indexArr = arr.map(function (k) { return Math.abs(k - x) })
     var min = Math.min.apply(Math, indexArr)
     return arr[indexArr.indexOf(min)]
-  }
+}
+
+function hasDuplicates(array) {
+    return (new Set(array)).size !== array.length;
+}
+
+Date.prototype.today = function () {
+    return ((this.getDate() < 10) ? "0" : "") + this.getDate() + "/" + (((this.getMonth() + 1) < 10) ? "0" : "") + (this.getMonth() + 1) + "/" + this.getFullYear();
+}
+Date.prototype.timeNow = function () {
+    return ((this.getHours() < 10) ? "0" : "") + this.getHours() + ":" + ((this.getMinutes() < 10) ? "0" : "") + this.getMinutes() + ":" + ((this.getSeconds() < 10) ? "0" : "") + this.getSeconds();
+}
+
+function getClassContructorParams(obj) {
+    let match = obj.toString().match(/constructor\((.+)\)/)
+
+    if (match && match[1]) {
+        return match[1].split(",");
+    }
+
+    // If no match
+    return []
+}
+
+function applyToConstructor(constructor, argArray) {
+    var args = [null].concat(argArray);
+    var factoryFunction = constructor.bind.apply(constructor, args);
+    return new factoryFunction();
+}
+
+function monthToText(month) {
+    return ["Januari", "Februari", "Mars", "April", "Maj", "Juni", "Juli", "Augusti", "September", "Oktober", "November", "December"][month]
+};
+
+function numberToText(number) {
+    let siffror = ["EN", "ETT", "TVÅ", "TRE", "FYRA", "FEM", "SEX", "SJU", "ÅTTA", "NIO", "TIO", "ELVA", "TOLV", "TRETTON", "FJORTON", "FEMTON", "SEXTON", "SJUTTON", "ARTON", "NITTON", "TJUGO", "TRETTIO", "FYRTIO", "FEMTIO", "SEXTIO", "SJUTTIO", "ÅTTIO", "NITTIO", "HUNDRA", "TUSEN"]
+    if (number < 21) {
+        return siffror[number];
+    } else if (number < 100) {
+        if (number - Math.floor(number / 10) * 10 == 1) {
+            if ((number - Math.floor(number / 10) * 10) !== 0) {
+                return (siffror[Math.floor(number / 10) + 18] + siffror[number - Math.floor(number / 10) * 10 - 1])
+            } else {
+                return (siffror[Math.floor(number / 10) + 18])
+            }
+        } else {
+            if (number - Math.floor(number / 10) * 10 == 0) {
+                return (siffror[Math.floor(number / 10) + 18])
+            } else {
+                return (siffror[Math.floor(number / 10) + 18] + siffror[number - Math.floor(number / 10) * 10])
+            }
+        }
+    } else if (number == 100) {
+        return "ETT" + siffror[28]
+    } else if (number < 1000 && JSON.parse(JSON.stringify(number).slice(1, 2)) < 2) {
+        if (JSON.parse(JSON.stringify(number).slice(1, 2)) !== 0) {
+            return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(1, 3))]
+        } else if (JSON.parse(JSON.stringify(number).slice(2, 3)) === 0) {
+            return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[28]
+        } else if (JSON.parse(JSON.stringify(number).slice(2, 3)) === 1) {
+            return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[28] + siffror[0]
+        } else {
+            return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(2, 3))]
+        }
+    } else if (number < 1000) {
+        if (JSON.parse(JSON.stringify(number).slice(2, 3)) == 0) {
+            return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(1, 2)) + 18]
+        } else {
+            return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(1, 2)) + 18] + siffror[JSON.parse(JSON.stringify(number).slice(2, 3))]
+        }
+    } else if (number == 1000) {
+        return "ET" + siffror[29];
+    } else if (number < 10000) {
+        if (JSON.parse(JSON.stringify(number).slice(1, 2)) == 0) {
+            if (JSON.parse(JSON.stringify(number).slice(2, 3)) < 2 && JSON.parse(JSON.stringify(number).slice(2, 3) > 0)) {
+                return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(2, 4))]
+            } else if (JSON.parse(JSON.stringify(number).slice(2, 3)) < 2 && JSON.parse(JSON.stringify(number).slice(3, 4)) == 0) {
+                return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29];
+            } else if (JSON.parse(JSON.stringify(number).slice(2, 3)) < 2) {
+                return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(3, 4))]
+            } else if (JSON.parse(JSON.stringify(number).slice(3, 4)) == 0) {
+                return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(2, 3)) + 18]
+            } else {
+                return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(2, 3)) + 18] + siffror[JSON.parse(JSON.stringify(number).slice(3, 4))]
+            }
+        } else {
+            if (number < 10000 && JSON.parse(JSON.stringify(number).slice(2, 3)) < 2) {
+                if (JSON.parse(JSON.stringify(number).slice(2, 3)) == 0) {
+                    return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(1, 2))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(3, 4))]
+                } else {
+                    return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(1, 2))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(2, 4))]
+                }
+            } else if (JSON.parse(JSON.stringify(number).slice(3, 4)) == 0) {
+                return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(1, 2))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(2, 3)) + 18]
+            } else {
+                return siffror[JSON.parse(JSON.stringify(number).slice(0, 1))] + siffror[29] + siffror[JSON.parse(JSON.stringify(number).slice(1, 2))] + siffror[28] + siffror[JSON.parse(JSON.stringify(number).slice(2, 3)) + 18] + siffror[JSON.parse(JSON.stringify(number).slice(3, 4))]
+            }
+        }
+
+    }
+}
+
+const divide = (num = 100, n = 4) => {
+    const f = Math.floor(num / n);
+    return [...Array(n)].map((_, i) => i - n + 1 ? f : num - i * f);
+}
