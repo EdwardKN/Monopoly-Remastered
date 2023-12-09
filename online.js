@@ -153,8 +153,8 @@ function sendPlayers(settings = {}) {
 function resetReady() {
     if (board.constructor.name === 'Board') return
 
-    board.readyPlayers = 
-    board.ready = false
+    board.readyPlayers =
+        board.ready = false
 }
 
 function readyUp() {
@@ -215,18 +215,11 @@ function createHost() {
             const data = response.data
             console.log(response)
 
-            if (type === "requestCommunityCard") {
-                let rigged = randomIntFromRange(0, 12)
-                board.cardId = rigged
-                sendMessageToAll("saveCardId", { cardId: rigged, pos: players[turn].pos, type: "community" }, [client], "communityCard", rigged)
-            }
-            if (type === "requestChanceCard") {
-                let rigged = randomIntFromRange(0, 13)
-                board.cardId = rigged
-                sendMessageToAll("saveCardId", { cardId: rigged, pos: players[turn].pos, type: "chance" }, [client], "chanceCard", rigged)
-            }
             if (type === "ready") {
                 addReady()
+            }
+            if (type === "requestCloseCard") {
+                currentMenu.okayButton.onClick();
             }
             if (type === "requestDiceRoll") {
                 board.rollDiceButton.onClick()
@@ -296,20 +289,12 @@ function connectToHost(hostId) {
             const data = response.data
             console.log(response)
 
+            if (type === "closeCard") {
+                currentMenu.okayButton.onClick(false);
+            }
+
             if (type === "saveCardId") {
-                board.cardId = data.cardId
-                if (players[turn].pos === data.pos) {
-                    if (data.type === "chance") currentMenu = new CardDraw("chance")
-                    else currentMenu = new CardDraw("community")
-                }
-            }
-            if (type === "communityCard") {
                 board.cardId = data
-                currentMenu = new CardDraw("community")
-            }
-            if (type === "chanceCard") {
-                board.cardId = data
-                currentMenu = new CardDraw("chance")
             }
             if (type === "ready") {
                 board.ready = true
