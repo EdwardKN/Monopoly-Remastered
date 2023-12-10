@@ -51,6 +51,14 @@ function startGame(playersToStartGameWith, settings) {
             sendMessage(Object.values(board.peer.clients)[i - 1].connection, "startGame", { players: clientPlayers, settings: settings, index: i })
         }
         players[0].playing = true
+
+        let rigged = shuffle(players, true)
+        players = riggedShuffle(players, rigged)
+        turn = randomIntFromRange(0, players.length - 1)
+        console.log(players, rigged)
+        console.log(turn)
+        sendMessageToAll("sortPlayers", rigged)
+        sendMessageToAll("turn", turn)
     }
     else currentMenu = undefined
 }
@@ -474,7 +482,7 @@ class OnlineLobby {
             c.drawText("Id: " + this.peer.id, 250, canvas.height - 30, 30, "left", "blue")
             if (mouse.down) {
                 mouse.down = false
-                //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.host.id}`)
+                //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.peer.id}`)
                 navigator.clipboard.writeText(this.peer.id)
 
                 currentMenu.players[0].textInput.htmlElement.value = "Player 1" // TEMP
@@ -858,7 +866,7 @@ class OnlineBoard extends Board {
         this.readyPlayers = 0
         this.peer = peer
         this.cardId
-
+        
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
             let dice1 = randomIntFromRange(1, 1)
             let dice2 = randomIntFromRange(1, 1)
@@ -1946,7 +1954,7 @@ class Player {
         board.boardPieces[0].playersOnBoardPiece.push(this);
     }
     calculateDrawPos() {
-        let index = this.inPrison ? players.filter(e => e.inPrison).indexOf(this) : board.boardPieces[this.pos].playersOnBoardPiece.indexOf(this);
+        let index = this.inPrison && !board.playerIsWalkingTo ? players.filter(e => e.inPrison).indexOf(this) : board.boardPieces[this.pos].playersOnBoardPiece.indexOf(this);
 
         this.drawX = board.boardPieces[this.pos].drawX;
         this.drawY = board.boardPieces[this.pos].drawY - 64;

@@ -883,5 +883,25 @@ function mulberry32(a) {
     t = Math.imul(t ^ t >>> 15, t | 1);
     t ^= t + Math.imul(t ^ t >>> 7, t | 61);
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
+}
 
+function shuffle(unshuffled, saveValues = false) {
+    let values = []
+    let shuffled = unshuffled
+        .map(value => {
+            let sortValue = Math.random()
+            if (saveValues) values.push(sortValue)
+            return ({ value, sort: sortValue })
+        }).sort((a, b) => a.sort - b.sort)
+        .map(({ value }) => value)
+    
+    if (saveValues) return values
+    else return shuffled
+}
+
+function riggedShuffle(unshuffled, values) {
+    return unshuffled
+        .map((value, i) => ({ value, sort: values[i] }))
+        .sort((a, b) => a.sort - b.sort)
+        .map(({ value }) => value) 
 }

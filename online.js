@@ -364,6 +364,8 @@ function connectToHost(hostId) {
                 delete p
             }
 
+            if (type === "sortPlayers") players = riggedShuffle(players, data)
+            if (type === "turn") turn = data
             // Lobby
             if (type === "select") {
                 if (!data.valid) {
