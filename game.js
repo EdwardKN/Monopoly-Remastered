@@ -897,8 +897,10 @@ class PrisonMenu {
         });
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 1), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisonrolldice, function (request = true, rigged1 = randomIntFromRange(1, 6), rigged2 = randomIntFromRange(1, 6)) {
             if (requestAction("rollPrison", { rigged1: rigged1, rigged2: rigged2 }, request)) return
+            resetReady()
 
             board.dices.roll(function (dice1, dice2) {
+                readyUp()
                 if (dice1 == dice2) {
                     players[turn].getOutOfPrison();
                     players[turn].teleportTo(players[turn].pos + dice1 + dice2);
@@ -2139,9 +2141,9 @@ class Dice {
                 counter *= 1.2;
                 setTimeout(rollAnimation, counter);
             } else {
+                if (rigged1) board.dices.dice1 = rigged1
+                if (rigged2) board.dices.dice2 = rigged2
                 setTimeout(() => {
-                    if (rigged1) board.dices.dice1 = rigged1
-                    if (rigged2) board.dices.dice2 = rigged2
                     callback(rigged1 ?? self.dice1, rigged2 ?? self.dice2);
                 }, 1000);
             }
