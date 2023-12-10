@@ -19,4 +19,3 @@ Funktionalitet
 - [ ] Statistik
 - [ ] OnlineLäge
 - [ ] Bots
-
