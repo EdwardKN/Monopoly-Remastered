@@ -1498,7 +1498,6 @@ class Bankcheck {
 
         c.textAlign = "left"
         c.font = "40px handwritten";
-        console.log(this.from)
         c.fillText((typeof this.from == "number") ? players[this.from].name : this.from, 500 - canvas.width / 2 - 256 + this.xPos, 335);
     }
     doCard() {
