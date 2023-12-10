@@ -1320,6 +1320,8 @@ class Auction {
 
 class Trade {
     constructor(player1Id, player2Id) {
+        let self = this;
+
         this.player1Id = player1Id;
         this.player2Id = player2Id;
 
@@ -1335,11 +1337,31 @@ class Trade {
             }, disableHover: true
         }, images.buttons.exitCard, this.closeTrade)
 
-        this.player1MoneySlider = new Slider({ x: canvas.width / 2 - 455 + 30, y: 100, w: 400, h: 20, from: 0, to: this.player1.money, steps: 10, unit: "kr" })
-        this.player2MoneySlider = new Slider({ x: canvas.width / 2 + 455 - 430, y: 100, w: 400, h: 20, from: 0, to: this.player2.money, steps: 10, unit: "kr" })
+        this.player1MoneySlider = new Slider({ x: canvas.width / 2 - 455 + 30, y: 100, w: 400, h: 20, from: 0, to: this.player1.money, steps: 10, unit: "kr" }, function (value = self.player1MoneySlider.percentage, request = true) {
+            if (requestAction("tradeSliderChange", { id: 1, value: value }, request)) return;
+            self.player1MoneySlider.percentage = value;
+            self.player1MoneySlider.updateValue();
+        })
+        this.player2MoneySlider = new Slider({ x: canvas.width / 2 + 455 - 430, y: 100, w: 400, h: 20, from: 0, to: this.player2.money, steps: 10, unit: "kr" }, function (value = self.player2MoneySlider.percentage, request = true) {
+            if (requestAction("tradeSliderChange", { id: 2, value: value }, request)) return;
+            self.player2MoneySlider.percentage = value;
+            self.player2MoneySlider.updateValue();
+        })
 
-        this.player1Accept = new Button({ x: canvas.width / 2 - 455 + 205 - 55, y: 460, w: 150, h: 50, selectButton: true }, images.buttons.accept);
-        this.player2Accept = new Button({ x: canvas.width / 2 - 455 + 900 - 455 / 2 - 55, y: 460, w: 150, h: 50, selectButton: true }, images.buttons.accept);
+        this.player1MoneySlider.disabled = !this.player1.playing;
+        this.player2MoneySlider.disabled = !this.player2.playing;
+
+        this.player1Accept = new Button({ x: canvas.width / 2 - 455 + 205 - 55, y: 460, w: 150, h: 50, selectButton: true, disableDisabledTexture: true, disabledSelectOnClick: true }, images.buttons.accept, function (request = true) {
+            if (requestAction("acceptTrade", 1, request)) return;
+            this.selected = !this.selected
+        });
+        this.player2Accept = new Button({ x: canvas.width / 2 - 455 + 900 - 455 / 2 - 55, y: 460, w: 150, h: 50, selectButton: true, disableDisabledTexture: true, disabledSelectOnClick: true }, images.buttons.accept, function (request = true) {
+            if (requestAction("acceptTrade", 2, request)) return;
+            this.selected = !this.selected
+        });
+
+        this.player1Accept.disabled = !this.player1.playing;
+        this.player2Accept.disabled = !this.player2.playing;
         this.initProperties();
     }
     initProperties() {
@@ -1348,16 +1370,37 @@ class Trade {
 
         this.player1.ownedPlaces.forEach((place, i, amount) => {
             if (place.level == 0 || place.info.type == "station") {
-                this.player1Properties.push({ place: place, button: new Button({ x: 35 + splitPoints(2, 440, 186, (i % 2)), y: 130 + splitPoints(Math.ceil(amount.length / 2), 330, 21, Math.floor(i / 2)), w: 186, h: 21, textSize: 15, text: place.info.name, color: place.info.color, selectButton: true }, images.buttons.tradingcityname, function () { self.player1Accept.selected = false; self.player2Accept.selected = false; }) })
+                this.player1Properties.push({
+                    place: place, button: new Button({ x: 35 + splitPoints(2, 440, 186, (i % 2)), y: 130 + splitPoints(Math.ceil(amount.length / 2), 330, 21, Math.floor(i / 2)), w: 186, h: 21, textSize: 15, text: place.info.name, color: place.info.color, selectButton: true, disableDisabledTexture: true, disabledSelectOnClick: true }, images.buttons.tradingcityname, function (request = true) {
+                        if (requestAction("tradeSelectProperty", { id: 1, value: i }, request)) return;
+                        self.player1Accept.selected = false;
+                        self.player2Accept.selected = false;
+                        this.selected = !this.selected
+                    })
+                })
             }
+        })
+        this.player1Properties.forEach(e => {
+            e.button.disabled = !this.player1.playing;
         })
 
         this.player2Properties = [];
 
         this.player2.ownedPlaces.forEach((place, i, amount) => {
             if (place.level == 0 || place.info.type == "station") {
-                this.player2Properties.push({ place: place, button: new Button({ x: 450 + 35 + splitPoints(2, 440, 186, (i % 2)), y: 130 + splitPoints(Math.ceil(amount.length / 2), 330, 21, Math.floor(i / 2)), w: 186, h: 21, textSize: 15, text: place.info.name, color: place.info.color, selectButton: true }, images.buttons.tradingcityname, function () { self.player1Accept.selected = false; self.player2Accept.selected = false; }) })
+                this.player2Properties.push({
+                    place: place, button: new Button({ x: 450 + 35 + splitPoints(2, 440, 186, (i % 2)), y: 130 + splitPoints(Math.ceil(amount.length / 2), 330, 21, Math.floor(i / 2)), w: 186, h: 21, textSize: 15, text: place.info.name, color: place.info.color, selectButton: true, disableDisabledTexture: true, disabledSelectOnClick: true }, images.buttons.tradingcityname, function (request = true) {
+                        if (requestAction("tradeSelectProperty", { id: 2, value: i }, request)) return;
+                        self.player1Accept.selected = false;
+                        self.player2Accept.selected = false;
+                        this.selected = !this.selected
+                    })
+                })
             }
+        })
+
+        this.player2Properties.forEach(e => {
+            e.button.disabled = !this.player2.playing;
         })
     }
     draw() {
@@ -1405,9 +1448,10 @@ class Trade {
             }
         })
 
-        this.closeTrade();
+        this.closeTrade(false);
     }
-    closeTrade() {
+    closeTrade(request = true) {
+        if (requestAction("closeTrade", undefined, request)) return;
         currentMenu = undefined;
     }
 }
@@ -2057,8 +2101,9 @@ class Money {
 
         let self = this;
 
-        this.button = new Button({ x: this.drawX, y: this.drawY, w: 354, h: 54, mirrored: !this.side, hoverText: "Föreslå bytesförslag", disableDisabledTexture: true }, images.buttons.playerborder, function () {
-            currentMenu = new Trade(players.indexOf(players[turn]), players.indexOf(self.player));
+        this.button = new Button({ x: this.drawX, y: this.drawY, w: 354, h: 54, mirrored: !this.side, hoverText: "Föreslå bytesförslag", disableDisabledTexture: true }, images.buttons.playerborder, function (player1 = players.indexOf(players[turn]), player2 = players.indexOf(self.player)) {
+            if (requestAction("newTrade", { player1: player1, player2: player2 })) return;
+            currentMenu = new Trade(player1, player2);
         })
     }
     update() {

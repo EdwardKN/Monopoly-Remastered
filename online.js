@@ -218,6 +218,21 @@ function createHost() {
             if (type === "ready") {
                 addReady()
             }
+            if (type === "requestTradeSelectProperty") {
+                currentMenu["player" + data.id + "Properties"][data.value].button.onClick()
+            }
+            if (type === "requestTradeSliderChange") {
+                currentMenu["player" + data.id + "MoneySlider"].onChange(data.value)
+            }
+            if (type === "requestCloseTrade") {
+                currentMenu?.closeTrade();
+            }
+            if (type === "requestAcceptTrade") {
+                currentMenu["player" + data + "Accept"].onClick()
+            }
+            if (type === "requestNewTrade") {
+                currentMenu = new Trade(data.player1, data.player2);
+            }
             if (type === "requestAuctionLeave") {
                 currentMenu.leaveAuction()
             }
@@ -321,6 +336,21 @@ function connectToHost(hostId) {
 
             if (type === "ready") {
                 board.ready = true
+            }
+            if (type === "tradeSelectProperty") {
+                currentMenu["player" + data.id + "Properties"][data.value].button.onClick(false)
+            }
+            if (type === "tradeSliderChange") {
+                currentMenu["player" + data.id + "MoneySlider"].onChange(data.value, false)
+            }
+            if (type === "closeTrade") {
+                currentMenu?.closeTrade(false);
+            }
+            if (type === "acceptTrade") {
+                currentMenu["player" + data + "Accept"].onClick(false)
+            }
+            if (type === "newTrade") {
+                currentMenu = new Trade(data.player1, data.player2);
             }
             if (type === "auctionLeave") {
                 currentMenu.leaveAuction(false)

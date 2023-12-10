@@ -108,7 +108,7 @@ class Slider {
 
         if (this.follow) {
             this.percentage = Math.max(Math.min((mouse.x - 2 - (this.x)) / (this.w - 4), 1), 0);
-            this.value = Math.round((((this.to - this.from) * this.percentage) + this.from) / this.steps) * this.steps;
+            this.updateValue();
             if (this.value > this.to) {
                 this.value = this.to;
             };
@@ -131,6 +131,9 @@ class Slider {
 
 
         c.drawText(this.beginningText + this.value + this.unit, this.x + this.w / 2, this.y + this.h - (this.h - this.textSize) / 2 - 2, this.textSize, "center")
+    }
+    updateValue() {
+        this.value = Math.round((((this.to - this.from) * this.percentage) + this.from) / this.steps) * this.steps;
     }
 }
 class TextInput {
@@ -202,6 +205,7 @@ class Button {
         this.text = settings?.text;
         this.textSize = settings?.textSize;
         this.color = settings?.color;
+        this.disabledSelectOnClick = settings?.disabledSelectOnClick
 
         if (!this.onRightClick) {
             this.onRightClick = function () { }
@@ -223,7 +227,9 @@ class Button {
         }
         if ((this.hover || this.invertedHover) && mouse.down && !this.disabled) {
             mouse.down = false;
-            this.selected = !this.selected;
+            if (!this.disabledSelectOnClick) {
+                this.selected = !this.selected;
+            }
             this.hover = false;
             this.onClick();
         }
