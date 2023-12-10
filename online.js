@@ -213,7 +213,7 @@ function createHost() {
             if (currentMenu instanceof OnlineLobby) player = currentMenu.players[idx]
             const type = response.type
             const data = response.data
-            //console.log(response)
+            console.log(response)
 
             // General
             if (type === "ready") addReady()
@@ -222,11 +222,14 @@ function createHost() {
             if (type === "requestCloseCard") currentMenu.okayButton.onClick()
 
             // Trade
-            if (type === "requestNewTrade") currentMenu = new Trade(data.player1, data.player2)
             if (type === "requestAcceptTrade") currentMenu["player" + data + "Accept"].onClick()
             if (type === "requestCloseTrade") currentMenu?.closeTrade()
             if (type === "requestTradeSliderChange") currentMenu["player" + data.id + "MoneySlider"].onChange(data.value)
             if (type === "requestTradeSelectProperty") currentMenu["player" + data.id + "Properties"][data.value].button.onClick()
+            if (type === "requestNewTrade") {
+                sendMessageToAll("newTrade", data)
+                currentMenu = new Trade(data.player1, data.player2)
+            }
 
             // Auction
             if (type === "requestStartAuction") new PropertyCard(data).auctionButton.onClick()
@@ -292,8 +295,8 @@ function connectToHost(hostId) {
     peer.on("connection", x => {
         x.on("open", () => {
             //console.log("Connected to " + x.peer)
-            //currentMenu.players[0].textInput.htmlElement.value = generateId(5) // TEMP
-            //currentMenu.players[0].confirmButton.onClick() // TEMP
+            currentMenu.players[0].textInput.htmlElement.value = generateId(5) // TEMP
+            currentMenu.players[0].confirmButton.onClick() // TEMP
         })
 
         x.on("close", () => {
@@ -306,7 +309,7 @@ function connectToHost(hostId) {
             if (currentMenu instanceof OnlineLobby) player = currentMenu.players[0]
             const type = response.type
             const data = response.data
-            //console.log(response)
+            console.log(response)
 
             // General
             if (type === "ready") board.ready = true

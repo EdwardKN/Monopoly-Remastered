@@ -477,8 +477,8 @@ class OnlineLobby {
                 //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.host.id}`)
                 navigator.clipboard.writeText(this.peer.id)
 
-                //currentMenu.players[0].textInput.htmlElement.value = "Player 1" // TEMP
-                //setTimeout(() => { currentMenu.players[0].confirmButton.onClick() }, 100) // TEMP
+                currentMenu.players[0].textInput.htmlElement.value = "Player 1" // TEMP
+                setTimeout(() => { currentMenu.players[0].confirmButton.onClick() }, 100) // TEMP
             }
         }
     }
@@ -860,8 +860,8 @@ class OnlineBoard extends Board {
         this.cardId
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(1, 6)
-            let dice2 = randomIntFromRange(1, 6)
+            let dice1 = randomIntFromRange(1, 1)
+            let dice2 = randomIntFromRange(1, 1)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
@@ -924,6 +924,8 @@ class PrisonMenu {
         });
     }
     draw() {
+        if (!board.ready) return
+
         c.drawImageFromSpriteSheet(images.menus.prisonmenu, { x: canvas.width / 2 - 150, y: canvas.height / 2 + 5 })
 
         this.payButton.disabled = (players[turn].money < 50)
@@ -1976,7 +1978,7 @@ class Player {
         if (players[turn].laps < board.settings.roundsBeforePurchase) this.hasBought = true
         this.calculateDrawPos();
         let coord = to_screen_coordinate(this.drawX, this.drawY);
-        this.hover = (detectCollision(coord.x, coord.y, 24, 48, mouse.x, mouse.y, 1, 1) && !currentMenu && board.dices.hidden && (board.playerIsWalkingTo == false));
+        this.hover = players[turn].playing && (detectCollision(coord.x, coord.y, 24, 48, mouse.x, mouse.y, 1, 1) && !currentMenu && board.dices.hidden && (board.playerIsWalkingTo == false));
         if (this.hover) { hoverList.push(this.name + ((players[turn] !== this) ? "(Föreslå bytesförslag)" : "(Du)")) }
         if (this.hover && mouse.down && (players[turn] !== this)) {
             this.moneyShowerThing.button.onClick();
@@ -2007,12 +2009,13 @@ class Player {
         let direction = Math.sign(newPos);
         newPos %= 40;
         let self = this;
+        resetReady()
 
         this.animateSteps(Math.abs(newPos), direction, function (steps) {
+            readyUp();
             if (board.boardPieces[self.pos]?.step) {
                 board.boardPieces[self.pos].step((noSteps ? undefined : steps));
             } else {
-                readyUp();
             }
 
         });
@@ -2052,12 +2055,14 @@ class Player {
     }
 
     goToPrison() {
+        resetReady()
         let self = this;
         board.playerHasRolled = true;
         this.inPrison = true;
         this.animateSteps(10, 1, function () {
             self.pos = 40;
             self.calculateDrawPos();
+            readyUp()
         });
     }
     getOutOfPrison() {
