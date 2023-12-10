@@ -2108,7 +2108,7 @@ class Money {
         })
     }
     update() {
-        this.button.disabled = (this.player == players[turn] || currentMenu);
+        this.button.disabled = !players[turn].playing || (this.player == players[turn] || currentMenu);
         this.button.update();
         c.drawImageFromSpriteSheet(images.players[this.player.info.img], { x: (!this.side ? 3 : canvas.width - 3 - images.players.player.w), y: 3 + this.drawY })
 
