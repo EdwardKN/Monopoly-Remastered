@@ -232,6 +232,8 @@ function createHost() {
             }
             if (type === "requestNewTrade") {
                 currentMenu = new Trade(data.player1, data.player2);
+                sendMessageToAll("newTrade", data);
+
             }
             if (type === "requestAuctionLeave") {
                 currentMenu.leaveAuction()
@@ -318,8 +320,8 @@ function connectToHost(hostId) {
     peer.on("connection", x => {
         x.on("open", () => {
             console.log("Connected to " + x.peer)
-            currentMenu.players[0].textInput.htmlElement.value = generateId(5) // TEMP
-            currentMenu.players[0].confirmButton.onClick() // TEMP
+            //currentMenu.players[0].textInput.htmlElement.value = generateId(5) // TEMP
+            //currentMenu.players[0].confirmButton.onClick() // TEMP
         })
 
         x.on("close", () => {
