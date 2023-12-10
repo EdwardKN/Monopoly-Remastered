@@ -175,7 +175,7 @@ function update() {
 
     hoverList.forEach((e, i) => {
         c.font = 20 + "px " + "verdanai";
-        c.drawText(e, Math.max(c.measureText(e).width / 2 + 5, mouse.x), mouse.y + 35 * (i + 1) - 10, 20, "center", "black", { color: "white", blur: 5 });
+        c.drawText(e, Math.max(c.measureText(e).width / 2 + 5, mouse.x), Math.min(mouse.y + 35 * (i + 1) - 10, canvas.height - 5), 20, "center", "black", { color: "white", blur: 5 });
     })
     hoverList = [];
 
@@ -485,8 +485,8 @@ class OnlineLobby {
                 //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.peer.id}`)
                 navigator.clipboard.writeText(this.peer.id)
 
-                currentMenu.players[0].textInput.htmlElement.value = "Player 1" // TEMP
-                setTimeout(() => { currentMenu.players[0].confirmButton.onClick() }, 100) // TEMP
+                //currentMenu.players[0].textInput.htmlElement.value = "Player 1" // TEMP
+                //setTimeout(() => { currentMenu.players[0].confirmButton.onClick() }, 100) // TEMP
             }
         }
     }
@@ -871,8 +871,8 @@ class OnlineBoard extends Board {
         this.cardId
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(3, 3)
-            let dice2 = randomIntFromRange(4, 4)
+            let dice1 = randomIntFromRange(1, 6)
+            let dice2 = randomIntFromRange(1, 6)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
@@ -1182,7 +1182,7 @@ class Station extends BuyableProperty {
         if (this.owner == undefined && players[turn].playing) {
             this.openCard();
             readyUp();
-        } else if (this.owner != players[turn] && players[turn].playing) {
+        } else if (this.owner != players[turn]) {
             this.level = (this.owner.ownedPlaces.filter(e => e.constructor.name == "Station").length) - 1;
             this.payRent();
         } else {
@@ -1192,9 +1192,9 @@ class Station extends BuyableProperty {
 }
 class Utility extends BuyableProperty {
     step(steps) {
-        if (!players[turn].playing) return
-        if (this.owner == undefined) {
+        if (this.owner == undefined && players[turn].playing) {
             this.openCard();
+            readyUp();
         } else if (this.owner != players[turn]) {
             if (!(!this.owner?.inPrison || board.settings.prisonpay)) return
             let amount = this.owner.ownedPlaces.filter(e => e.constructor.name == "Utility").length;
@@ -1203,6 +1203,7 @@ class Utility extends BuyableProperty {
                 board.dices.roll(function (dice1, dice2) {
                     self.pay(dice1 + dice2, amount);
                     board.dices.hidden = true;
+                    readyUp();
                 }, randomIntFromRange(1, 6, board.cardId), randomIntFromRange(1, 6, board.cardId * 13))
             } else {
                 this.pay(steps, amount)
@@ -1211,6 +1212,7 @@ class Utility extends BuyableProperty {
         }
     }
     pay(steps, amount) {
+        readyUp();
         let rent = steps * (amount == 1 ? 4 : 10);
         currentMenu = new Bankcheck(players.indexOf(this.owner), turn, rent, "Avgift")
         players[turn].lastPayment = this.owner;
