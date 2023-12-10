@@ -215,42 +215,33 @@ function createHost() {
             const data = response.data
             //console.log(response)
 
+            // General
             if (type === "ready") addReady()
-
-            if (type === "requestTradeSelectProperty") currentMenu["player" + data.id + "Properties"][data.value].button.onClick()
-
-            if (type === "requestTradeSliderChange") currentMenu["player" + data.id + "MoneySlider"].onChange(data.value)
-
-            if (type === "requestCloseTrade") currentMenu?.closeTrade()
-
-            if (type === "requestAcceptTrade") currentMenu["player" + data + "Accept"].onClick()
-
-            if (type === "requestNewTrade") currentMenu = new Trade(data.player1, data.player2)
-
-            if (type === "requestAuctionLeave") currentMenu.leaveAuction()
-
-            if (type === "requestAuctionAddMoney") currentMenu.addMoney(data)
-
-            if (type === "requestStartAuction") new PropertyCard(data).auctionButton.onClick()
-
-            if (type === "requestBuyPrison") new PrisonMenu().payButton.onClick()
-
-            if (type === "requestRollPrison") new PrisonMenu().rollDiceButton.onClick()
-
-            if (type === "requestPrisonCardPay") new PrisonMenu().cardButton.onClick()
-
+            if (type === "requestDiceRoll") board.rollDiceButton.onClick()
+            if (type === "requestNextPlayer") board.nextPlayerButton.onClick()
             if (type === "requestCloseCard") currentMenu.okayButton.onClick()
 
-            if (type === "requestDiceRoll") board.rollDiceButton.onClick()
+            // Trade
+            if (type === "requestNewTrade") currentMenu = new Trade(data.player1, data.player2)
+            if (type === "requestAcceptTrade") currentMenu["player" + data + "Accept"].onClick()
+            if (type === "requestCloseTrade") currentMenu?.closeTrade()
+            if (type === "requestTradeSliderChange") currentMenu["player" + data.id + "MoneySlider"].onChange(data.value)
+            if (type === "requestTradeSelectProperty") currentMenu["player" + data.id + "Properties"][data.value].button.onClick()
 
-            if (type === "requestNextPlayer") board.nextPlayerButton.onClick()
+            // Auction
+            if (type === "requestStartAuction") new PropertyCard(data).auctionButton.onClick()
+            if (type === "requestAuctionAddMoney") currentMenu.addMoney(data)
+            if (type === "requestAuctionLeave") currentMenu.leaveAuction()
 
+            // Prison
+            if (type === "requestBuyPrison") new PrisonMenu().payButton.onClick()
+            if (type === "requestRollPrison") new PrisonMenu().rollDiceButton.onClick()
+            if (type === "requestPrisonCardPay") new PrisonMenu().cardButton.onClick()
+
+            // Property
             if (type === "requestBuyProperty") board.boardPieces[data].buy()
-
             if (type === "requestSellProperty") board.boardPieces[data].sell()
-
             if (type === "requestMortgageProperty") board.boardPieces[data].mortgage()
-
             if (type === "requestUpgradeProperty") {
                 let p = new PropertyCard(data)
                 p.upgradeInfo = p.calculateUpgrade()
@@ -264,6 +255,7 @@ function createHost() {
                 delete p
             }
 
+            // Lobby
             if (type === 'deselect') {
                 removeColor(data.color)
                 player.textInput.htmlElement.style.backgroundColor = 'white'
@@ -300,6 +292,8 @@ function connectToHost(hostId) {
     peer.on("connection", x => {
         x.on("open", () => {
             //console.log("Connected to " + x.peer)
+            //currentMenu.players[0].textInput.htmlElement.value = generateId(5) // TEMP
+            //currentMenu.players[0].confirmButton.onClick() // TEMP
         })
 
         x.on("close", () => {
@@ -314,44 +308,10 @@ function connectToHost(hostId) {
             const data = response.data
             //console.log(response)
 
+            // General
             if (type === "ready") board.ready = true
-
-            if (type === "tradeSelectProperty") currentMenu["player" + data.id + "Properties"][data.value].button.onClick(false)
-
-            if (type === "tradeSliderChange") currentMenu["player" + data.id + "MoneySlider"].onChange(data.value, false)
-
-            if (type === "closeTrade") currentMenu?.closeTrade(false);
-
-            if (type === "acceptTrade") currentMenu["player" + data + "Accept"].onClick(false)
-
-            if (type === "newTrade") currentMenu = new Trade(data.player1, data.player2);
-
-            if (type === "auctionLeave") currentMenu.leaveAuction(false)
-
-            if (type === "auctionAddMoney") currentMenu.addMoney(data, false)
-
-            if (type === "buyPrison") new PrisonMenu().payButton.onClick(false);
-
-            if (type === "rollPrison") new PrisonMenu().rollDiceButton.onClick(false, data.rigged1, data.rigged2);
-
-            if (type === "prisonCardPay") new PrisonMenu().cardButton.onClick(false);
-
-            if (type === "closeCard") currentMenu?.okayButton?.onClick(false);
-
             if (type === "saveCardId") board.cardId = data
-
-            if (type === "buyProperty") board.boardPieces[data].buy(false);
-
-            if (type === "sellProperty") board.boardPieces[data].sell(false)
-
-            if (type === "mortgageProperty") board.boardPieces[data].mortgage(false)
-            
-
-            if (type === "startAuction") {
-                new PropertyCard(data).auctionButton.onClick(false);
-                resetReady();
-            }
-
+            if (type === "closeCard") currentMenu?.okayButton?.onClick(false)
             if (type === "startGame") {
                 startGame(data.players, data.settings)
                 players[data.index].playing = true
@@ -364,7 +324,30 @@ function connectToHost(hostId) {
                 board.nextPlayer()
                 resetReady()
             }
+            // Trade
+            if (type === "newTrade") currentMenu = new Trade(data.player1, data.player2)
+            if (type === "acceptTrade") currentMenu["player" + data + "Accept"].onClick(false)
+            if (type === "closeTrade") currentMenu?.closeTrade(false)
+            if (type === "tradeSliderChange") currentMenu["player" + data.id + "MoneySlider"].onChange(data.value, false)
+            if (type === "tradeSelectProperty") currentMenu["player" + data.id + "Properties"][data.value].button.onClick(false)
 
+            // Auction
+            if (type === "auctionLeave") currentMenu.leaveAuction(false)
+            if (type === "auctionAddMoney") currentMenu.addMoney(data, false)
+            if (type === "startAuction") {
+                new PropertyCard(data).auctionButton.onClick(false)
+                resetReady()
+            }
+
+            // Prison
+            if (type === "buyPrison") new PrisonMenu().payButton.onClick(false)
+            if (type === "rollPrison") new PrisonMenu().rollDiceButton.onClick(false, data.rigged1, data.rigged2)
+            if (type === "prisonCardPay") new PrisonMenu().cardButton.onClick(false)
+
+            // Property
+            if (type === "buyProperty") board.boardPieces[data].buy(false)
+            if (type === "sellProperty") board.boardPieces[data].sell(false)
+            if (type === "mortgageProperty") board.boardPieces[data].mortgage(false)
             if (type === "upgradeProperty") {
                 let p = new PropertyCard(data)
                 p.upgradeInfo = p.calculateUpgrade()
@@ -378,6 +361,7 @@ function connectToHost(hostId) {
                 delete p
             }
 
+            // Lobby
             if (type === "select") {
                 if (!data.valid) {
                     if (data.reason === "Color is already taken") player.selectedColor = -1
@@ -431,7 +415,6 @@ function connectToHost(hostId) {
                     currentMenu.settings[index].disableDisabledTexture = true
                 })
             }
-
         })
     })
 
