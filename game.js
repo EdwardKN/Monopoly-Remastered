@@ -866,7 +866,7 @@ class OnlineBoard extends Board {
         this.readyPlayers = 0
         this.peer = peer
         this.cardId
-        
+
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
             let dice1 = randomIntFromRange(1, 6)
             let dice2 = randomIntFromRange(1, 6)
@@ -2020,13 +2020,12 @@ class Player {
         let direction = Math.sign(newPos);
         newPos %= 40;
         let self = this;
-        resetReady()
 
         this.animateSteps(Math.abs(newPos), direction, function (steps) {
-            readyUp();
             if (board.boardPieces[self.pos]?.step) {
                 board.boardPieces[self.pos].step((noSteps ? undefined : steps));
             } else {
+                readyUp();
             }
 
         });
