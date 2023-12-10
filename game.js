@@ -476,6 +476,9 @@ class OnlineLobby {
                 mouse.down = false
                 //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.host.id}`)
                 navigator.clipboard.writeText(this.peer.id)
+
+                //currentMenu.players[0].textInput.htmlElement.value = "Player 1" // TEMP
+                //setTimeout(() => { currentMenu.players[0].confirmButton.onClick() }, 100) // TEMP
             }
         }
     }
