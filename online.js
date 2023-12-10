@@ -165,8 +165,10 @@ function readyUp() {
 }
 function addReady() {
     if (board.constructor.name === 'Board') return
-
+    console.log("he")
     board.readyPlayers++
+    if (board.hosting) sendMessageToAll("readyPlayers", board.readyPlayers)
+
     if (board.readyPlayers === (Object.entries(peer.clients).length + 1)) {
         board.ready = true
         sendMessageToAll("ready")
@@ -311,8 +313,11 @@ function connectToHost(hostId) {
             const data = response.data
             console.log(response)
 
-            // General
+            //Ready
             if (type === "ready") board.ready = true
+            if (type === "readyPlayers") board.readyPlayers = data
+
+            // General
             if (type === "saveCardId") board.cardId = data
             if (type === "closeCard") currentMenu?.okayButton?.onClick(false)
             if (type === "startGame") {

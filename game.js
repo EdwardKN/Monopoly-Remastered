@@ -804,6 +804,9 @@ class Board {
         this.boardPieces.forEach(e => { if (e.hover) { hoverList.push(e.info.name + (e.owner !== undefined ? "(" + e.owner.name + ")" : "")) } });
 
         c.drawText("Just nu:" + players[turn].name, canvas.width / 2, 30, c.getFontSize("Just nu:" + players[turn].name, 240, 30), "center", players[turn].info.color)
+        if (this instanceof OnlineBoard) {
+            c.drawText((this.ready ? players.length : this.readyPlayers) + "/" + players.length, canvas.width / 2, 50, c.getFontSize(this.readyPlayers + "/" + players.length, 240, 15), "center", (this.ready ? players.length : this.readyPlayers) == players.length ? "green" : "red")
+        }
 
         if (this.settings.giveAllTaxToParking) {
             c.drawText(this.money + "kr", canvas.width / 2, 60, 20, "center", "gold")
@@ -868,8 +871,8 @@ class OnlineBoard extends Board {
         this.cardId
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(1, 6)
-            let dice2 = randomIntFromRange(1, 6)
+            let dice1 = randomIntFromRange(3, 3)
+            let dice2 = randomIntFromRange(4, 4)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
@@ -1553,6 +1556,7 @@ class CardDraw {
             self.animationStep = 3
             board.cardId = undefined
             requestAction("closeCard", undefined, request)
+            resetReady();
         })
 
     }
@@ -1606,12 +1610,14 @@ class CardDraw {
         if (this.card.teleport !== undefined) {
             players[turn].teleportTo(this.card.teleport);
         } else if (this.card.moneyChange) {
+            readyUp();
             players[turn].money += this.card.moneyChange;
             if (this.card.moneyChange < 0) {
                 board.money += board.settings.giveAllToParking ? this.card.moneyChange : 0;
             }
             players[turn].lastPayment = undefined;
         } else if (this.card.moneyFromPlayers) {
+            readyUp();
             currentMenu = new Bankcheck(turn, "Motspelare", (this.card.moneyFromPlayers * (players.filter(e => (!e.inPrison || board.settings.prisonpay)).length - 1)), "Present")
             close = false;
             players.filter(e => (!e.inPrison || board.settings.prisonpay)).forEach(e => {
@@ -1622,15 +1628,18 @@ class CardDraw {
             });
         } else if (this.card.type == "getprisoncard") {
             players[turn].prisonCards++;
+            readyUp();
         } else if (this.card.type == "gotoprison") {
             players[turn].goToPrison();
         } else if (this.card.steps) {
             players[turn].teleportTo((players[turn].pos + this.card.steps) * Math.sign(this.card.steps))
         } else if (this.card.gotoClosest) {
+            readyUp();
             let self = this;
             let closest = findClosest(players[turn].pos, board.boardPieces.filter(e => e.constructor.name == self.card.gotoClosest).map(e => e.n))
             players[turn].teleportTo(closest * Math.sign(closest - players[turn].pos), true);
         } else if (this.card.properyPrice) {
+            readyUp();
             let self = this;
             players[turn].ownedPlaces.forEach(place => {
                 if (place.level < 5) {
@@ -1647,10 +1656,12 @@ class CardDraw {
         } else if (this.type == "special" && (this.cardId == 0 || this.cardId == 1)) {
             players[turn].goToPrison();
         } else if (this.type == "special" && this.cardId == 2) {
+            readyUp();
             players[turn].money -= (players[turn].money > 2000 ? 200 : Math.round(players[turn].money / 10));
             board.money += board.settings.giveAllTaxToParking ? players[turn].money > 2000 ? 200 : Math.round(players[turn].money / 10) : 0;
             players[turn].lastPayment = undefined;
         } else if (this.type == "special" && this.cardId == 3) {
+            readyUp();
             players[turn].money -= 100;
             board.money += board.settings.giveAllTaxToParking ? 100 : 0;
             players[turn].lastPayment = undefined;
@@ -2065,7 +2076,6 @@ class Player {
     }
 
     goToPrison() {
-        resetReady()
         let self = this;
         board.playerHasRolled = true;
         this.inPrison = true;
@@ -2102,7 +2112,7 @@ class Player {
 class Money {
     constructor(player) {
         this.player = player;
-        this.index = players.length
+        this.index = players.length;
         this.calculateDrawPos();
     }
     calculateDrawPos() {
