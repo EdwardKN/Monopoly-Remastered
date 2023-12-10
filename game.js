@@ -868,8 +868,8 @@ class OnlineBoard extends Board {
         this.cardId
         
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(1, 1)
-            let dice2 = randomIntFromRange(1, 1)
+            let dice1 = randomIntFromRange(1, 6)
+            let dice2 = randomIntFromRange(1, 6)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
@@ -1276,6 +1276,7 @@ class Auction {
         } else if (this.playerlist.length == 0) {
             currentMenu = undefined;
         } else {
+            this.turn--
             this.nextPlayer();
         };
     };
