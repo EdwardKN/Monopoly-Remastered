@@ -1336,12 +1336,12 @@ class Trade {
             }, disableHover: true
         }, images.buttons.exitCard, this.closeTrade)
 
-        this.player1MoneySlider = new Slider({ x: canvas.width / 2 - 455 + 30, y: 100, w: 400, h: 20, from: 0, to: this.player1.money, steps: 10, unit: "kr" }, function (value = self.player1MoneySlider.percentage, request = true) {
+        this.player1MoneySlider = new Slider({ x: canvas.width / 2 - 455 + 30, y: 100, w: 400, h: 20, from: 0, to: this.player1.money, steps: 10, unit: "kr" }, undefined, function (value = self.player1MoneySlider.percentage, request = true) {
             if (requestAction("tradeSliderChange", { id: 1, value: value }, request)) return;
             self.player1MoneySlider.percentage = value;
             self.player1MoneySlider.updateValue();
         })
-        this.player2MoneySlider = new Slider({ x: canvas.width / 2 + 455 - 430, y: 100, w: 400, h: 20, from: 0, to: this.player2.money, steps: 10, unit: "kr" }, function (value = self.player2MoneySlider.percentage, request = true) {
+        this.player2MoneySlider = new Slider({ x: canvas.width / 2 + 455 - 430, y: 100, w: 400, h: 20, from: 0, to: this.player2.money, steps: 10, unit: "kr" }, undefined, function (value = self.player2MoneySlider.percentage, request = true) {
             if (requestAction("tradeSliderChange", { id: 2, value: value }, request)) return;
             self.player2MoneySlider.percentage = value;
             self.player2MoneySlider.updateValue();
