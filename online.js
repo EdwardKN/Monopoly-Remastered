@@ -153,8 +153,8 @@ function sendPlayers(settings = {}) {
 function resetReady() {
     if (board.constructor.name === 'Board') return
 
-    board.readyPlayers =
-        board.ready = false
+    board.readyPlayers = 0
+    board.ready = false
 }
 
 function readyUp() {
@@ -217,6 +217,15 @@ function createHost() {
 
             if (type === "ready") {
                 addReady()
+            }
+            if (type === "requestAuctionLeave") {
+                currentMenu.leaveAuction()
+            }
+            if (type === "requestAuctionAddMoney") {
+                currentMenu.addMoney(data)
+            }
+            if (type === "requestStartAuction") {
+                new PropertyCard(data).auctionButton.onClick();
             }
             if (type === "requestBuyPrison") {
                 new PrisonMenu().payButton.onClick();
@@ -313,6 +322,16 @@ function connectToHost(hostId) {
             if (type === "ready") {
                 board.ready = true
             }
+            if (type === "auctionLeave") {
+                currentMenu.leaveAuction(false)
+            }
+            if (type === "auctionAddMoney") {
+                currentMenu.addMoney(data, false)
+            }
+            if (type === "startAuction") {
+                new PropertyCard(data).auctionButton.onClick(false);
+                resetReady();
+            }
             if (type === "buyPrison") {
                 new PrisonMenu().payButton.onClick(false);
             }
@@ -361,7 +380,7 @@ function connectToHost(hostId) {
                 p.downgradeButton.onClick(false)
                 delete p
             }
- 
+
             if (type === "select") {
                 if (!data.valid) {
                     if (data.reason === "Color is already taken") player.selectedColor = -1

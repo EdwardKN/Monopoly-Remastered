@@ -301,7 +301,6 @@ class PublicGames {
 }
 
 /*
-Auction
 Trade
 */
 class OnlineLobby {
@@ -864,13 +863,13 @@ class OnlineBoard extends Board {
         this.cardId
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(2, 2)
-            let dice2 = randomIntFromRange(2, 2)
+            let dice1 = randomIntFromRange(1, 6)
+            let dice2 = randomIntFromRange(1, 6)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
                 this.rollDice(dice1, dice2)
-                board.cardId = randomIntFromRange(0, 1000000);
+                board.cardId = randomIntFromRange(0, 999999);
                 sendMessageToAll("saveCardId", board.cardId);
             } else sendMessage(this.peer.connection, "requestDiceRoll")
         })
@@ -887,19 +886,13 @@ class OnlineBoard extends Board {
         players[turn].rollDice(rigged1, rigged2);
         board.playerHasRolled = true;
     }
-
-    updateOnlineBoard() {
-
-    }
-
-
 }
 
 class PrisonMenu {
     constructor() {
         this.payButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 0), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisonpay, function (request = true) {
             if (requestAction("buyPrison", undefined, request)) return
-            
+
             players[turn].money -= 50;
             board.money += board.settings.giveAllToParking ? 50 : 0;
             players[turn].getOutOfPrison();
@@ -1198,7 +1191,7 @@ class Utility extends BuyableProperty {
                 board.dices.roll(function (dice1, dice2) {
                     self.pay(dice1 + dice2, amount);
                     board.dices.hidden = true;
-                })
+                }, randomIntFromRange(1, 6, board.cardId), randomIntFromRange(1, 6, board.cardId * 13))
             } else {
                 this.pay(steps, amount)
             }
@@ -1237,7 +1230,10 @@ class Auction {
         let self = this;
         this.cardId = cardId;
         this.boardPiece = board.boardPieces[this.cardId];
-        this.startButton = new Button({ x: canvas.width / 2 - 256 + 28, y: canvas.height / 2 + 80, w: 220, h: 40 }, images.buttons.startauction, function () { self.startAuction() })
+        this.startButton = new Button({ x: canvas.width / 2 - 256 + 28, y: canvas.height / 2 + 80, w: 220, h: 40 }, images.buttons.startauction, function () {
+            self.startAuction()
+            readyUp();
+        })
         this.auctionMoney = 0;
         this.turn = turn;
         this.minimumPay = this.boardPiece.info.price * (board.settings.lowestAuction / 100);
@@ -1255,14 +1251,16 @@ class Auction {
         this.add100 = new Button({ x: canvas.width / 2 - 256 + 28 + splitPoints(3, 220, 54, 2), y: canvas.height / 2 + 10, w: 54, h: 54 }, images.buttons["auction+100"], function () { self.addMoney(100) });
         this.leaveButton = new Button({ x: canvas.width / 2 - 256 + 28, y: canvas.height / 2 + 80, w: 220, h: 40 }, images.buttons.exitauction, function () { self.leaveAuction() });
     };
-    addMoney(amount) {
+    addMoney(amount, request = true) {
+        if (requestAction("auctionAddMoney", amount, request)) return;
         this.auctionMoney += amount;
         if (this.auctionMoney >= this.minimumPay) {
             this.playerlist[this.turn].hasLaidOver = true;
         }
         this.nextPlayer();
     };
-    leaveAuction() {
+    leaveAuction(request = true) {
+        if (requestAction("auctionLeave", undefined, request)) return;
         this.playerlist.splice(this.turn, 1);
         if (this.playerlist.length == 1 && this.playerlist[0].hasLaidOver) {
             this.winAuction(this.playerlist[0]);
@@ -1298,7 +1296,7 @@ class Auction {
         c.drawImageFromSpriteSheet(images.menus.auctionmenubackground, { x: canvas.width / 2 - 256 + 10, y: canvas.height / 2 - 162 })
         if (!this.started) {
             this.startButton.update();
-        } else {
+        } else if (board.ready && this.playerlist[this.turn].playing) {
             this.add100.disabled = (this.playerlist[this.turn].money < this.auctionMoney + 100)
             this.add10.disabled = (this.playerlist[this.turn].money < this.auctionMoney + 10)
             this.add2.update();
@@ -1626,8 +1624,16 @@ class PropertyCard {
 
         this.hasUpgradeButtons = !(board.boardPieces[this.n] instanceof Station || board.boardPieces[this.n] instanceof Utility);
 
-        this.auctionButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 97, 0), y: canvas.height / 2 + 100, w: 97, h: 40 }, images.buttons.auction, function () { players[turn].hasBought = true; currentMenu = new Auction(self.n) });
-        this.buyButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 97, 1), y: canvas.height / 2 + 100, w: 97, h: 40 }, images.buttons.buythislawn, function (n) {
+        this.auctionButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 97, 0), y: canvas.height / 2 + 100, w: 97, h: 40 }, images.buttons.auction, function (request = true) {
+            if (requestAction("startAuction", self.n, request)) return;
+            if (board.hosting) {
+                resetReady();
+            }
+            players[turn].hasBought = true;
+            currentMenu = new Auction(self.n)
+
+        });
+        this.buyButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 97, 1), y: canvas.height / 2 + 100, w: 97, h: 40 }, images.buttons.buythislawn, function () {
             self.buyThis();
         });
 
@@ -1679,7 +1685,7 @@ class PropertyCard {
                             players[turn].money -= self.upgradeInfo.price;
                             board.money += board.settings.giveAllToParking ? self.upgradeInfo.price : 0;
                             currentMenu = undefined;
-                            
+
                         }
                     } else {
                         if (requestAction("upgradeProperty", self.n, request)) return
