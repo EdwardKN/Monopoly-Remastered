@@ -857,13 +857,13 @@ class OnlineBoard extends Board {
         this.cardId
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(2, 2)
-            let dice2 = randomIntFromRange(2, 2)
+            let dice1 = randomIntFromRange(1, 6)
+            let dice2 = randomIntFromRange(1, 6)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
                 this.rollDice(dice1, dice2)
-                board.cardId = randomIntFromRange(0, 1000000);
+                board.cardId = randomIntFromRange(0, 999999);
                 sendMessageToAll("saveCardId", board.cardId);
             } else sendMessage(this.peer.connection, "requestDiceRoll")
         })
@@ -880,19 +880,13 @@ class OnlineBoard extends Board {
         players[turn].rollDice(rigged1, rigged2);
         board.playerHasRolled = true;
     }
-
-    updateOnlineBoard() {
-
-    }
-
-
 }
 
 class PrisonMenu {
     constructor() {
         this.payButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 0), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisonpay, function (request = true) {
             if (requestAction("buyPrison", undefined, request)) return
-            
+
             players[turn].money -= 50;
             board.money += board.settings.giveAllToParking ? 50 : 0;
             players[turn].getOutOfPrison();
@@ -1191,7 +1185,7 @@ class Utility extends BuyableProperty {
                 board.dices.roll(function (dice1, dice2) {
                     self.pay(dice1 + dice2, amount);
                     board.dices.hidden = true;
-                })
+                }, randomIntFromRange(1, 6, board.cardId), randomIntFromRange(1, 6, board.cardId * 13))
             } else {
                 this.pay(steps, amount)
             }
@@ -1230,7 +1224,10 @@ class Auction {
         let self = this;
         this.cardId = cardId;
         this.boardPiece = board.boardPieces[this.cardId];
-        this.startButton = new Button({ x: canvas.width / 2 - 256 + 28, y: canvas.height / 2 + 80, w: 220, h: 40 }, images.buttons.startauction, function () { self.startAuction() })
+        this.startButton = new Button({ x: canvas.width / 2 - 256 + 28, y: canvas.height / 2 + 80, w: 220, h: 40 }, images.buttons.startauction, function () {
+            self.startAuction()
+            readyUp();
+        })
         this.auctionMoney = 0;
         this.turn = turn;
         this.minimumPay = this.boardPiece.info.price * (board.settings.lowestAuction / 100);
@@ -1248,14 +1245,16 @@ class Auction {
         this.add100 = new Button({ x: canvas.width / 2 - 256 + 28 + splitPoints(3, 220, 54, 2), y: canvas.height / 2 + 10, w: 54, h: 54 }, images.buttons["auction+100"], function () { self.addMoney(100) });
         this.leaveButton = new Button({ x: canvas.width / 2 - 256 + 28, y: canvas.height / 2 + 80, w: 220, h: 40 }, images.buttons.exitauction, function () { self.leaveAuction() });
     };
-    addMoney(amount) {
+    addMoney(amount, request = true) {
+        if (requestAction("auctionAddMoney", amount, request)) return;
         this.auctionMoney += amount;
         if (this.auctionMoney >= this.minimumPay) {
             this.playerlist[this.turn].hasLaidOver = true;
         }
         this.nextPlayer();
     };
-    leaveAuction() {
+    leaveAuction(request = true) {
+        if (requestAction("auctionLeave", undefined, request)) return;
         this.playerlist.splice(this.turn, 1);
         if (this.playerlist.length == 1 && this.playerlist[0].hasLaidOver) {
             this.winAuction(this.playerlist[0]);
@@ -1291,7 +1290,7 @@ class Auction {
         c.drawImageFromSpriteSheet(images.menus.auctionmenubackground, { x: canvas.width / 2 - 256 + 10, y: canvas.height / 2 - 162 })
         if (!this.started) {
             this.startButton.update();
-        } else {
+        } else if (board.ready && this.playerlist[this.turn].playing) {
             this.add100.disabled = (this.playerlist[this.turn].money < this.auctionMoney + 100)
             this.add10.disabled = (this.playerlist[this.turn].money < this.auctionMoney + 10)
             this.add2.update();
@@ -1315,6 +1314,8 @@ class Auction {
 
 class Trade {
     constructor(player1Id, player2Id) {
+        let self = this;
+
         this.player1Id = player1Id;
         this.player2Id = player2Id;
 
@@ -1330,11 +1331,31 @@ class Trade {
             }, disableHover: true
         }, images.buttons.exitCard, this.closeTrade)
 
-        this.player1MoneySlider = new Slider({ x: canvas.width / 2 - 455 + 30, y: 100, w: 400, h: 20, from: 0, to: this.player1.money, steps: 10, unit: "kr" })
-        this.player2MoneySlider = new Slider({ x: canvas.width / 2 + 455 - 430, y: 100, w: 400, h: 20, from: 0, to: this.player2.money, steps: 10, unit: "kr" })
+        this.player1MoneySlider = new Slider({ x: canvas.width / 2 - 455 + 30, y: 100, w: 400, h: 20, from: 0, to: this.player1.money, steps: 10, unit: "kr" }, function (value = self.player1MoneySlider.percentage, request = true) {
+            if (requestAction("tradeSliderChange", { id: 1, value: value }, request)) return;
+            self.player1MoneySlider.percentage = value;
+            self.player1MoneySlider.updateValue();
+        })
+        this.player2MoneySlider = new Slider({ x: canvas.width / 2 + 455 - 430, y: 100, w: 400, h: 20, from: 0, to: this.player2.money, steps: 10, unit: "kr" }, function (value = self.player2MoneySlider.percentage, request = true) {
+            if (requestAction("tradeSliderChange", { id: 2, value: value }, request)) return;
+            self.player2MoneySlider.percentage = value;
+            self.player2MoneySlider.updateValue();
+        })
 
-        this.player1Accept = new Button({ x: canvas.width / 2 - 455 + 205 - 55, y: 460, w: 150, h: 50, selectButton: true }, images.buttons.accept);
-        this.player2Accept = new Button({ x: canvas.width / 2 - 455 + 900 - 455 / 2 - 55, y: 460, w: 150, h: 50, selectButton: true }, images.buttons.accept);
+        this.player1MoneySlider.disabled = !this.player1.playing;
+        this.player2MoneySlider.disabled = !this.player2.playing;
+
+        this.player1Accept = new Button({ x: canvas.width / 2 - 455 + 205 - 55, y: 460, w: 150, h: 50, selectButton: true, disableDisabledTexture: true, disabledSelectOnClick: true }, images.buttons.accept, function (request = true) {
+            if (requestAction("acceptTrade", 1, request)) return;
+            this.selected = !this.selected
+        });
+        this.player2Accept = new Button({ x: canvas.width / 2 - 455 + 900 - 455 / 2 - 55, y: 460, w: 150, h: 50, selectButton: true, disableDisabledTexture: true, disabledSelectOnClick: true }, images.buttons.accept, function (request = true) {
+            if (requestAction("acceptTrade", 2, request)) return;
+            this.selected = !this.selected
+        });
+
+        this.player1Accept.disabled = !this.player1.playing;
+        this.player2Accept.disabled = !this.player2.playing;
         this.initProperties();
     }
     initProperties() {
@@ -1343,16 +1364,37 @@ class Trade {
 
         this.player1.ownedPlaces.forEach((place, i, amount) => {
             if (place.level == 0 || place.info.type == "station") {
-                this.player1Properties.push({ place: place, button: new Button({ x: 35 + splitPoints(2, 440, 186, (i % 2)), y: 130 + splitPoints(Math.ceil(amount.length / 2), 330, 21, Math.floor(i / 2)), w: 186, h: 21, textSize: 15, text: place.info.name, color: place.info.color, selectButton: true }, images.buttons.tradingcityname, function () { self.player1Accept.selected = false; self.player2Accept.selected = false; }) })
+                this.player1Properties.push({
+                    place: place, button: new Button({ x: 35 + splitPoints(2, 440, 186, (i % 2)), y: 130 + splitPoints(Math.ceil(amount.length / 2), 330, 21, Math.floor(i / 2)), w: 186, h: 21, textSize: 15, text: place.info.name, color: place.info.color, selectButton: true, disableDisabledTexture: true, disabledSelectOnClick: true }, images.buttons.tradingcityname, function (request = true) {
+                        if (requestAction("tradeSelectProperty", { id: 1, value: i }, request)) return;
+                        self.player1Accept.selected = false;
+                        self.player2Accept.selected = false;
+                        this.selected = !this.selected
+                    })
+                })
             }
+        })
+        this.player1Properties.forEach(e => {
+            e.button.disabled = !this.player1.playing;
         })
 
         this.player2Properties = [];
 
         this.player2.ownedPlaces.forEach((place, i, amount) => {
             if (place.level == 0 || place.info.type == "station") {
-                this.player2Properties.push({ place: place, button: new Button({ x: 450 + 35 + splitPoints(2, 440, 186, (i % 2)), y: 130 + splitPoints(Math.ceil(amount.length / 2), 330, 21, Math.floor(i / 2)), w: 186, h: 21, textSize: 15, text: place.info.name, color: place.info.color, selectButton: true }, images.buttons.tradingcityname, function () { self.player1Accept.selected = false; self.player2Accept.selected = false; }) })
+                this.player2Properties.push({
+                    place: place, button: new Button({ x: 450 + 35 + splitPoints(2, 440, 186, (i % 2)), y: 130 + splitPoints(Math.ceil(amount.length / 2), 330, 21, Math.floor(i / 2)), w: 186, h: 21, textSize: 15, text: place.info.name, color: place.info.color, selectButton: true, disableDisabledTexture: true, disabledSelectOnClick: true }, images.buttons.tradingcityname, function (request = true) {
+                        if (requestAction("tradeSelectProperty", { id: 2, value: i }, request)) return;
+                        self.player1Accept.selected = false;
+                        self.player2Accept.selected = false;
+                        this.selected = !this.selected
+                    })
+                })
             }
+        })
+
+        this.player2Properties.forEach(e => {
+            e.button.disabled = !this.player2.playing;
         })
     }
     draw() {
@@ -1400,9 +1442,10 @@ class Trade {
             }
         })
 
-        this.closeTrade();
+        this.closeTrade(false);
     }
-    closeTrade() {
+    closeTrade(request = true) {
+        if (requestAction("closeTrade", undefined, request)) return;
         currentMenu = undefined;
     }
 }
@@ -1619,8 +1662,16 @@ class PropertyCard {
 
         this.hasUpgradeButtons = !(board.boardPieces[this.n] instanceof Station || board.boardPieces[this.n] instanceof Utility);
 
-        this.auctionButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 97, 0), y: canvas.height / 2 + 100, w: 97, h: 40 }, images.buttons.auction, function () { players[turn].hasBought = true; currentMenu = new Auction(self.n) });
-        this.buyButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 97, 1), y: canvas.height / 2 + 100, w: 97, h: 40 }, images.buttons.buythislawn, function (n) {
+        this.auctionButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 97, 0), y: canvas.height / 2 + 100, w: 97, h: 40 }, images.buttons.auction, function (request = true) {
+            if (requestAction("startAuction", self.n, request)) return;
+            if (board.hosting) {
+                resetReady();
+            }
+            players[turn].hasBought = true;
+            currentMenu = new Auction(self.n)
+
+        });
+        this.buyButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(2, 234, 97, 1), y: canvas.height / 2 + 100, w: 97, h: 40 }, images.buttons.buythislawn, function () {
             self.buyThis();
         });
 
@@ -1672,7 +1723,7 @@ class PropertyCard {
                             players[turn].money -= self.upgradeInfo.price;
                             board.money += board.settings.giveAllToParking ? self.upgradeInfo.price : 0;
                             currentMenu = undefined;
-                            
+
                         }
                     } else {
                         if (requestAction("upgradeProperty", self.n, request)) return
@@ -2044,8 +2095,9 @@ class Money {
 
         let self = this;
 
-        this.button = new Button({ x: this.drawX, y: this.drawY, w: 354, h: 54, mirrored: !this.side, hoverText: "Föreslå bytesförslag", disableDisabledTexture: true }, images.buttons.playerborder, function () {
-            currentMenu = new Trade(players.indexOf(players[turn]), players.indexOf(self.player));
+        this.button = new Button({ x: this.drawX, y: this.drawY, w: 354, h: 54, mirrored: !this.side, hoverText: "Föreslå bytesförslag", disableDisabledTexture: true }, images.buttons.playerborder, function (player1 = players.indexOf(players[turn]), player2 = players.indexOf(self.player)) {
+            if (requestAction("newTrade", { player1: player1, player2: player2 })) return;
+            currentMenu = new Trade(player1, player2);
         })
     }
     update() {

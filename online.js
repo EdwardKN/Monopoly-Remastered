@@ -153,8 +153,8 @@ function sendPlayers(settings = {}) {
 function resetReady() {
     if (board.constructor.name === 'Board') return
 
-    board.readyPlayers =
-        board.ready = false
+    board.readyPlayers = 0
+    board.ready = false
 }
 
 function readyUp() {
@@ -217,6 +217,30 @@ function createHost() {
 
             if (type === "ready") {
                 addReady()
+            }
+            if (type === "requestTradeSelectProperty") {
+                currentMenu["player" + data.id + "Properties"][data.value].button.onClick()
+            }
+            if (type === "requestTradeSliderChange") {
+                currentMenu["player" + data.id + "MoneySlider"].onChange(data.value)
+            }
+            if (type === "requestCloseTrade") {
+                currentMenu?.closeTrade();
+            }
+            if (type === "requestAcceptTrade") {
+                currentMenu["player" + data + "Accept"].onClick()
+            }
+            if (type === "requestNewTrade") {
+                currentMenu = new Trade(data.player1, data.player2);
+            }
+            if (type === "requestAuctionLeave") {
+                currentMenu.leaveAuction()
+            }
+            if (type === "requestAuctionAddMoney") {
+                currentMenu.addMoney(data)
+            }
+            if (type === "requestStartAuction") {
+                new PropertyCard(data).auctionButton.onClick();
             }
             if (type === "requestBuyPrison") {
                 new PrisonMenu().payButton.onClick();
@@ -311,6 +335,31 @@ function connectToHost(hostId) {
             if (type === "ready") {
                 board.ready = true
             }
+            if (type === "tradeSelectProperty") {
+                currentMenu["player" + data.id + "Properties"][data.value].button.onClick(false)
+            }
+            if (type === "tradeSliderChange") {
+                currentMenu["player" + data.id + "MoneySlider"].onChange(data.value, false)
+            }
+            if (type === "closeTrade") {
+                currentMenu?.closeTrade(false);
+            }
+            if (type === "acceptTrade") {
+                currentMenu["player" + data + "Accept"].onClick(false)
+            }
+            if (type === "newTrade") {
+                currentMenu = new Trade(data.player1, data.player2);
+            }
+            if (type === "auctionLeave") {
+                currentMenu.leaveAuction(false)
+            }
+            if (type === "auctionAddMoney") {
+                currentMenu.addMoney(data, false)
+            }
+            if (type === "startAuction") {
+                new PropertyCard(data).auctionButton.onClick(false);
+                resetReady();
+            }
             if (type === "buyPrison") {
                 new PrisonMenu().payButton.onClick(false);
             }
@@ -359,7 +408,7 @@ function connectToHost(hostId) {
                 p.downgradeButton.onClick(false)
                 delete p
             }
- 
+
             if (type === "select") {
                 if (!data.valid) {
                     if (data.reason === "Color is already taken") player.selectedColor = -1
