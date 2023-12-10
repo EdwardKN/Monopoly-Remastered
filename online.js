@@ -213,7 +213,7 @@ function createHost() {
             if (currentMenu instanceof OnlineLobby) player = currentMenu.players[idx]
             const type = response.type
             const data = response.data
-            //console.log(response)
+            console.log(response)
 
             // General
             if (type === "ready") addReady()
@@ -225,7 +225,7 @@ function createHost() {
             if (type === "requestNewTrade") currentMenu = new Trade(data.player1, data.player2)
             if (type === "requestAcceptTrade") currentMenu["player" + data + "Accept"].onClick()
             if (type === "requestCloseTrade") currentMenu?.closeTrade()
-            if (type === "requestTradeSliderChange") currentMenu["player" + data.id + "MoneySlider"].onChange(data.value)
+            if (type === "requestTradeSliderChange") currentMenu["player" + data.id + "MoneySlider"].onMouseUp(data.value)
             if (type === "requestTradeSelectProperty") currentMenu["player" + data.id + "Properties"][data.value].button.onClick()
 
             // Auction
@@ -306,7 +306,7 @@ function connectToHost(hostId) {
             if (currentMenu instanceof OnlineLobby) player = currentMenu.players[0]
             const type = response.type
             const data = response.data
-            //console.log(response)
+            console.log(response)
 
             // General
             if (type === "ready") board.ready = true
@@ -328,7 +328,7 @@ function connectToHost(hostId) {
             if (type === "newTrade") currentMenu = new Trade(data.player1, data.player2)
             if (type === "acceptTrade") currentMenu["player" + data + "Accept"].onClick(false)
             if (type === "closeTrade") currentMenu?.closeTrade(false)
-            if (type === "tradeSliderChange") currentMenu["player" + data.id + "MoneySlider"].onChange(data.value, false)
+            if (type === "tradeSliderChange") currentMenu["player" + data.id + "MoneySlider"].onMouseUp(data.value, false)
             if (type === "tradeSelectProperty") currentMenu["player" + data.id + "Properties"][data.value].button.onClick(false)
 
             // Auction

@@ -63,7 +63,7 @@ var buttons = [];
 var textInputs = [];
 
 class Slider {
-    constructor(settings, onChange) {
+    constructor(settings, onChange, onMouseUp) {
         this.x = settings?.x;
         this.y = settings?.y;
         this.w = settings?.w;
@@ -75,6 +75,7 @@ class Slider {
         this.unit = (settings?.unit == undefined) ? "" : settings?.unit;
         this.beginningText = (settings?.beginningText == undefined) ? "" : settings?.beginningText;
         this.onChange = (onChange == undefined ? function () { } : onChange);
+        this.onMouseUp = (onMouseUp == undefined ? function () { } : onMouseUp);
 
         this.undefinedTextSize = (settings?.textSize == undefined);
 
@@ -102,8 +103,9 @@ class Slider {
             mouse.down = false;
             this.follow = true;
         };
-        if (mouse.up) {
+        if (mouse.up && this.follow) {
             this.follow = false;
+            this.onMouseUp();
         };
 
         if (this.follow) {
