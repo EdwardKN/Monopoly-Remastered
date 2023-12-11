@@ -125,14 +125,14 @@ function sendPlayers(settings = {}) {
             data_players.push({
                 name: text ?? player.textInput.htmlElement.value, // Text can be ''
                 color: color ?? player.selectedColor, // Color can be 0
-                selected: selected ?? player.textInput.htmlElement.disabled, // Selected can be false
+                selected: selected ?? player.textInput.htmlElement.style.backgroundColor === '', // Selected can be false
                 placeHolder: getPlaceHolder(player),
             })
         } else {
             data_players.push({
                 name: player.textInput.htmlElement.value,
                 color: player.selectedColor,
-                selected: player.textInput.htmlElement.disabled,
+                selected: player.textInput.htmlElement.style.backgroundColor === '',
                 placeHolder: getPlaceHolder(player),
             })
         }
@@ -143,10 +143,11 @@ function sendPlayers(settings = {}) {
         if (client === updatedClient) continue // Don't send to updated client
 
         let data = data_players.filter(player => peer.clients[player.placeHolder] !== client) // Dont include self
-        sendMessage(client.connection, "players", {
+        sendMessage(client.connection, currentMenu instanceof OnlineJoinLobby ? "existingPlayers" : "players", {
             players: data,
             settings: currentMenu.settings
-                .map(e => e.constructor.name === "Button" ? e.selected : { percentage: e.percentage, value: e.value })
+                .map(e => e.constructor.name === "Button" ? e.selected : { percentage: e.percentage, value: e.value }),
+            lobbyType: currentMenu instanceof OnlineJoinLobby
         })
     }
 }
@@ -182,9 +183,21 @@ function createHost() {
         let id = x.peer
 
         x.on('open', () => {
+            // Connnection
+            peer.clients[id] = { connection: peer.connect(id) }
+
+            waitForOpenConnection(peer.clients[id], () => {
+                console.log("Hi")
+                if (currentMenu instanceof OnlineJoinLobby) sendMessage(peer.clients[id].connection, "changeLobby")
+                else sendMessage(peer.clients[id].connection, "selectedColors", currentMenu.selectedColors)
+                sendPlayers()
+            })
+
+            if (currentMenu instanceof OnlineJoinLobby) return
+
             //console.log("Id: ", id, " connected")
             // HTML
-            const idx = Object.entries(peer.clients).length + 1
+            const idx = Object.entries(peer.clients).length
             const player = currentMenu.players[idx]
             player.textInput.htmlElement.style.backgroundColor = 'white'
             player.textInput.htmlElement.setAttribute('placeHolder', id)
@@ -194,14 +207,6 @@ function createHost() {
                 w: 40,
                 h: 40
             }, images.buttons.no, () => removeClient(id))
-
-            // Connnection
-            peer.clients[id] = { connection: peer.connect(id) }
-
-            waitForOpenConnection(peer.clients[id], () => {
-                sendMessage(peer.clients[id].connection, "selectedColors", currentMenu.selectedColors)
-                sendPlayers()
-            })
         })
 
         x.on('close', () => {
@@ -266,7 +271,7 @@ function createHost() {
                 delete p
             }
 
-            // Lobby
+            // Online Lobby
             if (type === 'deselect') {
                 removeColor(data.color)
                 player.textInput.htmlElement.style.backgroundColor = 'white'
@@ -288,6 +293,19 @@ function createHost() {
             }
             if (type === "nameChange") { player.textInput.htmlElement.value = data; sendPlayers({ client: client, name: data }) }
             if (type === "colorChange") { player.selectedColor = data; sendPlayers({ client: client, color: data }) }
+
+            // Online Join Lobby
+            if (type === "choosePlayer") {
+                if (data.selected && currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor === "") { // Select already taken
+                    sendMessage(client.connection, "invalidPlayer", data.index)
+                } else {
+                    let p = currentMenu.players[data.index]
+                    currentMenu.players[data.index].confirmButton.image = data.selected ? images.buttons.no : images.buttons.yes
+                    currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor = data.selected ? "" : "white"
+                    currentMenu.players[data.index].confirmButton.disabled = ((data.selected || currentMenu.selectedPlayer !== -1) && data.index !== currentMenu.selectedPlayer)
+                    sendMessageToAll("selectPlayer", data, [client])
+                }
+            }
         })
     })
     return peer
@@ -304,8 +322,8 @@ function connectToHost(hostId) {
     peer.on("connection", x => {
         x.on("open", () => {
             //console.log("Connected to " + x.peer)
-            currentMenu.players[0].textInput.htmlElement.value = generateId(5) // TEMP
-            currentMenu.players[0].confirmButton.onClick() // TEMP
+            //currentMenu.players[0].textInput.htmlElement.value = generateId(5) // TEMP
+            //currentMenu.players[0].confirmButton.onClick() // TEMP
         })
 
         x.on("close", () => {
@@ -395,7 +413,7 @@ function connectToHost(hostId) {
             }
             if (type === "players") {
                 const players = data.players
-
+                
                 // Players
                 currentMenu.players.splice(1)
                 currentMenu.initPlayers(players.length)
@@ -409,7 +427,6 @@ function connectToHost(hostId) {
                     player.textInput.htmlElement.style.backgroundColor = newPlayer.selected ? "" : "white"
                     if (player.selected) player.confirmButton.onClick(true)
                 }
-
                 if (currentMenu.currentMenu) player.colorButton.onClick() // Resize the width on htmlElements
 
                 // Settings
@@ -430,6 +447,21 @@ function connectToHost(hostId) {
                     currentMenu.settings[index].disableDisabledTexture = true
                 })
             }
+
+            if (type === "selectPlayer") {
+                currentMenu.players[data.index].confirmButton.image = data.selected ? images.buttons.no : images.buttons.yes
+                currentMenu.players[data.index].confirmButton.disabled = ((data.selected || currentMenu.selectedPlayer !== -1) && data.index !== currentMenu.selectedPlayer)
+                currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor = data.selected ? "" : "white"
+            }
+            if (type === "invalidPlayer") {
+                currentMenu.players[data].confirmButton.onClick(true)
+            }
+            if (type === "existingPlayers") {
+                const players = data.players
+                currentMenu.players = []
+                currentMenu.initPlayers(players)
+            }
+            if (type === "changeLobby") currentMenu = new OnlineJoinLobby(false, { id: hostId, client: peer })
         })
     })
 

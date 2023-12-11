@@ -224,8 +224,9 @@ class LoadGames {
 
         this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, function () { currentMenu = new MainMenu() });
         this.startButton = new Button({ x: canvas.width / 4 - 194 / 2, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, function () {
-            if (!self.online) loadGame(self.games[self.gameButtons.indexOf(self.selected)])
-            else "Wait for all x amount of players to join"
+            let game = self.games[self.gameButtons.indexOf(self.selected)]
+            if (!online) loadGame(game)
+            else currentMenu = new OnlineJoinLobby(true, { game: game })
         })
 
         this.deleteButton = new Button({ x: canvas.width / 4 + 194 / 2 + 20, y: canvas.height - 60, w: 40, h: 40, hoverText: "Radera sparfil" }, images.buttons.sellbutton, function () {
@@ -313,13 +314,13 @@ class PublicGames {
 }
 
 class OnlineLobby {
-    constructor(hosting, id) {
+    constructor(hosting, id, createPeer = true) {
         this.hosting = hosting
         this.players = []
         this.settings = []
 
         if (this.hosting) {
-            this.peer = createHost()
+            if (createPeer) this.peer = createHost()
             this.initPlayers(8)
             this.startButton = new Button({ x: 10, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, () => {
                 let tmpPlayers = []
@@ -350,7 +351,7 @@ class OnlineLobby {
                 }
             })
         } else {
-            this.peer = connectToHost(id)
+            if (createPeer) this.peer = connectToHost(id)
             this.initPlayers(1)
         }
 
@@ -489,12 +490,103 @@ class OnlineLobby {
                 //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.peer.id}`)
                 navigator.clipboard.writeText(this.peer.id)
 
-                currentMenu.players[0].textInput.htmlElement.value = "Player 1" // TEMP
-                setTimeout(() => { currentMenu.players[0].confirmButton.onClick() }, 100) // TEMP
+                //currentMenu.players[0].textInput.htmlElement.value = "Player 1" // TEMP
+                //setTimeout(() => { currentMenu.players[0].confirmButton.onClick() }, 100) // TEMP
             }
         }
     }
 }
+
+class OnlineJoinLobby extends OnlineLobby {
+    constructor(hosting, options = {}) {
+        super(hosting, options.id, false)
+        this.players = []
+        this.selectedPlayer = -1
+        console.log(options.game)
+
+        if (this.hosting) {
+            this.peer = createHost()
+            this.initPlayers(options.game.players.map(e => JSON.parse(e)))
+        } else {
+            this.peer = options.client
+        }
+    }
+    initPlayers(playersData) {
+        let self = this;
+        let off = this.players.length
+        for (let i = off; i < playersData.length + off; i++) {
+            this.players.push(
+                {
+                    textInput: new TextInput({ x: 10, y: 80 + 48 * i, w: 300, h: 45, maxLength: 15, textSize: 40 }),
+                    colorButton: new Button({ x: 320, y: 82 + 48 * i, w: 40, h: 40, selectButton: true, disableSelectTexture: true, disableDisabledTexture: true }, images.playercolorbuttons.unselected, function () {
+                        self.players.forEach((e, index) => {
+                            if (index != i) { e.colorButton.selected = false; } else {
+                                self.players.forEach((b) => {
+                                    b.textInput.w = 300;
+                                })
+                                if (index >= 4) {
+                                    self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30 - 40, -62 + 48 * (i + 1), e, self.selectedColors) : undefined;
+
+                                    if (self.currentMenu) {
+                                        self.players[index - 1].textInput.w = 230;
+                                        self.players[index - 2].textInput.w = 230;
+                                    }
+                                } else {
+                                    self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30 - 40, 82 + 48 * (i + 1), e, self.selectedColors) : undefined;
+
+                                    if (self.currentMenu) {
+                                        if (self.players[index + 1]) self.players[index + 1].textInput.w = 230;
+                                        if (self.players[index + 2]) self.players[index + 2].textInput.w = 230;
+                                    }
+                                }
+                            }
+                        });
+                    }),
+                    selectedColor: -1
+                }
+            );
+
+            let playerData = playersData[i]
+            let player = this.players[i]
+
+            player.textInput.htmlElement.disabled = true
+            player.textInput.htmlElement.value = playerData.name
+            player.textInput.htmlElement.style.backgroundColor = playerData.selected ? "" : "white"
+
+            player.selectedColor = playerData.color
+            player.colorButton.disabled = true
+            player.colorButton.disableDisabledTexture = true
+  
+            player.confirmButton = new Button({
+                x: 370,
+                y: 82 + 48 * i,
+                w: 40,
+                h: 40
+            }, playerData.selected ? images.buttons.no : images.buttons.yes, (invalid = false, client = undefined) => {
+                let state = player.confirmButton.image === images.buttons.yes ? true : false
+                if (!invalid) this.selectedPlayer = state ? i : -1
+                console.log(this.selectedPlayer)
+                if (state) {
+                    console.log("To selected")
+                    player.confirmButton.image = images.buttons.no
+                    player.textInput.htmlElement.style.backgroundColor = ''
+                    currentMenu.players.forEach((e, j) => e.confirmButton.disabled = j !== i)
+                } else {
+                    console.log("To not selected")
+                    player.confirmButton.image = images.buttons.yes
+                    player.textInput.htmlElement.style.backgroundColor = 'white'
+                    currentMenu.players.forEach((e, j) => e.confirmButton.disabled = e.confirmButton.image === images.buttons.no)
+                }
+
+                if (this.hosting) sendPlayers({ selected: state, client: client })
+                else if (!invalid) sendMessage(this.peer.connection, "choosePlayer", { index: i, selected: state })
+            })
+            player.confirmButton.disabled = ((playerData.selected || this.selectedPlayer !== -1) && i !== this.selectedPlayer)
+            player.confirmButton.disableDisabledTexture = true
+        }
+    }
+}
+
 class LobbyMenu {
     constructor() {
         let self = this;
