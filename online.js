@@ -165,10 +165,8 @@ function readyUp() {
 }
 function addReady() {
     if (board.constructor.name === 'Board') return
-    console.log("he")
-    board.readyPlayers++
-    if (board.hosting) sendMessageToAll("readyPlayers", board.readyPlayers)
 
+    board.readyPlayers++
     if (board.readyPlayers === (Object.entries(peer.clients).length + 1)) {
         board.ready = true
         sendMessageToAll("ready")
@@ -177,6 +175,8 @@ function addReady() {
 
 function createHost() {
     peer.clients = {}
+
+    window.onbeforeunload = () => Object.values(peer.clients).forEach(client => client.connection.close())
 
     peer.on('connection', x => {
         let id = x.peer
@@ -205,7 +205,13 @@ function createHost() {
         })
 
         x.on('close', () => {
-            removeClient(id)
+            if (currentMenu instanceof OnlineLobby) removeClient(id)
+            else if (board instanceof OnlineBoard) {
+                saveGame(true)
+                Object.values(peer.clients).forEach(client => client.connection.close())
+                peer.clients = {}
+                currentMenu = new PublicGames()
+            }
         })
 
         x.on('data', (response) => {
@@ -292,17 +298,19 @@ function connectToHost(hostId) {
 
     peer.on("open", id => {
         peer.connection = peer.connect(hostId)
+        window.onbeforeunload = function () { peer.connection.close() }
     })
 
     peer.on("connection", x => {
         x.on("open", () => {
             //console.log("Connected to " + x.peer)
-            //currentMenu.players[0].textInput.htmlElement.value = generateId(5) // TEMP
-            //currentMenu.players[0].confirmButton.onClick() // TEMP
+            currentMenu.players[0].textInput.htmlElement.value = generateId(5) // TEMP
+            currentMenu.players[0].confirmButton.onClick() // TEMP
         })
 
         x.on("close", () => {
             //console.log("Connection Lost")
+            delete peer
             currentMenu = new PublicGames()
         })
 
@@ -313,11 +321,8 @@ function connectToHost(hostId) {
             const data = response.data
             console.log(response)
 
-            //Ready
-            if (type === "ready") board.ready = true
-            if (type === "readyPlayers") board.readyPlayers = data
-
             // General
+            if (type === "ready") board.ready = true
             if (type === "saveCardId") board.cardId = data
             if (type === "closeCard") currentMenu?.okayButton?.onClick(false)
             if (type === "startGame") {
