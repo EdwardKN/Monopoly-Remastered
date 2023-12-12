@@ -69,6 +69,7 @@ function addRandomPlayer(name, i) {
 
 // game.id = generateId(13) Can replace if necessary
 function saveGame(online = false) {
+    if (!board || !players) return
     let key = online ? "monopolyOnlineGames" : "monopolyGames"
     let games = JSON.parse(localStorage.getItem(key) ?? "[]")
 
@@ -99,62 +100,57 @@ function saveGame(online = false) {
     localStorage.setItem(key, JSON.prune(games))
 }
 
-function loadGame(gameToload) {
-    window.onbeforeunload = saveGame;
-    currentMenu = undefined;
-    board = new Board()
-    Object.entries(JSON.parse(gameToload.board)).forEach(e => {
-        if (typeof e[1] != "object") {
-            board[e[0]] = e[1];
-        };
-    });
-    board.id = gameToload.id;
-    board.settings = JSON.parse(gameToload.board).settings;
-    turn = gameToload.turn;
-
-    let playersToLoad = gameToload.players.map(e => JSON.parse(e));
-
-    playersToLoad.forEach((player, index) => {
-        players.push(new Player(player.color, player.name));
-    });
-    board.boardPieces[0].playersOnBoardPiece.splice(0, 8);
-
-    playersToLoad.forEach((player, index) => {
-        board.boardPieces[(player.pos == 40 ? 10 : player.pos)].playersOnBoardPiece.push(players[index]);
-        Object.entries(player).forEach(e => {
-            if (typeof e[1] != "object") {
-                players[index][e[0]] = e[1];
-            }
-        })
-        player.ownedPlaces.forEach(place => {
-            players[index].ownedPlaces.push(board.boardPieces[place.n])
-            board.boardPieces[place.n].owner = players[index];
-            board.boardPieces[place.n].level = place.level;
-            board.boardPieces[place.n].mortgaged = place.mortgaged;
-        })
-    });
-
-    let currentMenuClass = eval(gameToload.currentMenu.class);
-    if (currentMenuClass) {
-        let args = getClassContructorParams(currentMenuClass);
-        let argsToInsert = [];
-        args.forEach(e => {
-            Object.entries(JSON.parse(gameToload.currentMenu.value)).forEach(b => {
-                if (e.trim() == b[0]) { argsToInsert.push(b[1]); }
-            })
-        })
-        currentMenu = applyToConstructor(currentMenuClass, argsToInsert);
-        Object.entries(JSON.parse(gameToload.currentMenu.value)).forEach(e => {
-            if (typeof e[1] != "object") {
-                currentMenu[e[0]] = e[1];
-            } else if (e[0] == "card") { currentMenu["card"] = e[1]; }
-        });
+function loadGame(gameToLoad, index) {
+    let boardToLoad = JSON.parse(gameToLoad.board)
+    let local = currentMenu instanceof LoadGames
+    if (local) window.onbeforeunload = saveGame
+    
+    // Board (settings)
+    board = local ? new Board() : new OnlineBoard() // ONLINE VS LOCAL
+    currentMenu = undefined
+    board.id = gameToLoad.id
+    turn = gameToLoad.turn
+    board.settings = boardToLoad.settings
+    for (let [key, value] of Object.entries(boardToLoad)) if (typeof value != "object") board[key] = value
+    
+    // Players
+    let playersToLoad = gameToLoad.players.map(e => JSON.parse(e))
+    for (let i = 0; i < playersToLoad.length; i++) {
+        let playerData = playersToLoad[i]
+        let player = new Player(playerData.color, playerData.name, local || index === i) // ONLINE VS LOCAL
+        players.push(player)
+        board.boardPieces[0].playersOnBoardPiece.splice(-1)
+        board.boardPieces[(playerData.pos === 40 ? 10 : playerData.pos)].playersOnBoardPiece.push(player)
+        
+        for (let [key, value] of Object.entries(playerData)) if (typeof value != "object") player[key] = value
+        for (let ownedBoardPiece of playerData.ownedPlaces) {
+            let bP = board.boardPieces[ownedBoardPiece.n]
+            
+            player.ownedPlaces.push(bP)
+            bP.owner = player
+            bP.level = ownedBoardPiece.level
+            bP.mortgaged = ownedBoardPiece.mortgaged
+        }
     }
+    if (board.playerIsWalkingTo) players[turn].teleportTo(board.playerIsWalkingTo)
 
-    if (board.playerIsWalkingTo) {
-        players[turn].teleportTo(board.playerIsWalkingTo);
+    // currentMenu
+    let currentMenuClass = eval(gameToLoad.currentMenu.class)
+    if (!currentMenuClass) return
+    
+    let currentMenuValue = JSON.parse(gameToLoad.currentMenu.value)
+    let requiredArgs = getClassContructorParams(currentMenuClass)
+    let argsToInsert = []
+    for (let arg of requiredArgs) {
+        let value = currentMenuValue[arg.trim()]
+        if (value) argsToInsert.push(value)
     }
+    currentMenu = applyToConstructor(currentMenuClass, argsToInsert)
 
+    for (let [key, value] of Object.entries(currentMenuValue)) {
+        if (typeof value !== "object") currentMenu[key] = value
+        else if (key === "card") currentMenu["card"] = value
+    }
 }
 
 function update() {
@@ -500,11 +496,12 @@ class OnlineJoinLobby extends OnlineLobby {
         this.players = []
         this.settings = []
         this.selectedPlayer = -1
+        this.peer = options.client
         console.log(options.game)
 
         if (this.hosting) {
             let game = options.game
-            this.peer = createHost()
+            this.peer = createHost() // Override this.peer if options.client is undefined
             this.initPlayers(game.players.map(e => JSON.parse(e)))
 
             Object.values(JSON.parse(game.board).settings).forEach((value, i) => {
@@ -522,9 +519,11 @@ class OnlineJoinLobby extends OnlineLobby {
                 }
                 htmlSetting.disabled = true
                 this.settings.push(htmlSetting)
+
+                this.startButton = new Button({ x: 10, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, () => {
+                    console.log(game.players, game.settings)
+                })
             })
-        } else {
-            this.peer = options.client
         }
     }
     initPlayers(playersData) {
