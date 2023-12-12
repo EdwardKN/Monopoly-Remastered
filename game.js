@@ -106,12 +106,12 @@ function loadGame(gameToLoad, index) {
     if (local) window.onbeforeunload = saveGame
 
     // Board (settings)
-    board = local ? new Board() : new OnlineBoard() // ONLINE VS LOCAL
+    board = local ? new Board() : new OnlineBoard(currentMenu.hosting, currentMenu.peer) // ONLINE VS LOCAL
     currentMenu = undefined
     board.id = gameToLoad.id
     turn = gameToLoad.turn
     board.settings = boardToLoad.settings
-    for (let [key, value] of Object.entries(boardToLoad)) if (typeof value != "object") board[key] = value
+    for (let [key, value] of Object.entries(boardToLoad)) if (typeof value != "object" && key !== "hosting") board[key] = value
     
     // Players
     let playersToLoad = gameToLoad.players.map(e => JSON.parse(e))
@@ -123,7 +123,7 @@ function loadGame(gameToLoad, index) {
         board.boardPieces[0].playersOnBoardPiece.splice(-1)
         board.boardPieces[(playerData.pos === 40 ? 10 : playerData.pos)].playersOnBoardPiece.push(player)
         
-        for (let [key, value] of Object.entries(playerData)) if (typeof value != "object") player[key] = value
+        for (let [key, value] of Object.entries(playerData)) if (typeof value != "object" && key !== "playing") player[key] = value
         for (let ownedBoardPiece of playerData.ownedPlaces) {
             let bP = board.boardPieces[ownedBoardPiece.n]
             
@@ -820,6 +820,7 @@ class SmallMenu {
             if (board.constructor.name === "Board") { exitGame(); return }
             if (board.hosting) {
                 Object.values(board.peer.clients).forEach(client => client.connection.close())
+                board.peer.clients = {}
                 exitGame(true)
             } else {
                 board.peer.connection.close()
