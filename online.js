@@ -212,10 +212,9 @@ function createHost() {
         x.on('close', () => {
             if (currentMenu instanceof OnlineLobby) removeClient(id)
             else if (board instanceof OnlineBoard) {
-                saveGame(true)
                 Object.values(peer.clients).forEach(client => client.connection.close())
                 peer.clients = {}
-                currentMenu = new PublicGames()
+                exitGame(true)
             }
         })
 
@@ -333,7 +332,7 @@ function connectToHost(hostId) {
         x.on("close", () => {
             //console.log("Connection Lost")
             delete peer
-            currentMenu = new PublicGames()
+            exitGame(true, true)
         })
 
         x.on("data", (response) => {

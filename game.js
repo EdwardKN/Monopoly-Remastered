@@ -16,14 +16,14 @@ async function init() {
     update();
 };
 
-function exitGame(online = false) {
+function exitGame(online = false, client = false) {
     setTimeout(e => {
-        saveGame(online);
+        if (!client) saveGame(online);
         board.boardPieces.forEach(e => e.hover = false);
         players.forEach(e => e.hover = false);
         board = undefined;
         players = [];
-        currentMenu = new MainMenu();
+        currentMenu = online ? new PublicGames() : new MainMenu();
         window.onbeforeunload = undefined;
     }, 100)
 }
