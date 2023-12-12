@@ -347,8 +347,12 @@ function connectToHost(hostId) {
             if (type === "saveCardId") board.cardId = data
             if (type === "closeCard") currentMenu?.okayButton?.onClick(false)
             if (type === "startGame") {
-                startGame(data.players, data.settings)
-                players[data.index].playing = true
+                if (currentMenu instanceof OnlineJoinLobby) {
+                    loadGame(data, currentMenu.selectedPlayer)
+                } else {
+                    startGame(data.players, data.settings)
+                    players[data.index].playing = true
+                }
             }
             if (type === "throwDices") {
                 board.rollDice(data.dice1, data.dice2)

@@ -104,7 +104,7 @@ function loadGame(gameToLoad, index) {
     let boardToLoad = JSON.parse(gameToLoad.board)
     let local = currentMenu instanceof LoadGames
     if (local) window.onbeforeunload = saveGame
-    
+
     // Board (settings)
     board = local ? new Board() : new OnlineBoard() // ONLINE VS LOCAL
     currentMenu = undefined
@@ -118,6 +118,7 @@ function loadGame(gameToLoad, index) {
     for (let i = 0; i < playersToLoad.length; i++) {
         let playerData = playersToLoad[i]
         let player = new Player(playerData.color, playerData.name, local || index === i) // ONLINE VS LOCAL
+        
         players.push(player)
         board.boardPieces[0].playersOnBoardPiece.splice(-1)
         board.boardPieces[(playerData.pos === 40 ? 10 : playerData.pos)].playersOnBoardPiece.push(player)
@@ -519,10 +520,11 @@ class OnlineJoinLobby extends OnlineLobby {
                 }
                 htmlSetting.disabled = true
                 this.settings.push(htmlSetting)
+            })
 
-                this.startButton = new Button({ x: 10, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, () => {
-                    console.log(game.players, game.settings)
-                })
+            this.startButton = new Button({ x: 10, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, () => {
+                loadGame(game, this.selectedPlayer)
+                if (this.hosting) sendMessageToAll("startGame", game)
             })
         }
     }
