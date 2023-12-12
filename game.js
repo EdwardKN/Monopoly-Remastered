@@ -494,11 +494,6 @@ class OnlineLobby {
     }
 }
 
-/*
-Fixes: 
-Choose player
-*/
-
 class OnlineJoinLobby extends OnlineLobby {
     constructor(hosting, options = {}) {
         super(hosting, options.id, false)
@@ -594,10 +589,10 @@ class OnlineJoinLobby extends OnlineLobby {
                 } else {
                     player.confirmButton.image = images.buttons.yes
                     player.textInput.htmlElement.style.backgroundColor = 'white'
-                    currentMenu.players.forEach((e, j) => e.confirmButton.disabled = e.confirmButton.image === images.buttons.no)
+                    currentMenu.players.forEach(e => e.confirmButton.disabled = e.confirmButton.image === images.buttons.no)
                 }
 
-                if (this.hosting) sendPlayers({ selected: state, client: client })
+                if (this.hosting) sendPlayers({ selected: state })
                 else if (!invalid) sendMessage(this.peer.connection, "choosePlayer", { index: i, selected: state })
             })
             player.confirmButton.disabled = ((playerData.selected || this.selectedPlayer !== -1) && (i !== this.selectedPlayer))

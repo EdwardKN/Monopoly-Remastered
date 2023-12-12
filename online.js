@@ -187,7 +187,6 @@ function createHost() {
             peer.clients[id] = { connection: peer.connect(id) }
 
             waitForOpenConnection(peer.clients[id], () => {
-                console.log("Hi")
                 if (currentMenu instanceof OnlineJoinLobby) sendMessage(peer.clients[id].connection, "changeLobby")
                 else sendMessage(peer.clients[id].connection, "selectedColors", currentMenu.selectedColors)
                 sendPlayers()
@@ -295,17 +294,18 @@ function createHost() {
 
             // Online Join Lobby
             if (type === "choosePlayer") {
+                let player = currentMenu.players[data.index]
                 if (!data.selected) {
-                    currentMenu.players[data.index].confirmButton.image = data.selected ? images.buttons.no : images.buttons.yes
-                    currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor = data.selected ? "" : "white"
-                    currentMenu.players[data.index].confirmButton.disabled = currentMenu.selectedPlayer !== -1
+                    player.confirmButton.image = images.buttons.yes
+                    player.textInput.htmlElement.style.backgroundColor = "white"
+                    player.confirmButton.disabled = currentMenu.selectedPlayer !== -1
                     sendMessageToAll("selectPlayer", data, [client])
                 } else if (currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor === "") {
                     sendMessage(client.connection, "invalidPlayer", data.index)
                 } else {
-                    currentMenu.players[data.index].confirmButton.image = data.selected ? images.buttons.no : images.buttons.yes
-                    currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor = data.selected ? "" : "white"
-                    currentMenu.players[data.index].confirmButton.disabled = ((data.selected || currentMenu.selectedPlayer !== -1) && data.index !== currentMenu.selectedPlayer)
+                    player.confirmButton.image = images.buttons.no
+                    player.textInput.htmlElement.style.backgroundColor = ""
+                    player.confirmButton.disabled = true
                     sendMessageToAll("selectPlayer", data, [client])
                 }
             }
@@ -452,9 +452,12 @@ function connectToHost(hostId) {
             }
 
             if (type === "selectPlayer") {
-                currentMenu.players[data.index].confirmButton.image = data.selected ? images.buttons.no : images.buttons.yes
-                currentMenu.players[data.index].confirmButton.disabled = ((data.selected || currentMenu.selectedPlayer !== -1) && data.index !== currentMenu.selectedPlayer)
-                currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor = data.selected ? "" : "white"
+                let player = currentMenu.players[data.index]
+                if (!player) return // Needed if it players has not loaded yet
+
+                player.confirmButton.image = data.selected ? images.buttons.no : images.buttons.yes
+                player.confirmButton.disabled = ((data.selected || currentMenu.selectedPlayer !== -1) && data.index !== currentMenu.selectedPlayer)
+                player.textInput.htmlElement.style.backgroundColor = data.selected ? "" : "white"
             }
             if (type === "invalidPlayer") {
                 currentMenu.players[data].confirmButton.onClick(true)
