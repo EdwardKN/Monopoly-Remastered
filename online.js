@@ -296,7 +296,7 @@ function createHost() {
 
             // Online Join Lobby
             if (type === "choosePlayer") {
-                if (data.selected && currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor === "") { // Select already taken
+                if (!data.selected && currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor === "") { // Select already taken
                     sendMessage(client.connection, "invalidPlayer", data.index)
                 } else {
                     let p = currentMenu.players[data.index]

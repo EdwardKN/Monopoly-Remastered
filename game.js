@@ -497,16 +497,43 @@ class OnlineLobby {
     }
 }
 
+/*
+Fixes: 
+Choose player
+Ready is still fucked up
+Less code - Cojoin OnlineJoinLobby and OnlineLobby?
+
+*/
+
 class OnlineJoinLobby extends OnlineLobby {
     constructor(hosting, options = {}) {
         super(hosting, options.id, false)
         this.players = []
+        this.settings = []
         this.selectedPlayer = -1
         console.log(options.game)
 
         if (this.hosting) {
+            let game = options.game
             this.peer = createHost()
-            this.initPlayers(options.game.players.map(e => JSON.parse(e)))
+            this.initPlayers(game.players.map(e => JSON.parse(e)))
+
+            Object.values(JSON.parse(game.board).settings).forEach((value, i) => {
+                let length = settings.length
+                let mainSetting = settings[i]
+                let htmlSetting
+
+                if (mainSetting.type === "select") {
+                    htmlSetting = new Button({ x: 450, y: splitPoints(length, canvas.height, 35, i), w: 500, h: 35, selectButton: true, text: mainSetting.title, textSize: c.getFontSize(mainSetting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting, () => sendPlayers(this.peer))
+                    htmlSetting.selected = value
+                } else if (mainSetting.type === "slider") {
+                    htmlSetting = new Slider({ x: 450, y: splitPoints(length, canvas.height, 35, i), w: 500, h: 35, from: mainSetting.from, to: mainSetting.to, unit: mainSetting.unit, steps: mainSetting.steps, beginningText: mainSetting.title }, () => sendPlayers(this.peer))
+                    htmlSetting.percentage = value / (mainSetting.to - mainSetting.from)
+                    htmlSetting.value = value
+                }
+                htmlSetting.disabled = true
+                this.settings.push(htmlSetting)
+            })
         } else {
             this.peer = options.client
         }
@@ -565,14 +592,12 @@ class OnlineJoinLobby extends OnlineLobby {
             }, playerData.selected ? images.buttons.no : images.buttons.yes, (invalid = false, client = undefined) => {
                 let state = player.confirmButton.image === images.buttons.yes ? true : false
                 if (!invalid) this.selectedPlayer = state ? i : -1
-                console.log(this.selectedPlayer)
+
                 if (state) {
-                    console.log("To selected")
                     player.confirmButton.image = images.buttons.no
                     player.textInput.htmlElement.style.backgroundColor = ''
                     currentMenu.players.forEach((e, j) => e.confirmButton.disabled = j !== i)
                 } else {
-                    console.log("To not selected")
                     player.confirmButton.image = images.buttons.yes
                     player.textInput.htmlElement.style.backgroundColor = 'white'
                     currentMenu.players.forEach((e, j) => e.confirmButton.disabled = e.confirmButton.image === images.buttons.no)
@@ -583,6 +608,46 @@ class OnlineJoinLobby extends OnlineLobby {
             })
             player.confirmButton.disabled = ((playerData.selected || this.selectedPlayer !== -1) && i !== this.selectedPlayer)
             player.confirmButton.disableDisabledTexture = true
+        }
+    }
+
+    draw() {
+        c.drawImageFromSpriteSheet(images.menus.lobbymenu);
+        this.backButton.update();
+        this.players.forEach(player => {
+            player.textInput.draw();
+            player.colorButton.image = images.playercolorbuttons[(player.selectedColor == -1 ? "unselected" : "playercolorbutton" + (player.selectedColor == 0 ? "" : player.selectedColor + 1))]
+            if (self.currentMenu?.hover) {
+                player.colorButton.draw();
+                player.confirmButton?.draw()
+            } else {
+                player.colorButton.update();
+                player.confirmButton?.update()
+            }
+            if (!(this.currentMenu instanceof ColorSelector)) player.kickButton?.update()
+            else player.kickButton?.draw()
+        })
+
+        this.currentMenu?.draw()
+        this.settings.forEach(setting => setting.update());
+
+        if (!this.hosting) return
+
+        this.startButton.disabled = Object.entries(this.peer.clients).length === 0 ||
+            !this.players.every(player => player.textInput.htmlElement.style.backgroundColor === "")
+        this.startButton.update();
+
+        c.drawText("Id: " + this.peer.id, 250, canvas.height - 30, 30)
+        if (detectCollision(240, canvas.height - 60, 180, 40, mouse.x, mouse.y, 1, 1)) {
+            c.drawText("Id: " + this.peer.id, 250, canvas.height - 30, 30, "left", "blue")
+            if (mouse.down) {
+                mouse.down = false
+                //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.peer.id}`)
+                navigator.clipboard.writeText(this.peer.id)
+
+                //currentMenu.players[0].textInput.htmlElement.value = "Player 1" // TEMP
+                //setTimeout(() => { currentMenu.players[0].confirmButton.onClick() }, 100) // TEMP
+            }
         }
     }
 }
@@ -976,8 +1041,8 @@ class OnlineBoard extends Board {
         }
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(1, 6)
-            let dice2 = randomIntFromRange(1, 6)
+            let dice1 = randomIntFromRange(3, 4)
+            let dice2 = randomIntFromRange(3, 4)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
