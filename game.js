@@ -67,59 +67,36 @@ function addRandomPlayer(name, i) {
     colorsToPick.splice(random, 1);
 }
 
+// game.id = generateId(13) Can replace if necessary
 function saveGame(online = false) {
-    let key = online ? "monopolyOnlineGames" : "games"
-    let games = JSON.parse(localStorage.getItem(key)) || []
-    delete board.peer
+    let key = online ? "monopolyOnlineGames" : "monopolyGames"
+    let games = JSON.parse(localStorage.getItem(key) ?? "[]")
 
+    delete board.peer
     let game = {
         board: JSON.prune(board),
         saveVersion: latestSaveVersion,
         players: players.map(e => JSON.prune(e)),
         turn: turn,
-        currentDay: new Date().today(),
-        currentTime: new Date().timeNow(),
+        currentTime: new Date().getTime(),
         screenshot: canvas.toDataURL(),
         currentMenu: { class: currentMenu?.constructor.name, value: JSON.prune(currentMenu) }
     }
 
-    game.id = board.id ?? ((JSON.parse(games[games.length - 1]).id ?? -1) + 1)
-
-}
-
-async function saveGame(online = false) {
-    if (!board || !players) { return }
-    let key = online ? "monopolyOnlineGames" : "games"
-    let games = JSON.parse(localStorage.getItem(key));
-    games = (games == null || games == undefined) ? [] : games;
-    
-    delete board.peer
-    let game = {
-        board: JSON.prune(board),
-        saveVersion: latestSaveVersion,
-        players: players.map(e => JSON.prune(e)),
-        turn: turn,
-        currentDay: new Date().today(),
-        currentTime: new Date().timeNow(),
-        screenshot: canvas.toDataURL(),
-        currentMenu: { class: currentMenu?.constructor.name, value: JSON.prune(currentMenu) }
-    };
-    
-    game.id = (board.id == undefined || board.id == null) ? (games.length === 0 ? 0 : JSON.parse(games[games.length - 1]).id + 1) : board.id;
-
-
-    let tmpGame = JSON.prune(game);
-    let tmp = false;
-    games.forEach(function (e, i) {
-        if (JSON.parse(e).id == game.id) {
-            tmp = true;
-            games[i] = tmpGame;
+    if (board.id !== undefined) game.id = board.id
+    else if (games.length > 0) game.id = JSON.parse(games[games.length - 1]).id + 1
+    else game.id = 0
+    console.log(game.id)
+    let tmpGame = JSON.prune(game)
+    let pushed = false
+    games.forEach((oldGame, i) => {
+        if (JSON.parse(oldGame).id == game.id) {
+            pushed = true
+            games[i] = tmpGame
         }
     })
-    if (tmp === false) {
-        games.push(tmpGame);
-    }
-    localStorage.setItem(key, JSON.prune(games));
+    if (!pushed) games.push(tmpGame)
+    localStorage.setItem(key, JSON.prune(games))
 }
 
 function loadGame(gameToload) {
@@ -225,7 +202,7 @@ class MainMenu {
     }
     draw() {
         c.drawImageFromSpriteSheet(images.menus.mainmenu)
-        this.loadButton.disabled = (JSON.parse(localStorage.getItem("games")) == undefined || JSON.parse(localStorage.getItem("games")).length == 0);
+        this.loadButton.disabled = (JSON.parse(localStorage.getItem("monopolyGames")) == undefined || JSON.parse(localStorage.getItem("monopolyGames")).length == 0);
 
         this.localButton.update();
         this.loadButton.update();
@@ -240,7 +217,7 @@ class MainMenu {
 class LoadGames {
     constructor(online = false) {
         let self = this;
-        this.key = online ? "monopolyOnlineGames" : "games"
+        this.key = online ? "monopolyOnlineGames" : "monopolyGames"
 
         this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, function () { currentMenu = new MainMenu() });
         this.startButton = new Button({ x: canvas.width / 4 - 194 / 2, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, function () {
@@ -254,7 +231,7 @@ class LoadGames {
             self.games.splice(index, 1);
 
             let tmpGames = self.games.map(e => JSON.prune(e));
-            localStorage.setItem(self.key, JSON.prune(tmpGames.reverse()));
+            localStorage.setItem(self.key, JSON.prune(tmpGames));
             self.init();
             if (self.games[index]) {
                 self.gameButtons[index].selected = true;
@@ -277,10 +254,11 @@ class LoadGames {
     }
     init() {
         let self = this;
-        this.games = (JSON.parse(localStorage.getItem(this.key)) || []).map(e => JSON.parse(e)).reverse() 
+        this.games = (JSON.parse(localStorage.getItem(this.key)) || []).map(e => JSON.parse(e))
+        this.games = this.games.sort((a, b) => b.currentTime - a.currentTime)
         this.gameButtons = [];
         this.games.forEach((game, i) => {
-            this.gameButtons.push(new Button({ x: 500, y: 10 + i * 50, w: 450, h: 40, text: game.currentDay + " " + game.currentTime, textSize: 30, selectButton: true }, images.buttons.saveselect, function () {
+            this.gameButtons.push(new Button({ x: 500, y: 10 + i * 50, w: 450, h: 40, text: new Date(game.currentTime).today() + " " + new Date(game.currentTime).timeNow(), textSize: 30, selectButton: true }, images.buttons.saveselect, function () {
                 self.gameButtons.forEach((e, index) => {
                     if (i != index) {
                         e.selected = false;
