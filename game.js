@@ -67,6 +67,26 @@ function addRandomPlayer(name, i) {
     colorsToPick.splice(random, 1);
 }
 
+function saveGame(online = false) {
+    let key = online ? "monopolyOnlineGames" : "games"
+    let games = JSON.parse(localStorage.getItem(key)) || []
+    delete board.peer
+
+    let game = {
+        board: JSON.prune(board),
+        saveVersion: latestSaveVersion,
+        players: players.map(e => JSON.prune(e)),
+        turn: turn,
+        currentDay: new Date().today(),
+        currentTime: new Date().timeNow(),
+        screenshot: canvas.toDataURL(),
+        currentMenu: { class: currentMenu?.constructor.name, value: JSON.prune(currentMenu) }
+    }
+
+    game.id = board.id ?? ((JSON.parse(games[games.length - 1]).id ?? -1) + 1)
+
+}
+
 async function saveGame(online = false) {
     if (!board || !players) { return }
     let key = online ? "monopolyOnlineGames" : "games"
@@ -257,8 +277,7 @@ class LoadGames {
     }
     init() {
         let self = this;
-        this.games = this.online ? (JSON.parse(localStorage.getItem(this.key)) || []).map(e => JSON.parse(e)).reverse() 
-                            : JSON.parse(localStorage.getItem(this.key)).map(e => JSON.parse(e)).reverse();
+        this.games = (JSON.parse(localStorage.getItem(this.key)) || []).map(e => JSON.parse(e)).reverse() 
         this.gameButtons = [];
         this.games.forEach((game, i) => {
             this.gameButtons.push(new Button({ x: 500, y: 10 + i * 50, w: 450, h: 40, text: game.currentDay + " " + game.currentTime, textSize: 30, selectButton: true }, images.buttons.saveselect, function () {
@@ -500,9 +519,6 @@ class OnlineLobby {
 /*
 Fixes: 
 Choose player
-Ready is still fucked up
-Less code - Cojoin OnlineJoinLobby and OnlineLobby?
-
 */
 
 class OnlineJoinLobby extends OnlineLobby {
@@ -606,7 +622,7 @@ class OnlineJoinLobby extends OnlineLobby {
                 if (this.hosting) sendPlayers({ selected: state, client: client })
                 else if (!invalid) sendMessage(this.peer.connection, "choosePlayer", { index: i, selected: state })
             })
-            player.confirmButton.disabled = ((playerData.selected || this.selectedPlayer !== -1) && i !== this.selectedPlayer)
+            player.confirmButton.disabled = ((playerData.selected || this.selectedPlayer !== -1) && (i !== this.selectedPlayer))
             player.confirmButton.disableDisabledTexture = true
         }
     }
@@ -1728,6 +1744,7 @@ class CardDraw {
             self.animationStep = 3
             board.cardId = undefined
             requestAction("closeCard", undefined, request)
+            resetReady();
         })
 
     }
@@ -1782,6 +1799,7 @@ class CardDraw {
             players[turn].teleportTo(this.card.teleport);
         } else if (this.card.moneyChange) {
             players[turn].money += this.card.moneyChange;
+            readyUp();
             if (this.card.moneyChange < 0) {
                 board.money += board.settings.giveAllToParking ? this.card.moneyChange : 0;
             }
@@ -1797,6 +1815,7 @@ class CardDraw {
             });
         } else if (this.card.type == "getprisoncard") {
             players[turn].prisonCards++;
+            readyUp();
         } else if (this.card.type == "gotoprison") {
             players[turn].goToPrison();
         } else if (this.card.steps) {
@@ -1806,6 +1825,7 @@ class CardDraw {
             let closest = findClosest(players[turn].pos, board.boardPieces.filter(e => e.constructor.name == self.card.gotoClosest).map(e => e.n))
             players[turn].teleportTo(closest * Math.sign(closest - players[turn].pos), true);
         } else if (this.card.properyPrice) {
+            readyUp();
             let self = this;
             players[turn].ownedPlaces.forEach(place => {
                 if (place.level < 5) {
@@ -1822,10 +1842,12 @@ class CardDraw {
         } else if (this.type == "special" && (this.cardId == 0 || this.cardId == 1)) {
             players[turn].goToPrison();
         } else if (this.type == "special" && this.cardId == 2) {
+            readyUp();
             players[turn].money -= (players[turn].money > 2000 ? 200 : Math.round(players[turn].money / 10));
             board.money += board.settings.giveAllTaxToParking ? players[turn].money > 2000 ? 200 : Math.round(players[turn].money / 10) : 0;
             players[turn].lastPayment = undefined;
         } else if (this.type == "special" && this.cardId == 3) {
+            readyUp();
             players[turn].money -= 100;
             board.money += board.settings.giveAllTaxToParking ? 100 : 0;
             players[turn].lastPayment = undefined;

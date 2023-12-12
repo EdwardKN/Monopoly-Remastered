@@ -296,10 +296,14 @@ function createHost() {
 
             // Online Join Lobby
             if (type === "choosePlayer") {
-                if (!data.selected && currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor === "") { // Select already taken
+                if (!data.selected) {
+                    currentMenu.players[data.index].confirmButton.image = data.selected ? images.buttons.no : images.buttons.yes
+                    currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor = data.selected ? "" : "white"
+                    currentMenu.players[data.index].confirmButton.disabled = currentMenu.selectedPlayer !== -1
+                    sendMessageToAll("selectPlayer", data, [client])
+                } else if (currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor === "") {
                     sendMessage(client.connection, "invalidPlayer", data.index)
                 } else {
-                    let p = currentMenu.players[data.index]
                     currentMenu.players[data.index].confirmButton.image = data.selected ? images.buttons.no : images.buttons.yes
                     currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor = data.selected ? "" : "white"
                     currentMenu.players[data.index].confirmButton.disabled = ((data.selected || currentMenu.selectedPlayer !== -1) && data.index !== currentMenu.selectedPlayer)
