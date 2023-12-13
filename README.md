@@ -17,6 +17,6 @@ Funktionalitet
 - [x] Animationer
 - [x] Custom games
 - [ ] Statistik
-- [ ] OnlineLäge
+- [x] OnlineLäge
+- [x] Sparning av Onlinespel
 - [ ] Bots
-
