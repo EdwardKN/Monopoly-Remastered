@@ -87,7 +87,7 @@ function saveGame(online = false) {
     if (board.id !== undefined) game.id = board.id
     else if (games.length > 0) game.id = JSON.parse(games[games.length - 1]).id + 1
     else game.id = 0
-    console.log(game.id)
+
     let tmpGame = JSON.prune(game)
     let pushed = false
     games.forEach((oldGame, i) => {
@@ -498,7 +498,6 @@ class OnlineJoinLobby extends OnlineLobby {
         this.settings = []
         this.selectedPlayer = -1
         this.peer = options.client
-        console.log(options.game)
 
         if (this.hosting) {
             let game = options.game
@@ -1446,7 +1445,6 @@ class Auction {
         };
     };
     nextPlayer() {
-        console.log("Next")
         this.turn = (this.turn + 1) % this.playerlist.length;
         if (this.playerlist.length == 1 && this.playerlist[this.turn].hasLaidOver) {
             this.winAuction(this.playerlist[0]);
