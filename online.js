@@ -311,6 +311,12 @@ function createHost() {
             }
         })
     })
+
+    peer.on("error", error => {
+        Object.values(peer.clients).forEach(client => client.connection.close())
+        peer.clients = {}
+        throw new Error(error.type)
+    })
     return peer
 }
 
@@ -476,8 +482,9 @@ function connectToHost(hostId) {
     })
 
     peer.on("error", error => {
-        if (error.type === "peer-unavailable") currentMenu = new PublicGames()
-        else throw new Error(error.type)
+        peer.connection.close()
+        currentMenu = new PublicGames()
+        throw new Error(error.type)
     })
     return peer
 }

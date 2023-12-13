@@ -885,7 +885,7 @@ class Board {
             return;
         };
         board.playerHasRolled = false;
-        if (players[turn].inPrison && players[turn].playing) {
+        if (players[turn].inPrison) {
             currentMenu = new PrisonMenu();
         }
         readyUp();
@@ -1097,7 +1097,7 @@ class PrisonMenu {
         });
     }
     draw() {
-        if (!board.ready) return
+        if (!board.ready || !players[turn].playing) return
 
         c.drawImageFromSpriteSheet(images.menus.prisonmenu, { x: canvas.width / 2 - 150, y: canvas.height / 2 + 5 })
 
@@ -1343,7 +1343,7 @@ class Station extends BuyableProperty {
         if (this.owner == undefined && players[turn].playing) {
             this.openCard();
             readyUp();
-        } else if (this.owner != players[turn]) {
+        } else if (this.owner != undefined && this.owner != players[turn]) {
             this.level = (this.owner.ownedPlaces.filter(e => e.constructor.name == "Station").length) - 1;
             this.payRent();
             readyUp();
@@ -1357,7 +1357,7 @@ class Utility extends BuyableProperty {
         if (this.owner == undefined && players[turn].playing) {
             this.openCard();
             readyUp();
-        } else if (this.owner != players[turn]) {
+        } else if (this.owner != players[turn] && this.owner != undefined) {
             if (!(!this.owner?.inPrison || board.settings.prisonpay)) return
             let amount = this.owner.ownedPlaces.filter(e => e.constructor.name == "Utility").length;
             if (steps == undefined) {
@@ -2129,7 +2129,7 @@ class Player {
         board.boardPieces[0].playersOnBoardPiece.push(this);
     }
     calculateDrawPos() {
-        let index = this.inPrison && !board.playerIsWalkingTo && this === players[turn] ? players.filter(e => e.inPrison).indexOf(this) : board.boardPieces[this.pos].playersOnBoardPiece.indexOf(this);
+        let index = this.inPrison && this.pos == 40 ? players.filter(e => e.inPrison).indexOf(this) : board.boardPieces[this.pos].playersOnBoardPiece.indexOf(this);
 
         this.drawX = board.boardPieces[this.pos].drawX;
         this.drawY = board.boardPieces[this.pos].drawY - 64;
