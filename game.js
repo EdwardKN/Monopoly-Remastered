@@ -112,21 +112,21 @@ function loadGame(gameToLoad, index) {
     turn = gameToLoad.turn
     board.settings = boardToLoad.settings
     for (let [key, value] of Object.entries(boardToLoad)) if (typeof value != "object" && key !== "hosting") board[key] = value
-    
+
     // Players
     let playersToLoad = gameToLoad.players.map(e => JSON.parse(e))
     for (let i = 0; i < playersToLoad.length; i++) {
         let playerData = playersToLoad[i]
         let player = new Player(playerData.color, playerData.name, local || index === i) // ONLINE VS LOCAL
-        
+
         players.push(player)
         board.boardPieces[0].playersOnBoardPiece.splice(-1)
         board.boardPieces[(playerData.pos === 40 ? 10 : playerData.pos)].playersOnBoardPiece.push(player)
-        
+
         for (let [key, value] of Object.entries(playerData)) if (typeof value != "object" && key !== "playing") player[key] = value
         for (let ownedBoardPiece of playerData.ownedPlaces) {
             let bP = board.boardPieces[ownedBoardPiece.n]
-            
+
             player.ownedPlaces.push(bP)
             bP.owner = player
             bP.level = ownedBoardPiece.level
@@ -138,7 +138,7 @@ function loadGame(gameToLoad, index) {
     // currentMenu
     let currentMenuClass = eval(gameToLoad.currentMenu.class)
     if (!currentMenuClass) return
-    
+
     let currentMenuValue = JSON.parse(gameToLoad.currentMenu.value)
     let requiredArgs = getClassContructorParams(currentMenuClass)
     let argsToInsert = []
@@ -330,7 +330,7 @@ class OnlineLobby {
                 let tmpSettings = {}
                 this.settings.forEach((setting, i) => tmpSettings[settings[i].variable] = setting instanceof Button ? setting.selected : setting.value)
                 startGame(tmpPlayers, tmpSettings)
-                currentMenu = undefined                
+                currentMenu = undefined
             })
 
             settings.forEach((setting, index,) => {
@@ -572,7 +572,7 @@ class OnlineJoinLobby extends OnlineLobby {
             player.selectedColor = playerData.color
             player.colorButton.disabled = true
             player.colorButton.disableDisabledTexture = true
-  
+
             player.confirmButton = new Button({
                 x: 370,
                 y: 82 + 48 * i,
@@ -1294,6 +1294,7 @@ class BuyableProperty extends BoardPiece {
             readyUp();
         } else if (this.owner != undefined && this.owner != players[turn] && !this.mortgaged) {
             this.payRent();
+            readyUp();
         } else {
             readyUp();
         }
@@ -1342,9 +1343,10 @@ class Station extends BuyableProperty {
         if (this.owner == undefined && players[turn].playing) {
             this.openCard();
             readyUp();
-        } else if (this.owner != players[turn] && players[turn].playing) {
+        } else if (this.owner != players[turn]) {
             this.level = (this.owner.ownedPlaces.filter(e => e.constructor.name == "Station").length) - 1;
             this.payRent();
+            readyUp();
         } else {
             readyUp();
         }
@@ -1352,9 +1354,9 @@ class Station extends BuyableProperty {
 }
 class Utility extends BuyableProperty {
     step(steps) {
-        if (!players[turn].playing) return
-        if (this.owner == undefined) {
+        if (this.owner == undefined && players[turn].playing) {
             this.openCard();
+            readyUp();
         } else if (this.owner != players[turn]) {
             if (!(!this.owner?.inPrison || board.settings.prisonpay)) return
             let amount = this.owner.ownedPlaces.filter(e => e.constructor.name == "Utility").length;
@@ -1363,9 +1365,11 @@ class Utility extends BuyableProperty {
                 board.dices.roll(function (dice1, dice2) {
                     self.pay(dice1 + dice2, amount);
                     board.dices.hidden = true;
+                    readyUp();
                 }, randomIntFromRange(1, 6, board.cardId), randomIntFromRange(1, 6, board.cardId * 13))
             } else {
                 this.pay(steps, amount)
+                readyUp();
             }
 
         }
@@ -2125,7 +2129,7 @@ class Player {
         board.boardPieces[0].playersOnBoardPiece.push(this);
     }
     calculateDrawPos() {
-        let index = this.inPrison && !board.playerIsWalkingTo ? players.filter(e => e.inPrison).indexOf(this) : board.boardPieces[this.pos].playersOnBoardPiece.indexOf(this);
+        let index = this.inPrison && !board.playerIsWalkingTo && this === players[turn] ? players.filter(e => e.inPrison).indexOf(this) : board.boardPieces[this.pos].playersOnBoardPiece.indexOf(this);
 
         this.drawX = board.boardPieces[this.pos].drawX;
         this.drawY = board.boardPieces[this.pos].drawY - 64;
