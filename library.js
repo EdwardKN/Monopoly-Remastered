@@ -84,7 +84,6 @@ class Slider {
         this.value = 0;
         this.last = this.value;
         this.follow = false;
-        this.disabled = false;
         buttons.push(this)
 
         if (this.undefinedTextSize) {
