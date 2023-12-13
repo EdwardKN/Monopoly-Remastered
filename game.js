@@ -1647,7 +1647,7 @@ class Bankcheck {
     }
     draw() {
 
-        this.xPos -= 3 + Math.abs(this.xPos - canvas.width / 2 - 256) / 50
+        this.xPos -= (3 + Math.abs(this.xPos - canvas.width / 2 - 256) / 50) * deltaTime
 
         if (Math.abs(this.xPos - canvas.width / 2 - 256) < 5 && !this.hasPayed) {
             this.hasPayed = true;
@@ -1746,24 +1746,24 @@ class CardDraw {
                 }
             }
         } else if (this.animationStep == 0) {
-            this.yPos -= 1 - (canvas.height / 2 - 250 - this.yPos) / 20;
+            this.yPos -= (1 - (canvas.height / 2 - 250 - this.yPos) / 20) * deltaTime;
             if (canvas.height / 2 - 180 - this.yPos > 0) {
                 this.animationStep = 1;
             }
         } else if (this.animationStep == 1) {
-            this.yPos += 1 - (this.yPos - canvas.height / 2 - 128) / 50;
+            this.yPos += (1 - (this.yPos - canvas.height / 2 - 128) / 50) * deltaTime;
             if (this.yPos > canvas.height / 2 - 128) {
                 this.yPos = canvas.height / 2 - 128;
                 this.animationStep = 2;
                 readyUp();
             }
         } else if (this.animationStep == 3) {
-            this.yPos -= 1 - (canvas.height / 2 - 250 - this.yPos) / 20;
+            this.yPos -= (1 - (canvas.height / 2 - 250 - this.yPos) / 20) * deltaTime;
             if (canvas.height / 2 - 180 - this.yPos > 0) {
                 this.animationStep = 4;
             }
         } else if (this.animationStep == 4) {
-            this.yPos += 1 + (this.yPos) / 20;
+            this.yPos += (1 + (this.yPos) / 20) * deltaTime;
             if (this.yPos > canvas.height) {
                 this.useCard();
             }
@@ -2095,8 +2095,8 @@ class PropertyCard {
                 this.closeButton.update();
             }
         } else {
-            this.animationFactor += 0.001;
-            this.animationFactor *= 1.5;
+            this.animationFactor += (0.001) * deltaTime;
+            this.animationFactor *= (1.5) * deltaTime;
             this.animationFactor = this.animationFactor.clamp(0, 1);
         }
 
