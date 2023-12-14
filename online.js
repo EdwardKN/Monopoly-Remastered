@@ -125,14 +125,14 @@ function sendPlayers(settings = {}) {
             data_players.push({
                 name: text ?? player.textInput.htmlElement.value, // Text can be ''
                 color: color ?? player.selectedColor, // Color can be 0
-                selected: selected ?? player.textInput.htmlElement.disabled, // Selected can be false
+                selected: selected ?? player.textInput.htmlElement.style.backgroundColor === '', // Selected can be false
                 placeHolder: getPlaceHolder(player),
             })
         } else {
             data_players.push({
                 name: player.textInput.htmlElement.value,
                 color: player.selectedColor,
-                selected: player.textInput.htmlElement.disabled,
+                selected: player.textInput.htmlElement.style.backgroundColor === '',
                 placeHolder: getPlaceHolder(player),
             })
         }
@@ -143,10 +143,11 @@ function sendPlayers(settings = {}) {
         if (client === updatedClient) continue // Don't send to updated client
 
         let data = data_players.filter(player => peer.clients[player.placeHolder] !== client) // Dont include self
-        sendMessage(client.connection, "players", {
+        sendMessage(client.connection, currentMenu instanceof OnlineJoinLobby ? "existingPlayers" : "players", {
             players: data,
             settings: currentMenu.settings
-                .map(e => e.constructor.name === "Button" ? e.selected : { percentage: e.percentage, value: e.value })
+                .map(e => e.constructor.name === "Button" ? e.selected : { percentage: e.percentage, value: e.value }),
+            lobbyType: currentMenu instanceof OnlineJoinLobby
         })
     }
 }
@@ -165,10 +166,8 @@ function readyUp() {
 }
 function addReady() {
     if (board.constructor.name === 'Board') return
-    console.log("he")
-    board.readyPlayers++
-    if (board.hosting) sendMessageToAll("readyPlayers", board.readyPlayers)
 
+    board.readyPlayers++
     if (board.readyPlayers === (Object.entries(peer.clients).length + 1)) {
         board.ready = true
         sendMessageToAll("ready")
@@ -178,13 +177,26 @@ function addReady() {
 function createHost() {
     peer.clients = {}
 
+    window.onbeforeunload = () => Object.values(peer.clients).forEach(client => client.connection.close())
+
     peer.on('connection', x => {
         let id = x.peer
 
         x.on('open', () => {
+            // Connnection
+            peer.clients[id] = { connection: peer.connect(id) }
+
+            waitForOpenConnection(peer.clients[id], () => {
+                if (currentMenu instanceof OnlineJoinLobby) sendMessage(peer.clients[id].connection, "changeLobby")
+                else sendMessage(peer.clients[id].connection, "selectedColors", currentMenu.selectedColors)
+                sendPlayers()
+            })
+
+            if (currentMenu instanceof OnlineJoinLobby) return
+
             //console.log("Id: ", id, " connected")
             // HTML
-            const idx = Object.entries(peer.clients).length + 1
+            const idx = Object.entries(peer.clients).length
             const player = currentMenu.players[idx]
             player.textInput.htmlElement.style.backgroundColor = 'white'
             player.textInput.htmlElement.setAttribute('placeHolder', id)
@@ -194,18 +206,15 @@ function createHost() {
                 w: 40,
                 h: 40
             }, images.buttons.no, () => removeClient(id))
-
-            // Connnection
-            peer.clients[id] = { connection: peer.connect(id) }
-
-            waitForOpenConnection(peer.clients[id], () => {
-                sendMessage(peer.clients[id].connection, "selectedColors", currentMenu.selectedColors)
-                sendPlayers()
-            })
         })
 
         x.on('close', () => {
-            removeClient(id)
+            if (currentMenu instanceof OnlineLobby) removeClient(id)
+            else if (board instanceof OnlineBoard) {
+                Object.values(peer.clients).forEach(client => client.connection.close())
+                peer.clients = {}
+                exitGame(true)
+            }
         })
 
         x.on('data', (response) => {
@@ -260,7 +269,7 @@ function createHost() {
                 delete p
             }
 
-            // Lobby
+            // Online Lobby
             if (type === 'deselect') {
                 removeColor(data.color)
                 player.textInput.htmlElement.style.backgroundColor = 'white'
@@ -282,7 +291,31 @@ function createHost() {
             }
             if (type === "nameChange") { player.textInput.htmlElement.value = data; sendPlayers({ client: client, name: data }) }
             if (type === "colorChange") { player.selectedColor = data; sendPlayers({ client: client, color: data }) }
+
+            // Online Join Lobby
+            if (type === "choosePlayer") {
+                let player = currentMenu.players[data.index]
+                if (!data.selected) {
+                    player.confirmButton.image = images.buttons.yes
+                    player.textInput.htmlElement.style.backgroundColor = "white"
+                    player.confirmButton.disabled = currentMenu.selectedPlayer !== -1
+                    sendMessageToAll("selectPlayer", data, [client])
+                } else if (currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor === "") {
+                    sendMessage(client.connection, "invalidPlayer", data.index)
+                } else {
+                    player.confirmButton.image = images.buttons.no
+                    player.textInput.htmlElement.style.backgroundColor = ""
+                    player.confirmButton.disabled = true
+                    sendMessageToAll("selectPlayer", data, [client])
+                }
+            }
         })
+    })
+
+    peer.on("error", error => {
+        Object.values(peer.clients).forEach(client => client.connection.close())
+        peer.clients = {}
+        throw new Error(error.type)
     })
     return peer
 }
@@ -292,6 +325,7 @@ function connectToHost(hostId) {
 
     peer.on("open", id => {
         peer.connection = peer.connect(hostId)
+        window.onbeforeunload = function () { peer.connection.close() }
     })
 
     peer.on("connection", x => {
@@ -303,7 +337,8 @@ function connectToHost(hostId) {
 
         x.on("close", () => {
             //console.log("Connection Lost")
-            currentMenu = new PublicGames()
+            delete peer
+            exitGame(true, true)
         })
 
         x.on("data", (response) => {
@@ -313,16 +348,17 @@ function connectToHost(hostId) {
             const data = response.data
             console.log(response)
 
-            //Ready
-            if (type === "ready") board.ready = true
-            if (type === "readyPlayers") board.readyPlayers = data
-
             // General
+            if (type === "ready") board.ready = true
             if (type === "saveCardId") board.cardId = data
             if (type === "closeCard") currentMenu?.okayButton?.onClick(false)
             if (type === "startGame") {
-                startGame(data.players, data.settings)
-                players[data.index].playing = true
+                if (currentMenu instanceof OnlineJoinLobby) {
+                    loadGame(data, currentMenu.selectedPlayer)
+                } else {
+                    startGame(data.players, data.settings)
+                    players[data.index].playing = true
+                }
             }
             if (type === "throwDices") {
                 board.rollDice(data.dice1, data.dice2)
@@ -390,7 +426,7 @@ function connectToHost(hostId) {
             }
             if (type === "players") {
                 const players = data.players
-
+                
                 // Players
                 currentMenu.players.splice(1)
                 currentMenu.initPlayers(players.length)
@@ -404,7 +440,6 @@ function connectToHost(hostId) {
                     player.textInput.htmlElement.style.backgroundColor = newPlayer.selected ? "" : "white"
                     if (player.selected) player.confirmButton.onClick(true)
                 }
-
                 if (currentMenu.currentMenu) player.colorButton.onClick() // Resize the width on htmlElements
 
                 // Settings
@@ -425,12 +460,31 @@ function connectToHost(hostId) {
                     currentMenu.settings[index].disableDisabledTexture = true
                 })
             }
+
+            if (type === "selectPlayer") {
+                let player = currentMenu.players[data.index]
+                if (!player) return // Needed if it players has not loaded yet
+
+                player.confirmButton.image = data.selected ? images.buttons.no : images.buttons.yes
+                player.confirmButton.disabled = ((data.selected || currentMenu.selectedPlayer !== -1) && data.index !== currentMenu.selectedPlayer)
+                player.textInput.htmlElement.style.backgroundColor = data.selected ? "" : "white"
+            }
+            if (type === "invalidPlayer") {
+                currentMenu.players[data].confirmButton.onClick(true)
+            }
+            if (type === "existingPlayers") {
+                const players = data.players
+                currentMenu.players = []
+                currentMenu.initPlayers(players)
+            }
+            if (type === "changeLobby") currentMenu = new OnlineJoinLobby(false, { id: hostId, client: peer })
         })
     })
 
     peer.on("error", error => {
-        if (error.type === "peer-unavailable") currentMenu = new PublicGames()
-        else throw new Error(error.type)
+        peer.connection.close()
+        currentMenu = new PublicGames()
+        throw new Error(error.type)
     })
     return peer
 }
