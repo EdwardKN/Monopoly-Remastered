@@ -298,15 +298,62 @@ async function loadSpriteSheet() {
     spritesheetImage = new Image();
     spritesheetImage.src = "./images/texture.png";
 }
-
 async function loadImages() {
-    await loadSpriteSheet();
     spritesheet.frames.forEach((frame, i) => {
         let tmp = frame.filename.replaceAll(".png", "").split("/");
         images[tmp[0]] = images[tmp[0]] ?? {}
         images[tmp[0]][tmp[1]] = frame.frame;
     });
 }
+
+async function loadData() {
+    await loadSpriteSheet();
+    await loadImages();
+
+    soundEffects = new Sounds("/sounds/effects", soundEffects)
+}
+
+var soundEffects = {
+    movement: [0, 47],
+    cash: [48, 52],
+    dice: [53, 53]
+};
+
+class Sounds {
+    constructor(filePath, sounds) {
+        this.sounds = sounds;
+        this.filePath = filePath;
+
+        this.loadSoundObject();
+    }
+
+    async loadSoundObject() {
+        var response = await fetch(this.filePath + ".txt")
+        this.data = (await response.text()).split("\n").map(e => Math.floor(JSON.parse(e.split("\t")[0]) * 1000))
+
+        this.loadSounds();
+
+    }
+
+    loadSounds() {
+        let sprite = {};
+        Object.entries(this.sounds).forEach(e => {
+            if (e[0] === "data") return;
+
+            for (let i = e[1][0]; i <= e[1][1]; i++) {
+                sprite[e[0] + (i - e[1][0])] = [this.data[i], this.data[i + 1] - this.data[i]]
+            }
+        })
+        this.sound = new Howl({
+            src: ['sounds/effects.mp3'],
+            sprite: sprite
+        });
+    }
+    play(sound, random = true) {
+        this.sound.play(sound + (random ? randomIntFromRange(0, this.sounds[sound][1] - this.sounds[sound][0]) : 0));
+    }
+}
+
 
 CanvasRenderingContext2D.prototype.drawImageFromSpriteSheet = function (frame, settingsOverride) {
     if (!frame) { return }
@@ -894,7 +941,7 @@ function shuffle(unshuffled, saveValues = false) {
             return ({ value, sort: sortValue })
         }).sort((a, b) => a.sort - b.sort)
         .map(({ value }) => value)
-    
+
     if (saveValues) return values
     else return shuffled
 }
@@ -903,5 +950,5 @@ function riggedShuffle(unshuffled, values) {
     return unshuffled
         .map((value, i) => ({ value, sort: values[i] }))
         .sort((a, b) => a.sort - b.sort)
-        .map(({ value }) => value) 
+        .map(({ value }) => value)
 }

@@ -8,7 +8,7 @@ let colorsToPick = [0, 1, 2, 3, 4, 5, 6, 7];
 
 async function init() {
     fixCanvas();
-    await loadImages();
+    await loadData();
 
     renderC.imageSmoothingEnabled = false;
 
@@ -904,6 +904,7 @@ class PrisonMenu {
             players[turn].money -= 50;
             board.money += board.settings.giveAllToParking ? 50 : 0;
             players[turn].getOutOfPrison();
+            soundEffects.play("cash");
             currentMenu = undefined;
         });
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 1), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisonrolldice, function (request = true, rigged1 = randomIntFromRange(1, 6), rigged2 = randomIntFromRange(1, 6)) {
@@ -1056,6 +1057,7 @@ class Corner extends BoardPiece {
         if (this.n == 20 && board.settings.giveAllTaxToParking) {
             players[turn].money += board.money;
             board.money = 0;
+            soundEffects.play("cash");
         }
     }
 }
@@ -1147,6 +1149,7 @@ class BuyableProperty extends BoardPiece {
         this.owner = players[turn];
         players[turn].ownedPlaces.push(this);
         players[turn].hasBought = true;
+        soundEffects.play("cash");
     }
     sell(request = true) {
         if (requestAction("sellProperty", this.n, request)) return
@@ -1154,21 +1157,25 @@ class BuyableProperty extends BoardPiece {
         players[turn].money += this.mortgaged ? 0 : this.info.price / 2;
         this.owner = undefined;
         players[turn].ownedPlaces.splice(players[turn].ownedPlaces.indexOf(this), 1);
+        soundEffects.play("cash");
     }
     upgrade() {
         this.level++;
         players[turn].money -= this.info.housePrice;
         board.money += board.settings.giveAllToParking ? this.info.housePrice : 0;
+        soundEffects.play("cash");
     }
     mortgage(request = true) {
         if (requestAction("mortgageProperty", this.n, request)) return
 
         this.mortgaged = !this.mortgaged;
         players[turn].money += (this.mortgaged ? this.info.price / 2 : -(this.info.price / 2) * 1.1)
+        soundEffects.play("cash");
     }
     downgrade() {
         this.level--;
         players[turn].money += this.info.housePrice / 2;
+        soundEffects.play("cash");
     }
     payRent() {
         if (!(!this?.owner?.inPrison || board.settings.prisonpay)) return
@@ -1300,6 +1307,7 @@ class Auction {
         if (this.auctionMoney >= this.minimumPay) {
             players[playerIndex].money -= this.auctionMoney;
             board.money += board.settings.giveAllToParking ? this.auctionMoney : 0;
+            soundEffects.play("cash");
             this.boardPiece.owner = players[playerIndex];
             players[playerIndex].ownedPlaces.push(this.boardPiece);
         };
@@ -1528,6 +1536,7 @@ class Bankcheck {
         if (typeof this.from == "number") {
             players[this.from].money -= this.amount;
         }
+        soundEffects.play("cash");
     }
 }
 
@@ -1616,6 +1625,7 @@ class CardDraw {
             players[turn].money += this.card.moneyChange;
             if (this.card.moneyChange < 0) {
                 board.money += board.settings.giveAllToParking ? this.card.moneyChange : 0;
+                soundEffects.play("cash");
             }
             players[turn].lastPayment = undefined;
         } else if (this.card.moneyFromPlayers) {
@@ -1647,11 +1657,13 @@ class CardDraw {
                 if (place.level < 5) {
                     players[turn].money -= self.card.properyPrice.house * place.level;
                     board.money += board.settings.giveAllToParking ? self.card.properyPrice.house * place.level : 0;
+                    soundEffects.play("cash");
                     players[turn].lastPayment = undefined;
 
                 } else {
                     players[turn].money -= self.card.properyPrice.hotel;
                     board.money += board.settings.giveAllToParking ? self.card.properyPrice.hotel : 0;
+                    soundEffects.play("cash");
                     players[turn].lastPayment = undefined;
                 }
             })
@@ -1661,11 +1673,13 @@ class CardDraw {
             readyUp();
             players[turn].money -= (players[turn].money > 2000 ? 200 : Math.round(players[turn].money / 10));
             board.money += board.settings.giveAllTaxToParking ? players[turn].money > 2000 ? 200 : Math.round(players[turn].money / 10) : 0;
+            soundEffects.play("cash");
             players[turn].lastPayment = undefined;
         } else if (this.type == "special" && this.cardId == 3) {
             readyUp();
             players[turn].money -= 100;
             board.money += board.settings.giveAllTaxToParking ? 100 : 0;
+            soundEffects.play("cash");
             players[turn].lastPayment = undefined;
         }
         if (close) currentMenu = undefined;
@@ -1750,6 +1764,7 @@ class PropertyCard {
                             })
                             players[turn].money -= self.upgradeInfo.price;
                             board.money += board.settings.giveAllToParking ? self.upgradeInfo.price : 0;
+                            soundEffects.play("cash");
                             currentMenu = undefined;
 
                         }
@@ -1761,6 +1776,7 @@ class PropertyCard {
                         })
                         players[turn].money -= self.upgradeInfo.price;
                         board.money += board.settings.giveAllToParking ? self.upgradeInfo.price : 0;
+                        soundEffects.play("cash");
                     }
 
                 }
@@ -2070,6 +2086,7 @@ class Player {
                         board.playerIsWalkingTo = false;
                         onStep(steps);
                     };
+                    soundEffects.play("movement")
                 }
             }, 250)
         }
@@ -2155,10 +2172,12 @@ class Dice {
 
         let counter = 1;
 
+        soundEffects.play("dice")
+
         let rollAnimation = function () {
-            if (counter < 500) {
+            if (counter < 300) {
                 self.randomizeDice(rigged1, rigged2);
-                counter *= 1.2;
+                counter *= 1.33;
                 setTimeout(rollAnimation, counter);
             } else {
                 if (rigged1) board.dices.dice1 = rigged1
