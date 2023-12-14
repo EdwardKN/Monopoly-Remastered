@@ -316,7 +316,9 @@ async function loadData() {
 var soundEffects = {
     movement: [0, 47],
     cash: [48, 52],
-    dice: [53, 53]
+    dice: 53,
+    card: 54,
+    whoosh: 55
 };
 
 class Sounds {
@@ -329,7 +331,7 @@ class Sounds {
 
     async loadSoundObject() {
         var response = await fetch(this.filePath + ".txt")
-        this.data = (await response.text()).split("\n").map(e => Math.floor(JSON.parse(e.split("\t")[0]) * 1000))
+        this.data = (await response.text()).split("\n").slice(0, -1).map(e => Math.floor(JSON.parse(e.split("\t")[0]) * 1000))
 
         this.loadSounds();
 
@@ -339,18 +341,24 @@ class Sounds {
         let sprite = {};
         Object.entries(this.sounds).forEach(e => {
             if (e[0] === "data") return;
-
-            for (let i = e[1][0]; i <= e[1][1]; i++) {
-                sprite[e[0] + (i - e[1][0])] = [this.data[i], this.data[i + 1] - this.data[i]]
+            if (typeof e[1] == "object") {
+                for (let i = e[1][0]; i <= e[1][1]; i++) {
+                    sprite[e[0] + (i - e[1][0])] = [this.data[i], this.data[i + 1] - this.data[i]]
+                }
+            } else {
+                sprite[e[0]] = [this.data[e[1]], this.data[e[1] + 1] - this.data[e[1]]]
             }
+
+
         })
+
         this.sound = new Howl({
             src: ['sounds/effects.mp3'],
             sprite: sprite
         });
     }
-    play(sound, random = true) {
-        this.sound.play(sound + (random ? randomIntFromRange(0, this.sounds[sound][1] - this.sounds[sound][0]) : 0));
+    play(sound, random = true, index = "") {
+        this.sound.play(sound + (random ? (typeof this.sounds[sound] === "number" ? "" : randomIntFromRange(0, this.sounds[sound][1] - this.sounds[sound][0])) : index));
     }
 }
 

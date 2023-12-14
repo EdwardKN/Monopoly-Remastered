@@ -1652,6 +1652,7 @@ class Bankcheck {
 
         this.hasPayed = false;
 
+        soundEffects.play("whoosh");
     }
     draw() {
 
@@ -1700,6 +1701,7 @@ class Bankcheck {
             players[this.from].money -= this.amount;
         }
         soundEffects.play("cash");
+        soundEffects.play("whoosh");
     }
 }
 
@@ -1732,6 +1734,8 @@ class CardDraw {
             requestAction("closeCard", undefined, request)
             resetReady();
         })
+
+        soundEffects.play("card")
 
     }
     draw() {
