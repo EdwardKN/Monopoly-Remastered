@@ -234,6 +234,7 @@ class Button {
             }
             this.hover = false;
             this.onClick();
+            soundEffects.play("click");
         }
         if (this.hover && mouse.rightDown && !this.disabled) {
             this.onRightClick();
@@ -318,7 +319,8 @@ var soundEffects = {
     cash: [48, 52],
     dice: 53,
     card: 54,
-    whoosh: 55
+    whoosh: 55,
+    click: 56
 };
 
 class Sounds {
