@@ -332,7 +332,6 @@ class Sounds {
     async loadSoundObject() {
         var response = await fetch(this.filePath + ".txt")
         this.data = (await response.text()).split("\n").slice(0, -1).map(e => Math.floor(JSON.parse(e.split("\t")[0]) * 1000))
-        console.log(this.data)
         this.loadSounds();
 
     }
@@ -351,7 +350,6 @@ class Sounds {
 
 
         })
-        console.log(sprite)
         this.sound = new Howl({
             src: ['sounds/effects.mp3'],
             sprite: sprite
