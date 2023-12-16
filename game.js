@@ -404,7 +404,7 @@ class OnlineLobby {
             player.textInput.htmlElement.style.backgroundColor = ""
             player.textInput.htmlElement.oninput = () => {
                 let text = player.textInput.htmlElement.value
-                if (this.hosting) ""//sendPlayers(this.peer, text)
+                if (this.hosting) sendPlayers({ name: text })
                 else sendMessage(currentMenu.peer.connection, "nameChange", text)
             }
 

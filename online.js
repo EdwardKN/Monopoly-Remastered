@@ -1,147 +1,5 @@
 const peer = new Peer(generateId(6), { debug: 1 })
 
-function generateId(length) {
-    const ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    let id = ""
-    for (let _ = 0; _ < length; _++) {
-        id += ALPHABET[Math.floor(Math.random() * ALPHABET.length)]
-    }
-    return id
-}
-
-function sendMessage(connection, _type, _data) {
-    connection.send({
-        type: _type,
-        data: _data
-    })
-}
-
-function sendMessageToAll(_type, _data, exceptions = [], exceptionType = undefined, exceptionData = undefined) {
-    if (board?.constructor.name === 'Board') return
-    for (let client of Object.values(peer.clients)) {
-        if (!exceptions.includes(client)) sendMessage(client.connection, _type, _data)
-        else if (exceptionType) sendMessage(client.connection, exceptionType, exceptionData)
-    }
-}
-
-function removeClient(id) {
-    removeHTMLPlayer(id)
-
-    peer.clients[id].connection.close()
-    delete peer.clients[id]
-    
-    sendPlayers()
-}
-
-function removeColor(colorIdx) {
-    currentMenu.selectedColors = currentMenu.selectedColors.filter(e => e !== colorIdx)
-    if (currentMenu.currentMenu) currentMenu.currentMenu.selectedColors = currentMenu.currentMenu.selectedColors.filter(e => e !== colorIdx)
-}
-
-function addColor(colorIdx) {
-    currentMenu.selectedColors.push(colorIdx)
-    if (currentMenu.currentMenu) currentMenu.currentMenu.selectedColors.push(colorIdx)
-}
-
-function changeColor(playerIdx, from, to) {
-    currentMenu.players[playerIdx].selectedColor = to
-    removeColor(from)
-
-    if (to === -1) return
-    currentMenu.selectedColors.push(to)
-
-    if (!currentMenu.currentMenu) return
-    currentMenu.currentMenu.selectedColors.push(to)
-    currentMenu.currentMenu.initColors()
-}
-
-function validPlayer(player, name, color) {
-    let tempPlayers = currentMenu.players.filter(p2 => p2 !== player)
-    let tempColors = tempPlayers.map(player => player.selectedColor)
-    let valid = true
-    let reason = ""
-    name = name.trim()
-    if (name.length < 3) { valid = false; reason = "Username must be atleast 3 characters long" }
-
-    else if (name.length > 15) { valid = false; reason = "Username must be at most 15 characters long" }
-
-    else if (color !== -1 && tempColors.includes(color)) { valid = false; reason = "Color is already taken" }
-
-    else if (tempPlayers.some(p => p.textInput.htmlElement.style.backgroundColor === "" &&
-        p.textInput.htmlElement.value === name)) { valid = false; reason = "Username is already taken" }
-
-    return [valid, name, reason]
-}
-
-function waitForOpenConnection(client, callback) {
-    const checkConnection = () => {
-        if (client.connection.open) callback()
-        else requestAnimationFrame(checkConnection)
-    }
-
-    checkConnection()
-}
-
-function sendPlayers(settings = {}) {
-    let updatedClient = settings.client
-    delete updatedClient
-
-    let data_players = []
-    
-    for (let i = 0; i < currentMenu.playersPlaying; i++) {
-        let player = currentMenu.players[i]
-        let client = peer.clients[player.client]
-
-        data_players.push({
-            name: player.textInput.htmlElement.value,
-            color: player.selectedColor,
-            selected: player.textInput.htmlElement.style.backgroundColor === '',
-        })
-        if (client && client === updatedClient) Object.entries(settings).forEach(([key, value]) => data_players[i][key] = value)  
-    }
-
-    for (let client of Object.values(peer.clients)) {
-        let data = data_players.filter((_, j) => peer.clients[currentMenu.players[j].client] !== client)
-        sendMessage(client.connection, currentMenu instanceof OnlineJoinLobby ? "existingPlayers" : "players", {
-            players: data,
-            settings: currentMenu.settings
-                .map(e => e.constructor.name === "Button" ? e.selected : { percentage: e.percentage, value: e.value }),
-            lobbyType: currentMenu instanceof OnlineJoinLobby
-        })
-    }
-}
-
-
-function resetReady() {
-    if (board.constructor.name === 'Board') return
-
-    board.readyPlayers = 0
-    board.ready = false
-}
-
-function readyUp() {
-    if (board.constructor.name === 'Board') return
-
-    if (board.hosting) addReady()
-    else sendMessage(board.peer.connection, "ready")
-}
-function addReady() {
-    if (board.constructor.name === 'Board') return
-
-    board.readyPlayers++
-    if (board.readyPlayers === (Object.entries(peer.clients).length + 1)) {
-        board.ready = true
-        sendMessageToAll("ready")
-    }
-}
-
-/*
-KNOWN BUGS:
-8 Players selectbutton not disabled
-
-
-*/
-
 function createHost() {
     peer.clients = {}
 
@@ -179,7 +37,6 @@ function createHost() {
 
         x.on('data', (response) => {
             const client = peer.clients[id] //
-            const idx = getIndexFromObject(peer.clients, id) + 1
             let player
             if (currentMenu instanceof OnlineLobby) for (let p of currentMenu.players) if (p.client === id) player = p
             const type = response.type
@@ -238,14 +95,16 @@ function createHost() {
                     else addHTMLPlayer(id)
                     sendMessage(client.connection, "spectatorValidation", response)
                 }
+                sendPlayers()
             }
-            if (type === "nameChange") player.textInput.htmlElement.value = data
-            if (type === "colorChange") { player.selectedColor = data; sendPlayers({ client: client, color: data}) }
+            if (type === "nameChange") { player.textInput.htmlElement.value = data; sendPlayers({ client: client, name: data }) }
+            if (type === "colorChange") { player.selectedColor = data; sendPlayers({ client: client, color: data }) }
             if (type === "deselect") {
                 removeColor(data.color)
                 player.textInput.htmlElement.style.backgroundColor = "white"
                 sendMessage(client.connection, "deselect")
                 sendMessageToAll("selectedColors", currentMenu.selectedColors)
+                sendPlayers({ client: client, selected: false })
             }
             if (type === "select") {
                 let [valid, name, reason] = validPlayer(player, data.name, data.color)
@@ -255,9 +114,13 @@ function createHost() {
 
                 player.textInput.htmlElement.value = name
                 player.textInput.htmlElement.style.backgroundColor = ""
-                addColor(data.color)
+                if (data.color !== -1) {
+                    currentMenu.selectedColors.push(data.color)
+                    if (currentMenu.currentMenu) currentMenu.currentMenu.selectedColors.push(data.color)
+                }
                 for (let p2 of currentMenu.players) if (p2 !== player && p2.selectedColor === data.color) p2.selectedColor = -1
                 sendMessageToAll("selectedColors", currentMenu.selectedColors, [client])
+                sendPlayers({ client: client, selected: true })
             }
 
             // Online Join Lobby
@@ -299,11 +162,8 @@ function connectToHost(hostId) {
     peer.on("connection", x => {
         x.on("open", () => {
             //console.log("Connected to " + x.peer)
-            setTimeout(() => {
-                currentMenu.players[0].textInput.htmlElement.value = generateId(5) // TEMP
-                currentMenu.players[0].confirmButton.onClick() // TEMP
-
-            }, 100)
+            //currentMenu.players[0].textInput.htmlElement.value = generateId(5) // TEMP
+            //currentMenu.players[0].confirmButton.onClick() // TEMP
         })
 
         x.on("close", () => {
@@ -520,16 +380,4 @@ function connectToHost(hostId) {
 window.onload = () => {
     let id = new URLSearchParams(window.location.search).get("LobbyId")
     if (id) currentMenu = new OnlineLobby(false, id)
-}
-
-function requestAction(type, data, request = true) {
-    if (request && board instanceof OnlineBoard) {
-        if (board.hosting) {
-            sendMessageToAll(type, data)
-            return false
-        } else {
-            sendMessage(board.peer.connection, "request" + type.capitalize(), data)
-            return true
-        }
-    }
 }
