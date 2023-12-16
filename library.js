@@ -8,7 +8,10 @@ renderCanvas.style.zIndex = 0
 
 var scale = 0;
 
-const renderScale = 2;
+const standardX = 16;
+const standardY = 9;
+const renderScale = 60; // 120 för 1920 till 1080
+
 
 window.onload = fixCanvas;
 
@@ -46,15 +49,15 @@ renderCanvas.addEventListener("mouseup", function (e) {
 });
 
 function fixCanvas() {
-    canvas.width = 1920 / renderScale;
-    canvas.height = 1080 / renderScale;
-    if (window.innerWidth * 9 > window.innerHeight * 16) {
-        renderCanvas.width = window.innerHeight * 16 / 9;
+    canvas.width = renderScale * standardX;
+    canvas.height = renderScale * standardY;
+    if (window.innerWidth * standardY > window.innerHeight * standardX) {
+        renderCanvas.width = window.innerHeight * standardX / standardY;
         renderCanvas.height = window.innerHeight;
         scale = renderCanvas.width / canvas.width;
     } else {
         renderCanvas.width = window.innerWidth;
-        renderCanvas.height = window.innerWidth * 9 / 16;
+        renderCanvas.height = window.innerWidth * standardY / standardX;
         scale = renderCanvas.height / canvas.height;
     };
 };
