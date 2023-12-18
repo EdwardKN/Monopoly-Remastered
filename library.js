@@ -8,7 +8,10 @@ renderCanvas.style.zIndex = 0
 
 var scale = 0;
 
-const renderScale = 2;
+const standardX = 16;
+const standardY = 9;
+const renderScale = 60; // 120 för 1920 till 1080
+
 
 window.onload = fixCanvas;
 
@@ -46,15 +49,15 @@ renderCanvas.addEventListener("mouseup", function (e) {
 });
 
 function fixCanvas() {
-    canvas.width = 1920 / renderScale;
-    canvas.height = 1080 / renderScale;
-    if (window.innerWidth * 9 > window.innerHeight * 16) {
-        renderCanvas.width = window.innerHeight * 16 / 9;
+    canvas.width = renderScale * standardX;
+    canvas.height = renderScale * standardY;
+    if (window.innerWidth * standardY > window.innerHeight * standardX) {
+        renderCanvas.width = window.innerHeight * standardX / standardY;
         renderCanvas.height = window.innerHeight;
         scale = renderCanvas.width / canvas.width;
     } else {
         renderCanvas.width = window.innerWidth;
-        renderCanvas.height = window.innerWidth * 9 / 16;
+        renderCanvas.height = window.innerWidth * standardY / standardX;
         scale = renderCanvas.height / canvas.height;
     };
 };
@@ -234,6 +237,7 @@ class Button {
             }
             this.hover = false;
             this.onClick();
+            soundEffects.play("click");
         }
         if (this.hover && mouse.rightDown && !this.disabled) {
             this.onRightClick();
@@ -298,15 +302,69 @@ async function loadSpriteSheet() {
     spritesheetImage = new Image();
     spritesheetImage.src = "./images/texture.png";
 }
-
 async function loadImages() {
-    await loadSpriteSheet();
     spritesheet.frames.forEach((frame, i) => {
         let tmp = frame.filename.replaceAll(".png", "").split("/");
         images[tmp[0]] = images[tmp[0]] ?? {}
         images[tmp[0]][tmp[1]] = frame.frame;
     });
 }
+
+async function loadData() {
+    await loadSpriteSheet();
+    await loadImages();
+
+    soundEffects = new Sounds("/sounds/effects", soundEffects)
+}
+
+var soundEffects = {
+    movement: [0, 47],
+    cash: [48, 52],
+    dice: 53,
+    card: 54,
+    whoosh: 55,
+    click: 56
+};
+
+class Sounds {
+    constructor(filePath, sounds) {
+        this.sounds = sounds;
+        this.filePath = filePath;
+
+        this.loadSoundObject();
+    }
+
+    async loadSoundObject() {
+        var response = await fetch(this.filePath + ".txt")
+        this.data = (await response.text()).split("\n").slice(0, -1).map(e => Math.floor(JSON.parse(e.split("\t")[0]) * 1000))
+        this.loadSounds();
+
+    }
+
+    loadSounds() {
+        let sprite = {};
+        Object.entries(this.sounds).forEach(e => {
+            if (e[0] === "data") return;
+            if (typeof e[1] == "object") {
+                for (let i = e[1][0]; i <= e[1][1]; i++) {
+                    sprite[e[0] + (i - e[1][0])] = [this.data[i], this.data[i + 1] - this.data[i]]
+                }
+            } else {
+                sprite[e[0]] = [this.data[e[1]], this.data[e[1] + 1] - this.data[e[1]]]
+            }
+
+
+        })
+        this.sound = new Howl({
+            src: ['sounds/effects.mp3'],
+            sprite: sprite
+        });
+    }
+    play(sound, index = "") {
+        this.sound.play(sound + (typeof this.sounds[sound] === "number" ? "" : (index || randomIntFromRange(0, this.sounds[sound][1] - this.sounds[sound][0]))));
+    }
+}
+
 
 CanvasRenderingContext2D.prototype.drawImageFromSpriteSheet = function (frame, settingsOverride) {
     if (!frame) { return }
@@ -894,7 +952,7 @@ function shuffle(unshuffled, saveValues = false) {
             return ({ value, sort: sortValue })
         }).sort((a, b) => a.sort - b.sort)
         .map(({ value }) => value)
-    
+
     if (saveValues) return values
     else return shuffled
 }
@@ -903,5 +961,5 @@ function riggedShuffle(unshuffled, values) {
     return unshuffled
         .map((value, i) => ({ value, sort: values[i] }))
         .sort((a, b) => a.sort - b.sort)
-        .map(({ value }) => value) 
+        .map(({ value }) => value)
 }

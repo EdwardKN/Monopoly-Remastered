@@ -238,6 +238,12 @@ function connectToHost(hostId) {
                 p.downgradeButton.onClick(false)
                 delete p
             }
+
+            if (type === "sortPlayers") players = riggedShuffle(players, data)
+            if (type === "turn") {
+                turn = data
+                logger.log([{ color: players[turn].info.color, text: players[turn].name + "s" }, { color: "black", text: " tur" }]);
+            }
             // Lobby
             if (type === "deselect") {
                 player.confirmButton.onClick(true)
@@ -298,7 +304,7 @@ function connectToHost(hostId) {
 
             if (type === "players") {
                 const players = data.players
-                
+
                 // Players
                 currentMenu.players.splice(1)
                 currentMenu.initPlayers(players.length)
@@ -380,4 +386,16 @@ function connectToHost(hostId) {
 window.onload = () => {
     let id = new URLSearchParams(window.location.search).get("LobbyId")
     if (id) currentMenu = new OnlineLobby(false, id)
+}
+
+function requestAction(type, data, request = true) {
+    if (request && board instanceof OnlineBoard) {
+        if (board.hosting) {
+            sendMessageToAll(type, data)
+            return false
+        } else {
+            sendMessage(board.peer.connection, "request" + type.capitalize(), data)
+            return true
+        }
+    }
 }
