@@ -85,7 +85,6 @@ function createSpectatorButton() {
             if (currentMenu.hosting) addHTMLPlayer(currentMenu.peer.id)
             else player.confirmButton = createConfirmButton(currentMenu.playersPlaying)
         }
-            
 
         if (currentMenu.hosting) sendPlayers()
         else sendMessage(currentMenu.peer.connection, "spectator", state)

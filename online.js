@@ -90,9 +90,8 @@ function createHost() {
             if (type === "spectator") {
                 if (data) removeHTMLPlayer(id)
                 else {
-                    let response = true
-                    if (currentMenu.playersPlaying >= 8) response = false
-                    else addHTMLPlayer(id)
+                    let response = currentMenu.playersPlaying >= 8
+                    if (!response) addHTMLPlayer(id)
                     sendMessage(client.connection, "spectatorValidation", response)
                 }
                 sendPlayers()
@@ -301,42 +300,6 @@ function connectToHost(hostId) {
                 })
             }
             return
-
-            if (type === "players") {
-                const players = data.players
-
-                // Players
-                currentMenu.players.splice(1)
-                currentMenu.initPlayers(players.length)
-
-                for (let i = 1; i < players.length + 1; i++) {
-                    let player = currentMenu.players[i]
-                    let newPlayer = players[i - 1]
-                    player.textInput.htmlElement.value = newPlayer.name
-                    player.selectedColor = newPlayer.color
-                    player.textInput.htmlElement.style.backgroundColor = newPlayer.selected ? "" : "white"
-                    if (player.selected) player.confirmButton.onClick(true)
-                }
-                if (currentMenu.currentMenu) player.colorButton.onClick() // Resize the width on htmlElements
-
-                // Settings
-                currentMenu.settings = []
-                let length = data.settings.length
-                data.settings.forEach((setting, index) => {
-                    const origSetting = settings[index]
-
-                    if (typeof setting === "boolean") { // Button
-                        currentMenu.settings.push(new Button({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, selectButton: true, text: origSetting.title, textSize: c.getFontSize(origSetting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting))
-                        currentMenu.settings[index].selected = setting
-                    } else { // Slider
-                        currentMenu.settings.push(new Slider({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, from: origSetting.from, to: origSetting.to, unit: origSetting.unit, steps: origSetting.steps, beginningText: origSetting.title }))
-                        currentMenu.settings[index].percentage = setting.percentage
-                        currentMenu.settings[index].value = setting.value
-                    }
-                    currentMenu.settings[index].disabled = true
-                    currentMenu.settings[index].disableDisabledTexture = true
-                })
-            }
 
             if (type === "selectPlayer") {
                 let player = currentMenu.players[data.index]

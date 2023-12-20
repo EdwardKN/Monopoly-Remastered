@@ -53,11 +53,13 @@ function startGame(playersToStartGameWith, settings) {
     logger = new Logger();
 
     if (board.hosting) {
-        for (let i = 1; i < clientPlayers.length; i++) {
-            sendMessage(Object.values(board.peer.clients)[i - 1].connection, "startGame", { players: clientPlayers, settings: settings, index: i })
+        for (let i = 0; i < clientPlayers.length; i++) {
+            let player = currentMenu.players[i]
+            if (!player.client) break
+            else if (player.client === currentMenu.peer.id) players[i].playing = true
+            else sendMessage(board.peer.clients[player.client].connection, "startGame", { players: clientPlayers, settings: settings, index: i })
         }
-        players[0].playing = true
-
+        
         let rigged = shuffle(players, true)
         players = riggedShuffle(players, rigged)
         turn = randomIntFromRange(0, players.length - 1)
@@ -332,14 +334,16 @@ class OnlineLobby {
             this.initPlayers(8)
             this.startButton = new Button({ x: 10, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, () => {
                 let tmpPlayers = []
-                for (let i = 0; i <= Object.entries(this.peer.clients).length; i++) {
-                    let player = this.players[i]
 
+                for (let i = 0; i < this.players.length; i++) {
+                    let player = this.players[i]
+                    if (!player.client) break
                     tmpPlayers.push({
                         name: player.textInput.value,
                         color: player.selectedColor
                     })
                 }
+
 
                 let tmpSettings = {}
                 this.settings.forEach((setting, i) => tmpSettings[settings[i].variable] = setting instanceof Button ? setting.selected : setting.value)
