@@ -53,18 +53,56 @@ function startGame(playersToStartGameWith, settings) {
     logger = new Logger();
 
     if (board.hosting) {
+        let rigged = shuffle(players, true)
+        turn = randomIntFromRange(0, players.length - 1)
+
+        let data = {
+            players: clientPlayers,
+            settings: settings,
+            riggedShuffle: rigged,
+            turn: turn,
+        }
+        let activePlayers = []
+        for (let i = 0; i < currentMenu.playersPlaying; i++) {
+            let client = currentMenu.players[i].client
+            if (client !== currentMenu.peer.id) players[i].playing = !currentMenu.spectatorButton.selected 
+            activePlayers.push(client)
+        }
+
+        let i = 0
+        for (let id of Object.keys(currentMenu.peer.clients)) {
+            data.index = undefined
+            if (activePlayers.includes(id)) {
+                data.index = i
+                sendMessage(currentMenu.peer.clients[id].connection, "startgame", data)
+                i++
+            } else sendMessage(currentMenu.peer.clients[id].connection, "startgame", data)
+        }
+
+        let sentTo = []
+        // Only sends to active players
         for (let i = 0; i < clientPlayers.length; i++) {
             let player = currentMenu.players[i]
-            if (!player.client) break
-            else if (player.client === currentMenu.peer.id) players[i].playing = true
-            else sendMessage(board.peer.clients[player.client].connection, "startGame", { players: clientPlayers, settings: settings, index: i })
+            if (player.client === currentMenu.peer.id) players[i].playing = !currentMenu.spectatorButton.selected
+            else { sendMessage(board.peer.clients[player.client].connection, "startGame", {
+                players: clientPlayers,
+                settings: settings,
+                riggedShuffle: rigged,
+                turn: turn,
+                index: i
+            }); sentTo.push(player.client) }
         }
-        
-        let rigged = shuffle(players, true)
+        for (let id of Object.keys(currentMenu.peer.clients)) {
+            if (sentTo.includes(id)) continue
+            sendMessage(currentMenu.peer.clients[id].connection, "startGame", {
+                players: clientPlayers,
+                settings: settings,
+                riggedShuffle: rigged,
+                turn: turn
+            })
+        }
+
         players = riggedShuffle(players, rigged)
-        turn = randomIntFromRange(0, players.length - 1)
-        sendMessageToAll("sortPlayers", rigged)
-        sendMessageToAll("turn", turn)
         logger.log([{ color: players[turn].info.color, text: players[turn].name + "s" }, { color: "black", text: " tur" }])
     }
     currentMenu = undefined
@@ -459,9 +497,7 @@ class OnlineLobby {
         });
 
         if (!this.hosting) return
-
-        this.startButton.disabled = Object.entries(this.peer.clients).length === 0 ||
-            !this.players.every(player => player.textInput.htmlElement.style.backgroundColor === "")
+        this.startButton.disabled = this.players.some(p => p.client && p.textInput.htmlElement.style.backgroundColor !== "") || this.playersPlaying < 2
         this.startButton.update();
 
         c.drawText("Id: " + this.peer.id, 250, canvas.height - 30, 30)
@@ -2158,7 +2194,7 @@ class PropertyCard {
             }
         } else {
             this.animationFactor += (0.001) * deltaTime;
-            this.animationFactor *= (1.5) * deltaTime;
+            this.animationFactor *= 1 + .5 * deltaTime;
             this.animationFactor = this.animationFactor.clamp(0, 1);
         }
 

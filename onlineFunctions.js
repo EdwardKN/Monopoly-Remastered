@@ -62,32 +62,30 @@ function waitForOpenConnection(client, callback) {
     checkConnection()
 }
 
-// Currentmenu
 function createSpectatorButton() {
     return new Button({ x: 370, y: 20, w: 40, h: 40, selectButton: true, disableDisabledTexture: true }, images.buttons.bot, () => {
-        if (currentMenu.playersPlaying >= 8) return
+        let selected = currentMenu.spectatorButton.selected
+        let player = currentMenu.players[currentMenu.playersPlaying]
+        for (let p of currentMenu.players) if (p.client === peer.id) player = p
 
-        let player = currentMenu.players[currentMenu.playersPlaying] // New player?
-        for (let p of currentMenu.players) if (p.client === peer.id) player = p // Already a player?
-        let state = currentMenu.spectatorButton.selected
+        player.colorButton.disabled = selected
+        player.textInput.htmlElement.disabled = selected
+        player.textInput.htmlElement.style.backgroundColor = selected ? "" : "white"
 
-        player.colorButton.disabled = state
-        player.textInput.htmlElement.disabled = state
-        player.textInput.htmlElement.style.backgroundColor = state ? "" : "white"
-
-        if (state) {
-            if (currentMenu.hosting) removeHTMLPlayer(currentMenu.peer.id)
-            else delete player.confirmButton
-            player.textInput.htmlElement.value = ""
-            player.selectedColor = -1
-            removeColor(player.selectedColor)
-        } else {
-            if (currentMenu.hosting) addHTMLPlayer(currentMenu.peer.id)
-            else player.confirmButton = createConfirmButton(currentMenu.playersPlaying)
+        if (currentMenu.hosting) {
+            if (selected) removeHTMLPlayer(currentMenu.peer.id)
+            else addHTMLPlayer(currentMenu.peer.id)
+            sendPlayers()
+            return
         }
 
-        if (currentMenu.hosting) sendPlayers()
-        else sendMessage(currentMenu.peer.connection, "spectator", state)
+        if (selected) {
+            player.textInput.htmlElement.value = ""
+            removeColor(player.selectedColor)
+            player.selectedColor = -1
+            delete player.confirmButton
+        } else player.confirmButton = createConfirmButton(0)
+        sendMessage(currentMenu.peer.connection, "spectator", selected)
     })
 }
 
@@ -100,11 +98,15 @@ function createConfirmButton(i) {
         disabled: true,
         disableDisabledTexture: true
     }, images.buttons.yes, (forced = false) => {
+        if (currentMenu.currentMenu) {
+            currentMenu.players[i].colorButton.selected = false
+            currentMenu.players[i].colorButton.onClick()
+        }
         let player = currentMenu.players[currentMenu.playersPlaying]
         for (let p of currentMenu.players) if (p.client === peer.id) player = p
         let text = player.textInput.htmlElement
 
-        if (currentMenu.hosting && !text.disabled) {
+        if (currentMenu.hosting && !text.disabled && !forced) {
             let [valid, name, reason] = validPlayer(player, player.textInput.value, player.selectedColor)
                 if (!valid) {
                     if (reason === "Color is already taken") player.selectedColor = -1
@@ -133,7 +135,7 @@ function removeHTMLPlayer(id) {
     for (let i = 0; i < currentMenu.players.length; i++) {
         let player = currentMenu.players[i]
         if (player.client !== id) continue
-
+        removeColor(player.selectedColor)
         for (let j = i + 1; j < currentMenu.players.length; j++) {
             let prevPlayer = currentMenu.players[j - 1]
             let curPlayer = currentMenu.players[j]

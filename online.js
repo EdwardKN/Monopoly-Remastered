@@ -88,12 +88,10 @@ function createHost() {
 
             // Online Lobby
             if (type === "spectator") {
+                let response = currentMenu.playersPlaying < 8
                 if (data) removeHTMLPlayer(id)
-                else {
-                    let response = currentMenu.playersPlaying >= 8
-                    if (!response) addHTMLPlayer(id)
-                    sendMessage(client.connection, "spectatorValidation", response)
-                }
+                else if (response) addHTMLPlayer(id)
+                sendMessage(client.connection, "spectatorValidation", data || response)
                 sendPlayers()
             }
             if (type === "nameChange") { player.textInput.htmlElement.value = data; sendPlayers({ client: client, name: data }) }
@@ -180,8 +178,6 @@ function connectToHost(hostId) {
             console.log(response)
 
             // General
-            if (type === "sortPlayers") players = riggedShuffle(players, data)
-            if (type === "turn") turn = data
             if (type === "ready") board.ready = true
             if (type === "saveCardId") board.cardId = data
             if (type === "closeCard") currentMenu?.okayButton?.onClick(false)
@@ -190,8 +186,11 @@ function connectToHost(hostId) {
                     loadGame(data, currentMenu.selectedPlayer)
                 } else {
                     startGame(data.players, data.settings)
-                    players[data.index].playing = true
-                }
+                    turn = data.turn
+                    players = riggedShuffle(players, data.riggedShuffle)
+                    if (data.index !== undefined) players[data.index].playing = true
+                    logger.log([{ color: players[turn].info.color, text: players[turn].name + "s" }, { color: "black", text: " tur" }]);
+            }
             }
             if (type === "throwDices") {
                 board.rollDice(data.dice1, data.dice2)
@@ -238,12 +237,14 @@ function connectToHost(hostId) {
                 delete p
             }
 
-            if (type === "sortPlayers") players = riggedShuffle(players, data)
-            if (type === "turn") {
-                turn = data
-                logger.log([{ color: players[turn].info.color, text: players[turn].name + "s" }, { color: "black", text: " tur" }]);
-            }
             // Lobby
+            if (type === "spectatorValidation") {
+                if (data) return
+                let newState = !currentMenu.spectatorButton.selected
+                player.colorButton.disabled = newState
+                player.textInput.htmlElement.disabled = newState
+                player.textInput.htmlElement.style.backgroundColor = newState ? "" : "white"
+            }
             if (type === "deselect") {
                 player.confirmButton.onClick(true)
             }
@@ -278,7 +279,6 @@ function connectToHost(hostId) {
                 currentMenu.players.splice(start)
                 currentMenu.initPlayers(players.length)
                 currentMenu.spectatorButton.disabled = !start
-                if (!currentMenu.spectatorButton.disabled) currentMenu.spectatorButton.selected = true
                 loadPlayers(players, start)
 
                 // Settings
