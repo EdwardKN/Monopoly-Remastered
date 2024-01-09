@@ -56,49 +56,29 @@ function startGame(playersToStartGameWith, settings) {
         let rigged = shuffle(players, true)
         turn = randomIntFromRange(0, players.length - 1)
 
-        let data = {
-            players: clientPlayers,
-            settings: settings,
-            riggedShuffle: rigged,
-            turn: turn,
-        }
         let activePlayers = []
         for (let i = 0; i < currentMenu.playersPlaying; i++) {
             let client = currentMenu.players[i].client
-            if (client !== currentMenu.peer.id) players[i].playing = !currentMenu.spectatorButton.selected 
-            activePlayers.push(client)
+            if (client === currentMenu.peer.id) players[i].playing = !currentMenu.spectatorButton.selected
+            else activePlayers.push(client)
         }
 
         let i = 0
         for (let id of Object.keys(currentMenu.peer.clients)) {
-            data.index = undefined
             if (activePlayers.includes(id)) {
-                data.index = i
-                sendMessage(currentMenu.peer.clients[id].connection, "startgame", data)
+                sendMessage(currentMenu.peer.clients[id].connection, "startGame", {
+                    players: clientPlayers,
+                    settings: settings,
+                    riggedShuffle: rigged,
+                    turn: turn,
+                    index: i
+                })
                 i++
-            } else sendMessage(currentMenu.peer.clients[id].connection, "startgame", data)
-        }
-
-        let sentTo = []
-        // Only sends to active players
-        for (let i = 0; i < clientPlayers.length; i++) {
-            let player = currentMenu.players[i]
-            if (player.client === currentMenu.peer.id) players[i].playing = !currentMenu.spectatorButton.selected
-            else { sendMessage(board.peer.clients[player.client].connection, "startGame", {
+            } else sendMessage(currentMenu.peer.clients[id].connection, "startGame", {
                 players: clientPlayers,
                 settings: settings,
                 riggedShuffle: rigged,
                 turn: turn,
-                index: i
-            }); sentTo.push(player.client) }
-        }
-        for (let id of Object.keys(currentMenu.peer.clients)) {
-            if (sentTo.includes(id)) continue
-            sendMessage(currentMenu.peer.clients[id].connection, "startGame", {
-                players: clientPlayers,
-                settings: settings,
-                riggedShuffle: rigged,
-                turn: turn
             })
         }
 
