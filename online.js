@@ -186,9 +186,9 @@ function connectToHost(hostId) {
                     loadGame(data, currentMenu.selectedPlayer)
                 } else {
                     startGame(data.players, data.settings)
+                    if (data.index !== undefined) players[data.index].playing = true
                     turn = data.turn
                     players = riggedShuffle(players, data.riggedShuffle)
-                    if (data.index !== undefined) players[data.index].playing = true
                     logger.log([{ color: players[turn].info.color, text: players[turn].name + "s" }, { color: "black", text: " tur" }]);
             }
             }

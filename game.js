@@ -42,13 +42,13 @@ function startGame(playersToStartGameWith, settings) {
 
     let clientPlayers = []
     playersToStartGameWith.forEach((player, i) => {
-        if (player.color != -1) {
-            players.push(new Player(player.color, player.name, currentMenu instanceof LobbyMenu));
-            clientPlayers.push({ name: player.name, color: player.color })
-        } else {
-            addRandomPlayer(player.name);
-            clientPlayers.push({ name: player.name, color: players[players.length - 1].color })
+        if (player.color != -1) players.push(new Player(player.color, player.name, currentMenu instanceof LobbyMenu));
+        else {
+            let random = randomIntFromRange(0, colorsToPick.length - 1);
+            players.push(new Player(colorsToPick[random], name, currentMenu instanceof LobbyMenu));
+            colorsToPick.splice(random, 1)
         }
+        clientPlayers.push({ name: player.name, color: players[players.length - 1].color })
     })
     logger = new Logger();
 
@@ -57,13 +57,16 @@ function startGame(playersToStartGameWith, settings) {
         turn = randomIntFromRange(0, players.length - 1)
 
         let activePlayers = []
+        let indexes = {}
         for (let i = 0; i < currentMenu.playersPlaying; i++) {
             let client = currentMenu.players[i].client
             if (client === currentMenu.peer.id) players[i].playing = !currentMenu.spectatorButton.selected
-            else activePlayers.push(client)
+            else {
+                activePlayers.push(client)
+                indexes[client] = i
+            }
         }
 
-        let i = 0
         for (let id of Object.keys(currentMenu.peer.clients)) {
             if (activePlayers.includes(id)) {
                 sendMessage(currentMenu.peer.clients[id].connection, "startGame", {
@@ -71,9 +74,8 @@ function startGame(playersToStartGameWith, settings) {
                     settings: settings,
                     riggedShuffle: rigged,
                     turn: turn,
-                    index: i
+                    index: indexes[id]
                 })
-                i++
             } else sendMessage(currentMenu.peer.clients[id].connection, "startGame", {
                 players: clientPlayers,
                 settings: settings,
@@ -88,11 +90,6 @@ function startGame(playersToStartGameWith, settings) {
     currentMenu = undefined
 }
 
-function addRandomPlayer(name, i) {
-    let random = randomIntFromRange(0, colorsToPick.length - 1);
-    players.push(new Player(colorsToPick[random], name, currentMenu instanceof LobbyMenu));
-    colorsToPick.splice(random, 1);
-}
 
 // game.id = generateId(13) Can replace if necessary
 function saveGame(online = false) {

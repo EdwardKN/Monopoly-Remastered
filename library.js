@@ -953,8 +953,7 @@ function shuffle(unshuffled, saveValues = false) {
         }).sort((a, b) => a.sort - b.sort)
         .map(({ value }) => value)
 
-    if (saveValues) return values
-    else return shuffled
+    return saveValues ? values : shuffled
 }
 
 function riggedShuffle(unshuffled, values) {
