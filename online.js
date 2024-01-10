@@ -176,7 +176,7 @@ function connectToHost(hostId) {
             console.log(response)
 
             // General
-            if (type === "connectionStarted") currentMenu.spectatorButton.disabled = false
+            if (type === "connectionStarted") if (currentMenu.spectatorButton) currentMenu.spectatorButton.disabled = false
             if (type === "ready") board.ready = true
             if (type === "saveCardId") board.cardId = data
             if (type === "closeCard") currentMenu?.okayButton?.onClick(false)
@@ -298,6 +298,9 @@ function connectToHost(hostId) {
                     currentMenu.settings[index].disableDisabledTexture = true
                 })
             }
+
+
+            if (type === "changeLobby") currentMenu = new OnlineJoinLobby(false, { id: hostId, client: peer })
             return
 
             if (type === "selectPlayer") {
@@ -333,7 +336,6 @@ function connectToHost(hostId) {
                 //    this.settings.push(htmlSetting)
                 //})
             }
-            if (type === "changeLobby") currentMenu = new OnlineJoinLobby(false, { id: hostId, client: peer })
         })
     })
 

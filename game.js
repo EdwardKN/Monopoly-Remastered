@@ -493,7 +493,50 @@ class OnlineLobby {
     }
 }
 
-class OnlineJoinLobby extends OnlineLobby {
+class OnlineJoinLobby {
+    constructor(hosting) {
+        this.players = []
+        this.settings = []
+        this.selectedPlayer = -1
+
+        this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, function () { currentMenu = new MainMenu() });
+        this.startButton = new Button({ x: 10 + 100, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, {})
+    }
+
+    draw() {
+        let self = this;
+        c.drawImageFromSpriteSheet(images.menus.lobbymenu);
+        this.backButton.update();
+        this.selectedColors = this.players.map(e => e.selectedColor).filter(e => e != -1);
+        this.players.forEach(player => {
+            player.textInput.draw();
+            player.colorButton.image = images.playercolorbuttons[(player.selectedColor == -1 ? "unselected" : "playercolorbutton" + (player.selectedColor == 0 ? "" : player.selectedColor + 1))]
+            if (self.currentMenu?.hover) {
+                player.colorButton.draw();
+                player.botButton.draw();
+
+            } else {
+                player.colorButton.update();
+                player.botButton.update();
+            }
+        })
+        this.currentMenu?.draw();
+
+        let readyPlayers = this.players.filter(e => e.textInput.value.length > 1);
+        this.startButton.disabled = (readyPlayers.length < 2 || hasDuplicates(readyPlayers.map(e => e.textInput.value)))
+        this.startButton.update();
+        this.settings.forEach((setting, index) => {
+            if (settings[index].needed) {
+                setting.disabled = !this.settings[settings.map(e => e.variable).indexOf(settings[index].needed)].selected;
+                setting.selected = !this.settings[settings.map(e => e.variable).indexOf(settings[index].needed)].selected ? false : setting.selected
+            }
+            setting.update()
+        });
+
+    }
+}
+
+class OnlineJoinLobby2 extends OnlineLobby {
     constructor(hosting, options = {}) {
         super(hosting, options.id, false)
         this.players = []
