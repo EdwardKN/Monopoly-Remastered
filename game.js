@@ -5,7 +5,6 @@ var turn = 0;
 var hoverList = [];
 var logger;
 
-let colorsToPick = [0, 1, 2, 3, 4, 5, 6, 7];
 
 const boardOffsetX = 0;
 const boardOffsetY = 64;
@@ -37,7 +36,7 @@ function startGame(playersToStartGameWith, settings) {
     board = currentMenu instanceof LobbyMenu ? new Board() : new OnlineBoard(currentMenu.hosting, currentMenu.peer);
     board.settings = settings;
 
-    let colorsToPick = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    let colorsToPick = [0, 1, 2, 3, 4, 5, 6, 7]
     playersToStartGameWith.forEach(player => { if (player.color !== -1) colorsToPick.splice(colorsToPick.indexOf(player.color), 1) })
 
     let clientPlayers = []
