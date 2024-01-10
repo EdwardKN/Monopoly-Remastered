@@ -24,6 +24,7 @@ function exitGame(online = false, client = false) {
         if (!client) saveGame(online);
         board.boardPieces.forEach(e => e.hover = false);
         players.forEach(e => e.hover = false);
+        logger = undefined
         board = undefined;
         players = [];
         currentMenu = online ? new PublicGames() : new MainMenu();
@@ -44,7 +45,7 @@ function startGame(playersToStartGameWith, settings) {
         if (player.color != -1) players.push(new Player(player.color, player.name, currentMenu instanceof LobbyMenu));
         else {
             let random = randomIntFromRange(0, colorsToPick.length - 1);
-            players.push(new Player(colorsToPick[random], name, currentMenu instanceof LobbyMenu));
+            players.push(new Player(colorsToPick[random], player.name, currentMenu instanceof LobbyMenu));
             colorsToPick.splice(random, 1)
         }
         clientPlayers.push({ name: player.name, color: players[players.length - 1].color })
@@ -1035,8 +1036,8 @@ class OnlineBoard extends Board {
         }
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123 + boardOffsetX, y: canvas.height / 2 + boardOffsetY, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(3, 4)
-            let dice2 = randomIntFromRange(3, 4)
+            let dice1 = randomIntFromRange(3, 3)
+            let dice2 = randomIntFromRange(4, 4)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
@@ -1810,7 +1811,7 @@ class CardDraw {
                 this.animationStep = 4;
             }
         } else if (this.animationStep == 4) {
-            this.yPos += (1 + (this.yPos) / 20) * deltaTime;
+            this.yPos += Math.abs((1 + (this.yPos) / 20) * deltaTime);
             if (this.yPos > canvas.height) {
                 this.useCard();
             }
