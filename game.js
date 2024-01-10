@@ -1036,8 +1036,8 @@ class OnlineBoard extends Board {
         }
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123 + boardOffsetX, y: canvas.height / 2 + boardOffsetY, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(3, 3)
-            let dice2 = randomIntFromRange(4, 4)
+            let dice1 = randomIntFromRange(1, 6)
+            let dice2 = randomIntFromRange(1, 6)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
