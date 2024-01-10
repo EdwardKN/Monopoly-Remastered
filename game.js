@@ -3,12 +3,15 @@ var players = [];
 var currentMenu;
 var turn = 0;
 var hoverList = [];
+var logger;
 
-let colorsToPick = [0, 1, 2, 3, 4, 5, 6, 7];
+
+const boardOffsetX = 0;
+const boardOffsetY = 64;
 
 async function init() {
     fixCanvas();
-    await loadImages();
+    await loadData();
 
     renderC.imageSmoothingEnabled = false;
 
@@ -21,6 +24,7 @@ function exitGame(online = false, client = false) {
         if (!client) saveGame(online);
         board.boardPieces.forEach(e => e.hover = false);
         players.forEach(e => e.hover = false);
+        logger = undefined
         board = undefined;
         players = [];
         currentMenu = online ? new PublicGames() : new MainMenu();
@@ -33,39 +37,59 @@ function startGame(playersToStartGameWith, settings) {
     board = currentMenu instanceof LobbyMenu ? new Board() : new OnlineBoard(currentMenu.hosting, currentMenu.peer);
     board.settings = settings;
 
-    let colorsToPick = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    let colorsToPick = [0, 1, 2, 3, 4, 5, 6, 7]
     playersToStartGameWith.forEach(player => { if (player.color !== -1) colorsToPick.splice(colorsToPick.indexOf(player.color), 1) })
 
     let clientPlayers = []
     playersToStartGameWith.forEach((player, i) => {
-        if (player.color != -1) {
-            players.push(new Player(player.color, player.name, currentMenu instanceof LobbyMenu));
-            clientPlayers.push({ name: player.name, color: player.color })
-        } else {
-            addRandomPlayer(player.name);
-            clientPlayers.push({ name: player.name, color: players[players.length - 1].color })
+        if (player.color != -1) players.push(new Player(player.color, player.name, currentMenu instanceof LobbyMenu));
+        else {
+            let random = randomIntFromRange(0, colorsToPick.length - 1);
+            players.push(new Player(colorsToPick[random], player.name, currentMenu instanceof LobbyMenu));
+            colorsToPick.splice(random, 1)
         }
+        clientPlayers.push({ name: player.name, color: players[players.length - 1].color })
     })
-    if (board.hosting) {
-        for (let i = 1; i < clientPlayers.length; i++) {
-            sendMessage(Object.values(board.peer.clients)[i - 1].connection, "startGame", { players: clientPlayers, settings: settings, index: i })
-        }
-        players[0].playing = true
+    logger = new Logger();
 
+    if (board.hosting) {
         let rigged = shuffle(players, true)
-        players = riggedShuffle(players, rigged)
         turn = randomIntFromRange(0, players.length - 1)
-        sendMessageToAll("sortPlayers", rigged)
-        sendMessageToAll("turn", turn)
+
+        let activePlayers = []
+        let indexes = {}
+        for (let i = 0; i < currentMenu.playersPlaying; i++) {
+            let client = currentMenu.players[i].client
+            if (client === currentMenu.peer.id) players[i].playing = !currentMenu.spectatorButton.selected
+            else {
+                activePlayers.push(client)
+                indexes[client] = i
+            }
+        }
+
+        for (let id of Object.keys(currentMenu.peer.clients)) {
+            if (activePlayers.includes(id)) {
+                sendMessage(currentMenu.peer.clients[id].connection, "startGame", {
+                    players: clientPlayers,
+                    settings: settings,
+                    riggedShuffle: rigged,
+                    turn: turn,
+                    index: indexes[id]
+                })
+            } else sendMessage(currentMenu.peer.clients[id].connection, "startGame", {
+                players: clientPlayers,
+                settings: settings,
+                riggedShuffle: rigged,
+                turn: turn,
+            })
+        }
+
+        players = riggedShuffle(players, rigged)
+        logger.log([{ color: players[turn].info.color, text: players[turn].name + "s" }, { color: "black", text: " tur" }])
     }
     currentMenu = undefined
 }
 
-function addRandomPlayer(name, i) {
-    let random = randomIntFromRange(0, colorsToPick.length - 1);
-    players.push(new Player(colorsToPick[random], name, currentMenu instanceof LobbyMenu));
-    colorsToPick.splice(random, 1);
-}
 
 // game.id = generateId(13) Can replace if necessary
 function saveGame(online = false) {
@@ -81,7 +105,8 @@ function saveGame(online = false) {
         turn: turn,
         currentTime: new Date().getTime(),
         screenshot: canvas.toDataURL(),
-        currentMenu: { class: currentMenu?.constructor.name, value: JSON.prune(currentMenu) }
+        currentMenu: { class: currentMenu?.constructor.name, value: JSON.prune(currentMenu) },
+        logger: JSON.prune(logger)
     }
 
     if (board.id !== undefined) game.id = board.id
@@ -152,6 +177,10 @@ function loadGame(gameToLoad, index) {
         if (typeof value !== "object") currentMenu[key] = value
         else if (key === "card") currentMenu["card"] = value
     }
+
+    logger = new Logger();
+
+    logger.info = JSON.parse(gameToLoad.logger).info;
 }
 
 function update() {
@@ -164,6 +193,7 @@ function update() {
 
     board?.update();
     currentMenu?.draw();
+    logger?.draw();
 
     hoverList.forEach((e, i) => {
         c.font = 20 + "px " + "verdanai";
@@ -171,11 +201,11 @@ function update() {
     })
     hoverList = [];
 
-    c.drawText(fps, 5, 80, 20)
+    //c.drawText(fps, 5, 80, 20)
 
     renderC.drawImage(canvas, 0, 0, renderCanvas.width, renderCanvas.height);
 
-    renderCanvas.style.cursor = (players.map(e => e.hover).includes(true) || board?.boardPieces.map(e => e.hover).includes(true) || buttons?.map(e => (e.hover && !e.disabled)).includes(true)) ? "pointer" : "auto"
+    renderCanvas.style.cursor = logger?.hover || logger?.follow || (players.map(e => e.hover).includes(true) || board?.boardPieces.map(e => e.hover).includes(true) || buttons?.map(e => (e.hover && !e.disabled)).includes(true)) ? "pointer" : "auto"
 
     buttons.forEach(e => e.hover = false);
 }
@@ -216,7 +246,7 @@ class LoadGames {
         let self = this;
         this.key = online ? "monopolyOnlineGames" : "monopolyGames"
 
-        this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, function () { currentMenu = new MainMenu() });
+        this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, function () { currentMenu = new PublicGames() });
         this.startButton = new Button({ x: canvas.width / 4 - 194 / 2, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, function () {
             let game = self.games[self.gameButtons.indexOf(self.selected)]
             if (!online) loadGame(game)
@@ -312,20 +342,23 @@ class OnlineLobby {
         this.hosting = hosting
         this.players = []
         this.settings = []
+        this.playersPlaying = 0
 
         if (this.hosting) {
             if (createPeer) this.peer = createHost()
             this.initPlayers(8)
             this.startButton = new Button({ x: 10, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, () => {
                 let tmpPlayers = []
-                for (let i = 0; i <= Object.entries(this.peer.clients).length; i++) {
-                    let player = this.players[i]
 
+                for (let i = 0; i < this.players.length; i++) {
+                    let player = this.players[i]
+                    if (!player.client) break
                     tmpPlayers.push({
                         name: player.textInput.value,
                         color: player.selectedColor
                     })
                 }
+
 
                 let tmpSettings = {}
                 this.settings.forEach((setting, i) => tmpSettings[settings[i].variable] = setting instanceof Button ? setting.selected : setting.value)
@@ -356,6 +389,11 @@ class OnlineLobby {
             currentMenu = new PublicGames()
         })
         this.prev = -1
+
+        setTimeout(() => {
+            this.spectatorButton = createSpectatorButton(0)
+            this.spectatorButton.selected = true
+        }, 10)
     }
     initPlayers(amount) {
         let self = this;
@@ -364,7 +402,7 @@ class OnlineLobby {
             this.players.push(
                 {
                     textInput: new TextInput({ x: 10, y: 80 + 48 * i, w: 300, h: 45, maxLength: 15, textSize: 40 }),
-                    colorButton: new Button({ x: 320, y: 82 + 48 * i, w: 40, h: 40, selectButton: true, disableSelectTexture: true, disableDisabledTexture: true }, images.playercolorbuttons.unselected, function () {
+                    colorButton: new Button({ x: 320, y: 82 + 48 * i, w: 40, h: 40, selectButton: true, disableSelectTexture: true, disableDisabledTexture: true }, images.playercolorbuttons.unselected, () => {
                         self.players.forEach((e, index) => {
                             if (index != i) { e.colorButton.selected = false; } else {
                                 self.players.forEach((b) => {
@@ -379,7 +417,7 @@ class OnlineLobby {
                                     }
                                 } else {
                                     self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30 - 40, 82 + 48 * (i + 1), e, self.selectedColors) : undefined;
-
+                                    
                                     if (self.currentMenu) {
                                         if (self.players[index + 1]) self.players[index + 1].textInput.w = 230;
                                         if (self.players[index + 2]) self.players[index + 2].textInput.w = 230;
@@ -392,60 +430,25 @@ class OnlineLobby {
                 }
             );
             let player = this.players[i]
-
-            if (i !== 0) {
-                player.textInput.htmlElement.disabled = true
-                player.colorButton.disabled = true
-                player.colorButton.disableDisabledTexture = true
-                continue
-            }
-
-            player.textInput.htmlElement.style.backgroundColor = "white"
+            
+            player.client = undefined
+            player.textInput.htmlElement.disabled = true
+            player.textInput.htmlElement.style.backgroundColor = ""
             player.textInput.htmlElement.oninput = () => {
                 let text = player.textInput.htmlElement.value
-                if (this.hosting) sendPlayers(this.peer, text)
+                if (this.hosting) sendPlayers({ name: text })
                 else sendMessage(currentMenu.peer.connection, "nameChange", text)
             }
 
-            if (this.hosting) player.textInput.htmlElement.setAttribute("placeHolder", this.peer.id)
-
-            player.confirmButton = new Button({
-                x: 370,
-                y: 82 + 48 * i,
-                w: 40,
-                h: 40
-            }, images.buttons.yes, (wrong) => {
-                if (!wrong && this.hosting) {
-                    let [valid, name, reason] = validPlayer(player, player.textInput.value, player.selectedColor)
-                    if (!valid) {
-                        if (reason === "Color is already taken") player.selectedColor = -1
-                        player.confirmButton.onClick(true)
-                        alert(reason)
-                    } else player.textInput.htmlElement.value = name
-                }
-
-                let text = player.textInput.htmlElement
-                text.disabled = !text.disabled
-
-                if (text.disabled) {
-                    player.confirmButton.image = images.buttons.no
-                    player.colorButton.disabled = true
-                    text.style.backgroundColor = ''
-                } else {
-                    player.confirmButton.image = images.buttons.yes
-                    player.colorButton.disabled = false
-                    text.style.backgroundColor = 'white'
-                }
-
-                if (this.hosting) sendPlayers(this.peer, undefined, undefined, undefined, text.disabled)
-                if (!wrong && !this.hosting) sendMessage(this.peer.connection, text.disabled ? "select" : "deselect", { name: text.value, color: player.selectedColor })
-            })
+            player.colorButton.disabled = true
+            player.colorButton.disableDisabledTexture = true
         }
     }
 
     draw() {
         c.drawImageFromSpriteSheet(images.menus.lobbymenu);
         this.backButton.update();
+        this.spectatorButton?.update()
         this.players.forEach(player => {
             player.textInput.draw();
             player.colorButton.image = images.playercolorbuttons[(player.selectedColor == -1 ? "unselected" : "playercolorbutton" + (player.selectedColor == 0 ? "" : player.selectedColor + 1))]
@@ -471,9 +474,7 @@ class OnlineLobby {
         });
 
         if (!this.hosting) return
-
-        this.startButton.disabled = Object.entries(this.peer.clients).length === 0 ||
-            !this.players.every(player => player.textInput.htmlElement.style.backgroundColor === "")
+        this.startButton.disabled = this.players.some(p => p.client && p.textInput.htmlElement.style.backgroundColor !== "") || this.playersPlaying < 2
         this.startButton.update();
 
         c.drawText("Id: " + this.peer.id, 250, canvas.height - 30, 30)
@@ -865,16 +866,18 @@ class Board {
         this.money = 0;
         this.ready = true
 
-        this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, this.rollDice)
-        this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.nextplayer, this.nextPlayer);
+        this.rollDiceButton = new Button({ x: canvas.width / 2 - 123 + boardOffsetX, y: canvas.height / 2 + boardOffsetY, w: 246, h: 60 }, images.buttons.rolldice, this.rollDice)
+        this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123 + boardOffsetX, y: canvas.height / 2 + boardOffsetY, w: 246, h: 60 }, images.buttons.nextplayer, this.nextPlayer);
 
-        this.menuButton = new Button({ x: canvas.width / 2 - 40, y: canvas.height - 40, w: 80, h: 40 }, images.buttons.menu, function () { currentMenu = new SmallMenu() })
+        this.menuButton = new Button({ x: 0, y: canvas.height - 40, w: 80, h: 40 }, images.buttons.menu, function () { currentMenu = new SmallMenu() })
+        this.muteButton = new Button({ x: 80, y: canvas.height - 40, w: 40, h: 40, hoverText: "Tysta ljudet" }, images.buttons.music);
 
         this.init();
     }
     rollDice() {
         players[turn].rollDice();
         board.playerHasRolled = true;
+        logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " har kastat tärningarna", color: "black" }])
     }
     nextPlayer() {
         players[turn].rolls = 0;
@@ -889,6 +892,7 @@ class Board {
             currentMenu = new PrisonMenu();
         }
         readyUp();
+
 
     }
     getColorGroup(group) {
@@ -961,7 +965,7 @@ class Board {
         this.boardPieces.forEach(e => { if (e.owner && e.constructor.name == "BuyableProperty") e.drawHouses() })
         this.boardPieces.forEach(e => { if (e.hover) { hoverList.push(e.info.name + (e.owner !== undefined ? "(" + e.owner.name + ")" : "")) } });
 
-        c.drawText("Just nu:" + players[turn].name, canvas.width / 2, 30, c.getFontSize("Just nu:" + players[turn].name, 240, 30), "center", players[turn].info.color)
+        c.drawText("Just nu:" + players[turn].name, canvas.width / 2 + 170, canvas.height - 10, c.getFontSize("Just nu:" + players[turn].name, 220, 30), "center", players[turn].info.color)
 
         if (this.settings.giveAllTaxToParking) {
             c.drawText(this.money + "kr", canvas.width / 2, 60, 20, "center", "gold")
@@ -974,6 +978,7 @@ class Board {
 
         if (this.dices.hidden && !currentMenu && (this.playerIsWalkingTo == false)) {
             this.menuButton.update();
+            this.muteButton.update();
             if (players[turn].playing && board.ready) {
                 if (!this.playerHasRolled) {
                     this.rollDiceButton.update();
@@ -1012,7 +1017,7 @@ class Board {
                 c.drawImageFromSpriteSheet(images.static.realbackground, { x: canvas.width / 2 + 832 * coords.x - 416, y: canvas.height / 2 + 832 * coords.y - 208 })
             }
         }
-        c.drawImageFromSpriteSheet(images.static.insideboard, { x: canvas.width / 2 - 286, y: canvas.height / 2 - 143 })
+        c.drawImageFromSpriteSheet(images.static.insideboard, { x: canvas.width / 2 - 286 + boardOffsetX, y: canvas.height / 2 - 143 + boardOffsetY })
     }
 }
 
@@ -1030,9 +1035,9 @@ class OnlineBoard extends Board {
             saveGame(true)
         }
 
-        this.rollDiceButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.rolldice, () => {
-            let dice1 = randomIntFromRange(3, 4)
-            let dice2 = randomIntFromRange(3, 4)
+        this.rollDiceButton = new Button({ x: canvas.width / 2 - 123 + boardOffsetX, y: canvas.height / 2 + boardOffsetY, w: 246, h: 60 }, images.buttons.rolldice, () => {
+            let dice1 = randomIntFromRange(3, 3)
+            let dice2 = randomIntFromRange(4, 4)
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("throwDices", { dice1: dice1, dice2: dice2 })
@@ -1041,7 +1046,7 @@ class OnlineBoard extends Board {
                 sendMessageToAll("saveCardId", board.cardId);
             } else sendMessage(this.peer.connection, "requestDiceRoll")
         })
-        this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123, y: canvas.height / 2, w: 246, h: 60 }, images.buttons.nextplayer, () => {
+        this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123 + boardOffsetX, y: canvas.height / 2 + boardOffsetY, w: 246, h: 60 }, images.buttons.nextplayer, () => {
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("nextPlayer")
@@ -1064,17 +1069,25 @@ class PrisonMenu {
             players[turn].money -= 50;
             board.money += board.settings.giveAllToParking ? 50 : 0;
             players[turn].getOutOfPrison();
+            soundEffects.play("cash");
+            logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " betalade 50kr för att", color: "black" }])
+            logger.log([{ text: "lämna finkan", color: "black" }])
+
             currentMenu = undefined;
         });
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 138 + splitPoints(3, 276, 82, 1), y: canvas.height / 2 + 50, w: 82, h: 35 }, images.buttons.prisonrolldice, function (request = true, rigged1 = randomIntFromRange(1, 6), rigged2 = randomIntFromRange(1, 6)) {
             if (requestAction("rollPrison", { rigged1: rigged1, rigged2: rigged2 }, request)) return
             resetReady()
+            logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " kastade tärningarna för att", color: "black" }])
+            logger.log([{ text: "försöka lämna finkan", color: "black" }])
 
             board.dices.roll(function (dice1, dice2) {
                 readyUp()
                 if (dice1 == dice2) {
                     players[turn].getOutOfPrison();
                     players[turn].teleportTo(players[turn].pos + dice1 + dice2);
+                    logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " lyckades rymma från finkan", color: "black" }])
+
                 } else {
                     board.playerHasRolled = true;
                     board.dices.hidden = true;
@@ -1093,6 +1106,9 @@ class PrisonMenu {
 
             players[turn].getOutOfPrison();
             players[turn].prisonCards--;
+            logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " använde ett fängelsekort", color: "black" }])
+            logger.log([{ text: "för att lämna finkan", color: "black" }])
+
             currentMenu = undefined;
         });
     }
@@ -1166,7 +1182,7 @@ class BoardPiece {
     }
 
     draw() {
-        let isometricMouse = { x: to_grid_coordinate(mouse.x, mouse.y).x, y: to_grid_coordinate(mouse.x, mouse.y).y }
+        let isometricMouse = { x: to_grid_coordinate(mouse.x - boardOffsetX, mouse.y - boardOffsetY).x, y: to_grid_coordinate(mouse.x - boardOffsetX, mouse.y - boardOffsetY).y }
         this.hover = (players[turn].playing && this.info.price && !currentMenu && board.dices.hidden && ((Math.floor(this.n / 10) === 0 || Math.floor(this.n / 10) === 2) && isometricMouse.x > this.drawX + 64 && isometricMouse.x < this.drawX + 128 && isometricMouse.y > this.drawY - 64 && isometricMouse.y < this.drawY + 64 ||
             (Math.floor(this.n / 10) === 1 || Math.floor(this.n / 10) === 3) && isometricMouse.x > this.drawX + 32 && isometricMouse.x < this.drawX + 128 + 32 && isometricMouse.y > this.drawY - 32 && isometricMouse.y < this.drawY + 32
         ));
@@ -1182,7 +1198,8 @@ class BoardPiece {
             w: 96,
             cropW: 96,
             cropX: this.textureStart,
-            offsetY: (this.hover ? 1 : 0)
+            offsetY: (this.hover ? 1 : 0) + boardOffsetY,
+            offsetX: boardOffsetX
         })
         if (this.owner !== undefined) {
             c.drawIsometricImage(images.players[this.owner.info.ownedImg], {
@@ -1191,7 +1208,8 @@ class BoardPiece {
                 w: 96,
                 cropW: 96,
                 cropX: this.textureStart,
-                offsetY: (this.hover ? 1 : 0)
+                offsetY: (this.hover ? 1 : 0) + boardOffsetY,
+                offsetX: boardOffsetX
             })
         }
     }
@@ -1205,7 +1223,8 @@ class Corner extends BoardPiece {
             w: 128,
             cropW: 128,
             cropX: 0,
-            offsetY: (this.hover ? 1 : 0)
+            offsetY: (this.hover ? 1 : 0) + boardOffsetY,
+            offsetX: boardOffsetX
         })
     }
     step() {
@@ -1216,6 +1235,7 @@ class Corner extends BoardPiece {
         if (this.n == 20 && board.settings.giveAllTaxToParking) {
             players[turn].money += board.money;
             board.money = 0;
+            soundEffects.play("cash");
         }
     }
 }
@@ -1308,6 +1328,9 @@ class BuyableProperty extends BoardPiece {
         this.owner = players[turn];
         players[turn].ownedPlaces.push(this);
         players[turn].hasBought = true;
+        soundEffects.play("cash");
+
+        logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " köpte " }, { text: this.info.name, color: this.info.color }])
     }
     sell(request = true) {
         if (requestAction("sellProperty", this.n, request)) return
@@ -1315,21 +1338,35 @@ class BuyableProperty extends BoardPiece {
         players[turn].money += this.mortgaged ? 0 : this.info.price / 2;
         this.owner = undefined;
         players[turn].ownedPlaces.splice(players[turn].ownedPlaces.indexOf(this), 1);
+        soundEffects.play("cash");
+
+        logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " sålde " }, { text: this.info.name, color: this.info.color }])
+
     }
     upgrade() {
         this.level++;
         players[turn].money -= this.info.housePrice;
         board.money += board.settings.giveAllToParking ? this.info.housePrice : 0;
+        soundEffects.play("cash");
+
+        logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " köpte hus i " }, { text: this.info.name, color: this.info.color }])
+
     }
     mortgage(request = true) {
         if (requestAction("mortgageProperty", this.n, request)) return
 
         this.mortgaged = !this.mortgaged;
         players[turn].money += (this.mortgaged ? this.info.price / 2 : -(this.info.price / 2) * 1.1)
+        soundEffects.play("cash");
+        logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " intecknade " }, { text: this.info.name, color: this.info.color }])
+
     }
     downgrade() {
         this.level--;
         players[turn].money += this.info.housePrice / 2;
+        soundEffects.play("cash");
+        logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " sålde hus i " }, { text: this.info.name, color: this.info.color }])
+
     }
     payRent() {
         if (!(!this?.owner?.inPrison || board.settings.prisonpay)) return
@@ -1463,6 +1500,7 @@ class Auction {
         if (this.auctionMoney >= this.minimumPay) {
             players[playerIndex].money -= this.auctionMoney;
             board.money += board.settings.giveAllToParking ? this.auctionMoney : 0;
+            soundEffects.play("cash");
             this.boardPiece.owner = players[playerIndex];
             players[playerIndex].ownedPlaces.push(this.boardPiece);
         };
@@ -1644,10 +1682,11 @@ class Bankcheck {
 
         this.hasPayed = false;
 
+        soundEffects.play("whoosh");
     }
     draw() {
 
-        this.xPos -= 3 + Math.abs(this.xPos - canvas.width / 2 - 256) / 50
+        this.xPos -= (3 + Math.abs(this.xPos - canvas.width / 2 - 256) / 50) * deltaTime
 
         if (Math.abs(this.xPos - canvas.width / 2 - 256) < 5 && !this.hasPayed) {
             this.hasPayed = true;
@@ -1690,7 +1729,14 @@ class Bankcheck {
         }
         if (typeof this.from == "number") {
             players[this.from].money -= this.amount;
+
+
         }
+        soundEffects.play("cash");
+        soundEffects.play("whoosh");
+        logger.log([{ text: (typeof this.from == "number") ? players[this.from].name : this.from, color: (typeof this.from == "number") ? players[this.from].info.color : "black" }, { text: " fick betala " + this.amount + "kr till", color: "black" }])
+        logger.log([{ text: (typeof this.to == "number") ? players[this.to].name : this.to, color: (typeof this.to == "number") ? players[this.to].info.color : "black" }, { text: " för " + this.reason, color: "black" }])
+
     }
 }
 
@@ -1724,6 +1770,8 @@ class CardDraw {
             resetReady();
         })
 
+        soundEffects.play("card")
+
     }
     draw() {
         c.drawImageFromSpriteSheet(images["community card and chance card"][this.card.img], { x: canvas.width / 2 - 256, y: this.yPos, w: 512, h: 256 })
@@ -1746,24 +1794,24 @@ class CardDraw {
                 }
             }
         } else if (this.animationStep == 0) {
-            this.yPos -= 1 - (canvas.height / 2 - 250 - this.yPos) / 20;
+            this.yPos -= (1 - (canvas.height / 2 - 250 - this.yPos) / 20) * deltaTime;
             if (canvas.height / 2 - 180 - this.yPos > 0) {
                 this.animationStep = 1;
             }
         } else if (this.animationStep == 1) {
-            this.yPos += 1 - (this.yPos - canvas.height / 2 - 128) / 50;
+            this.yPos += (1 - (this.yPos - canvas.height / 2 - 128) / 50) * deltaTime;
             if (this.yPos > canvas.height / 2 - 128) {
                 this.yPos = canvas.height / 2 - 128;
                 this.animationStep = 2;
                 readyUp();
             }
         } else if (this.animationStep == 3) {
-            this.yPos -= 1 - (canvas.height / 2 - 250 - this.yPos) / 20;
+            this.yPos -= (1 - (canvas.height / 2 - 250 - this.yPos) / 20) * deltaTime;
             if (canvas.height / 2 - 180 - this.yPos > 0) {
                 this.animationStep = 4;
             }
         } else if (this.animationStep == 4) {
-            this.yPos += 1 + (this.yPos) / 20;
+            this.yPos += Math.abs((1 + (this.yPos) / 20) * deltaTime);
             if (this.yPos > canvas.height) {
                 this.useCard();
             }
@@ -1774,13 +1822,17 @@ class CardDraw {
         let close = true;
         if (this.card.teleport !== undefined) {
             players[turn].teleportTo(this.card.teleport);
+            logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " fick gå till ", color: "black" }, { text: board.boardPieces[Math.abs(this.card.teleport)].info.name, color: board.boardPieces[Math.abs(this.card.teleport)].info.color }])
         } else if (this.card.moneyChange) {
             players[turn].money += this.card.moneyChange;
             readyUp();
             if (this.card.moneyChange < 0) {
                 board.money += board.settings.giveAllToParking ? this.card.moneyChange : 0;
+                soundEffects.play("cash");
             }
             players[turn].lastPayment = undefined;
+            logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: (Math.sign(this.card.moneyChange) == 1 ? " fick " : " förlorade ") + Math.abs(this.card.moneyChange) + "kr", color: "black" }])
+
         } else if (this.card.moneyFromPlayers) {
             currentMenu = new Bankcheck(turn, "Motspelare", (this.card.moneyFromPlayers * (players.filter(e => (!e.inPrison || board.settings.prisonpay)).length - 1)), "Present")
             close = false;
@@ -1790,17 +1842,24 @@ class CardDraw {
                     e.lastPayment = players[turn];
                 }
             });
+
         } else if (this.card.type == "getprisoncard") {
             players[turn].prisonCards++;
             readyUp();
+            logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " fick ett fängelsekort", color: "black" }])
         } else if (this.card.type == "gotoprison") {
             players[turn].goToPrison();
+            logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " fick gå till finkan", color: "black" }])
         } else if (this.card.steps) {
             players[turn].teleportTo((players[turn].pos + this.card.steps) * Math.sign(this.card.steps))
+            logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " fick gå till ", color: "black" }, { text: board.boardPieces[players[turn].pos + this.card.steps].info.name, color: board.boardPieces[players[turn].pos + this.card.steps].info.color }])
+
         } else if (this.card.gotoClosest) {
             let self = this;
             let closest = findClosest(players[turn].pos, board.boardPieces.filter(e => e.constructor.name == self.card.gotoClosest).map(e => e.n))
             players[turn].teleportTo(closest * Math.sign(closest - players[turn].pos), true);
+            logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " fick gå till ", color: "black" }, { text: board.boardPieces[closest].info.name, color: board.boardPieces[closest].info.color }])
+
         } else if (this.card.properyPrice) {
             readyUp();
             let self = this;
@@ -1816,18 +1875,29 @@ class CardDraw {
                     players[turn].lastPayment = undefined;
                 }
             })
+            soundEffects.play("cash");
+
+            logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " fick betala för sina hus/hotell", color: "black" }])
+
         } else if (this.type == "special" && (this.cardId == 0 || this.cardId == 1)) {
             players[turn].goToPrison();
+            logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " fick gå till finkan", color: "black" }])
         } else if (this.type == "special" && this.cardId == 2) {
             readyUp();
+            logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " fick betala " + (players[turn].money > 2000 ? 200 : Math.round(players[turn].money / 10)) + "kr i skatt", color: "black" }])
             players[turn].money -= (players[turn].money > 2000 ? 200 : Math.round(players[turn].money / 10));
             board.money += board.settings.giveAllTaxToParking ? players[turn].money > 2000 ? 200 : Math.round(players[turn].money / 10) : 0;
+            soundEffects.play("cash");
             players[turn].lastPayment = undefined;
+
         } else if (this.type == "special" && this.cardId == 3) {
             readyUp();
             players[turn].money -= 100;
             board.money += board.settings.giveAllTaxToParking ? 100 : 0;
+            soundEffects.play("cash");
             players[turn].lastPayment = undefined;
+            logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " fick betala 100kr i skatt", color: "black" }])
+
         }
         if (close) currentMenu = undefined;
     }
@@ -1871,6 +1941,7 @@ class PropertyCard {
             this.sellButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 0), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj" }, images.buttons.sellbutton, function () { self.sellThis() })
             this.mortgageButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 1), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Inteckna" }, images.buttons.mortgage, function () { board.boardPieces[self.n].mortgage() })
             this.downgradeButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 2), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj Hus" }, images.buttons.arrowdown, function (request = true) {
+                logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " sålde hus i" + board.boardPieces[e.n].info.name, color: "black" }])
                 if (self.downgradeInfo?.index) {
                     if (requestAction("downgradeProperty", self.n, request)) return
                     board.boardPieces[self.downgradeInfo.index].downgrade()
@@ -1897,6 +1968,7 @@ class PropertyCard {
                 }
             })
             this.upgradeButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 3), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Köp Hus" }, images.buttons.arrowup, function (request = true) {
+                logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " köpte hus i" + board.boardPieces[e.n].info.name, color: "black" }])
                 if (self.upgradeInfo?.index) {
                     if (requestAction("upgradeProperty", self.n, request)) return
                     board.boardPieces[self.upgradeInfo.index].upgrade(board instanceof OnlineBoard)
@@ -1911,6 +1983,8 @@ class PropertyCard {
                             })
                             players[turn].money -= self.upgradeInfo.price;
                             board.money += board.settings.giveAllToParking ? self.upgradeInfo.price : 0;
+                            soundEffects.play("cash");
+
                             currentMenu = undefined;
 
                         }
@@ -1922,6 +1996,7 @@ class PropertyCard {
                         })
                         players[turn].money -= self.upgradeInfo.price;
                         board.money += board.settings.giveAllToParking ? self.upgradeInfo.price : 0;
+                        soundEffects.play("cash");
                     }
 
                 }
@@ -2095,8 +2170,8 @@ class PropertyCard {
                 this.closeButton.update();
             }
         } else {
-            this.animationFactor += 0.001;
-            this.animationFactor *= 1.5;
+            this.animationFactor += (0.001) * deltaTime;
+            this.animationFactor *= 1 + .5 * deltaTime;
             this.animationFactor = this.animationFactor.clamp(0, 1);
         }
 
@@ -2163,7 +2238,7 @@ class Player {
         if (players[turn].laps < board.settings.roundsBeforePurchase) this.hasBought = true
         this.calculateDrawPos();
         let coord = to_screen_coordinate(this.drawX, this.drawY);
-        this.hover = players[turn].playing && (detectCollision(coord.x, coord.y, 24, 48, mouse.x, mouse.y, 1, 1) && !currentMenu && board.dices.hidden && (board.playerIsWalkingTo == false));
+        this.hover = players[turn].playing && (detectCollision(coord.x + boardOffsetX, coord.y + boardOffsetY, 24, 48, mouse.x, mouse.y, 1, 1) && !currentMenu && board.dices.hidden && (board.playerIsWalkingTo == false));
         if (this.hover) { hoverList.push(this.name + ((players[turn] !== this) ? "(Föreslå bytesförslag)" : "(Du)")) }
         if (this.hover && mouse.down && (players[turn] !== this)) {
             this.moneyShowerThing.button.onClick();
@@ -2173,7 +2248,8 @@ class Player {
         c.drawIsometricImage(images.players[this.info.img], {
             x: this.drawX,
             y: this.drawY,
-            offsetY: this.hover ? 1 : 0
+            offsetY: (this.hover ? 1 : 0) + boardOffsetY,
+            offsetX: boardOffsetX
         })
         this.moneyShowerThing.update();
         let netWorth = this.money;
@@ -2231,6 +2307,7 @@ class Player {
                         board.playerIsWalkingTo = false;
                         onStep(steps);
                     };
+                    soundEffects.play("movement")
                 }
             }, 250)
         }
@@ -2269,6 +2346,9 @@ class Player {
                 }
             }
             self.teleportTo(self.pos + dice1 + dice2);
+            logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " slog en " + (dice1 + dice2) + ":a och", color: "black" }])
+            logger.log([{ text: "hamnade på ", color: "black" }, { text: board.boardPieces[(self.pos + dice1 + dice2) % 40].info.name, color: board.boardPieces[(self.pos + dice1 + dice2) % 40].info.color }])
+
         }, rigged1, rigged2)
     }
 }
@@ -2280,13 +2360,12 @@ class Money {
         this.calculateDrawPos();
     }
     calculateDrawPos() {
-        this.side = this.index % 2;
-        this.drawX = (this.side ? canvas.width - 354 : 0)
-        this.drawY = (this.index < 2 ? 0 : this.index < 4 ? canvas.height - 54 : this.index < 6 ? 54 : canvas.height - 54 * 2)
+        this.drawX = (this.index % 4) * 240;
+        this.drawY = Math.floor(this.index / 4) * 54;
 
         let self = this;
 
-        this.button = new Button({ x: this.drawX, y: this.drawY, w: 354, h: 54, mirrored: !this.side, hoverText: "Föreslå bytesförslag", disableDisabledTexture: true }, images.buttons.playerborder, function (player1 = players.indexOf(players[turn]), player2 = players.indexOf(self.player)) {
+        this.button = new Button({ x: this.drawX, y: this.drawY, w: 240, h: 54, hoverText: "Föreslå bytesförslag", disableDisabledTexture: true }, images.buttons.playerborder, function (player1 = players.indexOf(players[turn]), player2 = players.indexOf(self.player)) {
             if (requestAction("newTrade", { player1: player1, player2: player2 })) return;
             currentMenu = new Trade(player1, player2);
         })
@@ -2294,11 +2373,21 @@ class Money {
     update() {
         this.button.disabled = !players[turn].playing || (this.player == players[turn] || currentMenu);
         this.button.update();
-        c.drawImageFromSpriteSheet(images.players[this.player.info.img], { x: (!this.side ? 3 : canvas.width - 3 - images.players.player.w), y: 3 + this.drawY })
 
-        c.drawText(this.player.name, this.drawX + (this.side ? 15 : 30), this.drawY + 36, c.getFontSize(this.player.name, 165, 30), "left", this.player.info.color)
+        if (this.player.prisonCards > 0) {
+            c.drawImageFromSpriteSheet(images.buttons.playerborderwithcard, { x: this.drawX, y: this.drawY })
+        }
+        if (players[turn] == this.player) {
+            c.drawImageFromSpriteSheet(images.buttons.playerborderturn, { x: this.drawX, y: this.drawY })
+        }
 
-        c.drawText(this.player.money + "kr", this.drawX + (this.side ? 185 : 200), this.drawY + 36, 30)
+        c.drawImageFromSpriteSheet(images.players[this.player.info.img], { x: this.drawX + 2, y: 3 + this.drawY })
+
+        c.drawText(this.player.name, this.drawX + 36, this.drawY + 22, c.getFontSize(this.player.name, 86, 18), "left", this.player.info.color)
+
+        c.drawText(this.player.money + "kr", this.drawX + 36, this.drawY + 44, 18)
+
+
     }
 }
 
@@ -2317,10 +2406,12 @@ class Dice {
 
         let counter = 1;
 
+        soundEffects.play("dice")
+
         let rollAnimation = function () {
-            if (counter < 500) {
+            if (counter < 300) {
                 self.randomizeDice(rigged1, rigged2);
-                counter *= 1.2;
+                counter *= 1.33;
                 setTimeout(rollAnimation, counter);
             } else {
                 if (rigged1) board.dices.dice1 = rigged1
@@ -2350,7 +2441,9 @@ class Dice {
                 cropW: 64,
                 cropH: 64,
                 w: 64,
-                h: 64
+                h: 64,
+                offsetX: boardOffsetX,
+                offsetY: boardOffsetY
             })
             c.drawIsometricImage(images.dices.dices, {
                 x: 1050,
@@ -2360,9 +2453,69 @@ class Dice {
                 cropW: 64,
                 cropH: 64,
                 w: 64,
-                h: 64
+                h: 64,
+                offsetX: boardOffsetX,
+                offsetY: boardOffsetY
             })
         }
+    }
+}
+
+class Logger {
+    constructor() {
+        this.height = 100;
+        this.width = 192;
+
+        this.minHeight = 100;
+        this.maxHeight = 400;
+
+        this.info = [
+            [{ color: "black", text: "Spelet har startat med " + players.length + " spelare" }]
+        ]
+
+        this.follow = false;
+    }
+    log(item) {
+        this.info.unshift(item);
+    }
+    draw() {
+        c.fillStyle = "white"
+        c.fillRect(canvas.width - 192, canvas.height - this.height, this.width, this.height);
+        c.lineWidth = 2;
+        c.strokeStyle = "black";
+        c.strokeRect(canvas.width - 192, canvas.height - this.height, this.width, this.height);
+
+        this.hover = detectCollision(canvas.width - 192, canvas.height - this.height - 2, this.width, 6, mouse.x, mouse.y, 1, 1);
+
+        if (mouse.down && this.hover) {
+            mouse.down = false;
+            this.follow = true;
+        };
+        if (mouse.up && this.follow) {
+            this.follow = false;
+        };
+
+        if (this.follow) {
+            this.height = (canvas.height - mouse.y).clamp(this.minHeight, this.maxHeight);
+        };
+        if (this.hover || this.follow) {
+            c.fillStyle = "gray";
+            c.fillRect(canvas.width - 192, canvas.height - this.height - 2, this.width, 6)
+
+            hoverList.push("")
+        }
+        this.info.forEach((i, Iindex) => {
+            let last = 0;
+            Object.values(i).forEach((text, index) => {
+                let fontSize = 9;
+                c.font = fontSize + "px verdanai";
+                if ((Iindex + 1.5) * (fontSize + 5) < this.height) {
+                    c.drawText(text.text, canvas.width - 192 + 10 + c.measureText(index > 0 ? i[index - 1].text : "").width + last, canvas.height - 10 - Iindex * (fontSize + 5), fontSize, "left", text.color)
+                    last += c.measureText(index > 0 ? i[index - 1].text : "").width;
+                }
+            })
+        })
+
     }
 }
 

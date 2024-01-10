@@ -1,179 +1,5 @@
 const peer = new Peer(generateId(6), { debug: 1 })
 
-function generateId(length) {
-    const ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    let id = ""
-    for (let _ = 0; _ < length; _++) {
-        id += ALPHABET[Math.floor(Math.random() * ALPHABET.length)]
-    }
-    return id
-}
-
-function sendMessage(connection, _type, _data) {
-    connection.send({
-        type: _type,
-        data: _data
-    })
-}
-
-function sendMessageToAll(_type, _data, exceptions = [], exceptionType = undefined, exceptionData = undefined) {
-    if (board?.constructor.name === 'Board') return
-    for (let client of Object.values(peer.clients)) {
-        if (!exceptions.includes(client)) sendMessage(client.connection, _type, _data)
-        else if (exceptionType) sendMessage(client.connection, exceptionType, exceptionData)
-    }
-}
-
-function removeClient(id) {
-    const idx = getIndexFromObject(peer.clients, id) + 1
-    let values = Object.values(peer.clients)
-
-    for (let i = idx + 1; i <= values.length; i++) {
-        let player = currentMenu.players[i]
-        let prevPlayer = currentMenu.players[i - 1]
-        if (i <= 1) continue
-
-        prevPlayer.selectedColor = player.selectedColor
-        prevPlayer.kickButton.onClick = player.kickButton.onClick
-        prevPlayer.textInput.htmlElement.value = player.textInput.htmlElement.value
-        prevPlayer.textInput.htmlElement.setAttribute("placeHolder", getPlaceHolder(player))
-        prevPlayer.textInput.htmlElement.style.backgroundColor = player.textInput.htmlElement.style.backgroundColor
-    }
-
-    peer.clients[id].connection.close()
-    let player = currentMenu.players[values.length]
-
-    removeColor(player.selectedColor)
-    player.selectedColor = -1
-    player.textInput.htmlElement.value = ""
-    player.textInput.htmlElement.style.backgroundColor = ''
-    player.textInput.htmlElement.setAttribute("placeHolder", "")
-
-    delete player.kickButton
-    delete peer.clients[id]
-    sendPlayers()
-}
-
-function removeColor(colorIdx) {
-    currentMenu.selectedColors = currentMenu.selectedColors.filter(e => e !== colorIdx)
-    if (currentMenu.currentMenu) currentMenu.currentMenu.selectedColors = currentMenu.currentMenu.selectedColors.filter(e => e !== colorIdx)
-}
-
-function addColor(colorIdx) {
-    currentMenu.selectedColors.push(colorIdx)
-    if (currentMenu.currentMenu) currentMenu.currentMenu.selectedColors.push(colorIdx)
-}
-
-function changeColor(playerIdx, from, to) {
-    currentMenu.players[playerIdx].selectedColor = to
-    removeColor(from)
-
-    if (to === -1) return
-    currentMenu.selectedColors.push(to)
-
-    if (!currentMenu.currentMenu) return
-    currentMenu.currentMenu.selectedColors.push(to)
-    currentMenu.currentMenu.initColors()
-}
-
-function validPlayer(player, name, color) {
-    let tempPlayers = currentMenu.players.filter(p2 => p2 !== player)
-    let tempColors = tempPlayers.map(player => player.selectedColor)
-    let valid = true
-    let reason = ""
-    name = name.trim()
-    if (name.length < 3) { valid = false; reason = "Username must be atleast 3 characters long" }
-
-    else if (name.length > 15) { valid = false; reason = "Username must be at most 15 characters long" }
-
-    else if (color !== -1 && tempColors.includes(color)) { valid = false; reason = "Color is already taken" }
-
-    else if (tempPlayers.some(p => p.textInput.htmlElement.style.backgroundColor === "" &&
-        p.textInput.htmlElement.value === name)) { valid = false; reason = "Username is already taken" }
-
-    return [valid, name, reason]
-}
-
-function waitForOpenConnection(client, callback) {
-    const checkConnection = () => {
-        if (client.connection.open) callback()
-        else requestAnimationFrame(checkConnection)
-    }
-
-    checkConnection()
-}
-
-function getPlaceHolder(player) { return player.textInput.htmlElement.getAttribute("placeHolder") }
-
-function sendPlayers(settings = {}) {
-    let updatedClient = settings.client
-    let text = settings.name
-    let color = settings.color
-    let selected = settings.selected
-
-    let data_players = []
-    let clients = Object.values(peer.clients)
-
-    for (let i = 0; i < currentMenu.players.length; i++) {
-        if (i > clients.length) continue
-
-        let player = currentMenu.players[i]
-        let client = peer.clients[getPlaceHolder(player)]
-
-
-        if (client && client === updatedClient) {
-            data_players.push({
-                name: text ?? player.textInput.htmlElement.value, // Text can be ''
-                color: color ?? player.selectedColor, // Color can be 0
-                selected: selected ?? player.textInput.htmlElement.style.backgroundColor === '', // Selected can be false
-                placeHolder: getPlaceHolder(player),
-            })
-        } else {
-            data_players.push({
-                name: player.textInput.htmlElement.value,
-                color: player.selectedColor,
-                selected: player.textInput.htmlElement.style.backgroundColor === '',
-                placeHolder: getPlaceHolder(player),
-            })
-        }
-        data_players[i].settings = currentMenu.settings.map(e => e.constructor.name === "Button" ? e.selected : e.percentage)
-    }
-
-    for (let client of clients) {
-        if (client === updatedClient) continue // Don't send to updated client
-
-        let data = data_players.filter(player => peer.clients[player.placeHolder] !== client) // Dont include self
-        sendMessage(client.connection, currentMenu instanceof OnlineJoinLobby ? "existingPlayers" : "players", {
-            players: data,
-            settings: currentMenu.settings
-                .map(e => e.constructor.name === "Button" ? e.selected : { percentage: e.percentage, value: e.value }),
-            lobbyType: currentMenu instanceof OnlineJoinLobby
-        })
-    }
-}
-function resetReady() {
-    if (board.constructor.name === 'Board') return
-
-    board.readyPlayers = 0
-    board.ready = false
-}
-
-function readyUp() {
-    if (board.constructor.name === 'Board') return
-
-    if (board.hosting) addReady()
-    else sendMessage(board.peer.connection, "ready")
-}
-function addReady() {
-    if (board.constructor.name === 'Board') return
-
-    board.readyPlayers++
-    if (board.readyPlayers === (Object.entries(peer.clients).length + 1)) {
-        board.ready = true
-        sendMessageToAll("ready")
-    }
-}
-
 function createHost() {
     peer.clients = {}
 
@@ -198,14 +24,6 @@ function createHost() {
             // HTML
             const idx = Object.entries(peer.clients).length
             const player = currentMenu.players[idx]
-            player.textInput.htmlElement.style.backgroundColor = 'white'
-            player.textInput.htmlElement.setAttribute('placeHolder', id)
-            player.kickButton = new Button({
-                x: 370,
-                y: 82 + 48 * idx,
-                w: 40,
-                h: 40
-            }, images.buttons.no, () => removeClient(id))
         })
 
         x.on('close', () => {
@@ -219,9 +37,8 @@ function createHost() {
 
         x.on('data', (response) => {
             const client = peer.clients[id] //
-            const idx = getIndexFromObject(peer.clients, id) + 1
             let player
-            if (currentMenu instanceof OnlineLobby) player = currentMenu.players[idx]
+            if (currentMenu instanceof OnlineLobby) for (let p of currentMenu.players) if (p.client === id) player = p
             const type = response.type
             const data = response.data
             console.log(response)
@@ -270,27 +87,38 @@ function createHost() {
             }
 
             // Online Lobby
-            if (type === 'deselect') {
-                removeColor(data.color)
-                player.textInput.htmlElement.style.backgroundColor = 'white'
-                sendMessageToAll("selectedColors", currentMenu.selectedColors)
-            }
-            if (type === 'select') {
-                let [valid, name, reason] = validPlayer(player, data.name, data.color)
-
-                sendMessage(client.connection, "select", { valid: valid, name: name, reason: reason })
-                sendPlayers({ client: client, selected: valid })
-                if (!valid) return
-
-                // Update HTML
-                player.textInput.htmlElement.value = name
-                player.textInput.htmlElement.style.backgroundColor = ""
-                addColor(data.color)
-                for (let p2 of currentMenu.players) if (player !== p2 && p2.selectedColor === data.color) p2.selectedColor = -1
-                sendMessageToAll("selectedColors", currentMenu.selectedColors, [client])
+            if (type === "spectator") {
+                let response = currentMenu.playersPlaying < 8
+                if (data) removeHTMLPlayer(id)
+                else if (response) addHTMLPlayer(id)
+                sendMessage(client.connection, "spectatorValidation", data || response)
+                sendPlayers()
             }
             if (type === "nameChange") { player.textInput.htmlElement.value = data; sendPlayers({ client: client, name: data }) }
             if (type === "colorChange") { player.selectedColor = data; sendPlayers({ client: client, color: data }) }
+            if (type === "deselect") {
+                removeColor(data.color)
+                player.textInput.htmlElement.style.backgroundColor = "white"
+                sendMessage(client.connection, "deselect")
+                sendMessageToAll("selectedColors", currentMenu.selectedColors)
+                sendPlayers({ client: client, selected: false })
+            }
+            if (type === "select") {
+                let [valid, name, reason] = validPlayer(player, data.name, data.color)
+                
+                sendMessage(client.connection, "select", { valid: valid, name: name, reason: reason })
+                if (!valid) return
+
+                player.textInput.htmlElement.value = name
+                player.textInput.htmlElement.style.backgroundColor = ""
+                if (data.color !== -1) {
+                    currentMenu.selectedColors.push(data.color)
+                    if (currentMenu.currentMenu) currentMenu.currentMenu.selectedColors.push(data.color)
+                }
+                for (let p2 of currentMenu.players) if (p2 !== player && p2.selectedColor === data.color) p2.selectedColor = -1
+                sendMessageToAll("selectedColors", currentMenu.selectedColors, [client])
+                sendPlayers({ client: client, selected: true })
+            }
 
             // Online Join Lobby
             if (type === "choosePlayer") {
@@ -338,7 +166,8 @@ function connectToHost(hostId) {
         x.on("close", () => {
             //console.log("Connection Lost")
             delete peer
-            exitGame(true, true)
+            if (board) exitGame(true, true)
+            else currentMenu = new PublicGames()
         })
 
         x.on("data", (response) => {
@@ -357,8 +186,11 @@ function connectToHost(hostId) {
                     loadGame(data, currentMenu.selectedPlayer)
                 } else {
                     startGame(data.players, data.settings)
-                    players[data.index].playing = true
-                }
+                    if (data.index !== undefined) players[data.index].playing = true
+                    turn = data.turn
+                    players = riggedShuffle(players, data.riggedShuffle)
+                    logger.log([{ color: players[turn].info.color, text: players[turn].name + "s" }, { color: "black", text: " tur" }]);
+            }
             }
             if (type === "throwDices") {
                 board.rollDice(data.dice1, data.dice2)
@@ -405,15 +237,25 @@ function connectToHost(hostId) {
                 delete p
             }
 
-            if (type === "sortPlayers") players = riggedShuffle(players, data)
-            if (type === "turn") turn = data
             // Lobby
+            if (type === "spectatorValidation") {
+                if (data) return
+                let newState = !currentMenu.spectatorButton.selected
+                player.colorButton.disabled = newState
+                player.textInput.htmlElement.disabled = newState
+                player.textInput.htmlElement.style.backgroundColor = newState ? "" : "white"
+            }
+            if (type === "deselect") {
+                player.confirmButton.onClick(true)
+            }
             if (type === "select") {
                 if (!data.valid) {
                     if (data.reason === "Color is already taken") player.selectedColor = -1
-                    player.confirmButton.onClick()
                     alert(data.reason)
-                } else player.textInput.htmlElement.value = data.name
+                } else {
+                    player.textInput.htmlElement.value = data.name
+                    player.confirmButton.onClick(true)
+                }
             }
             if (type === "selectedColors") {
                 if (data.includes(player.selectedColor)) player.selectedColor = -1
@@ -425,22 +267,19 @@ function connectToHost(hostId) {
                 }
             }
             if (type === "players") {
-                const players = data.players
-                
                 // Players
-                currentMenu.players.splice(1)
-                currentMenu.initPlayers(players.length)
+                let players = data.players
+                let start = players.length === 8 ? 0 : 1
 
-                for (let i = 1; i < players.length + 1; i++) {
-                    let player = currentMenu.players[i]
-                    let newPlayer = players[i - 1]
-                    player.textInput.htmlElement.value = newPlayer.name
-                    player.selectedColor = newPlayer.color
-                    player.textInput.htmlElement.setAttribute("placeHolder", newPlayer.placeHolder)
-                    player.textInput.htmlElement.style.backgroundColor = newPlayer.selected ? "" : "white"
-                    if (player.selected) player.confirmButton.onClick(true)
+                if (currentMenu.spectatorButton.disabled) {
+                    currentMenu.players[0].textInput.htmlElement.value = ""
+                    currentMenu.players[0].selectedColor = -1
                 }
-                if (currentMenu.currentMenu) player.colorButton.onClick() // Resize the width on htmlElements
+
+                currentMenu.players.splice(start)
+                currentMenu.initPlayers(players.length)
+                currentMenu.spectatorButton.disabled = !start
+                loadPlayers(players, start)
 
                 // Settings
                 currentMenu.settings = []
@@ -460,10 +299,11 @@ function connectToHost(hostId) {
                     currentMenu.settings[index].disableDisabledTexture = true
                 })
             }
+            return
 
             if (type === "selectPlayer") {
                 let player = currentMenu.players[data.index]
-                if (!player) return // Needed if it players has not loaded yet
+                if (!player) return // Needed if players has not loaded yet
 
                 player.confirmButton.image = data.selected ? images.buttons.no : images.buttons.yes
                 player.confirmButton.disabled = ((data.selected || currentMenu.selectedPlayer !== -1) && data.index !== currentMenu.selectedPlayer)
@@ -476,6 +316,23 @@ function connectToHost(hostId) {
                 const players = data.players
                 currentMenu.players = []
                 currentMenu.initPlayers(players)
+
+                //Object.values(data.settings).forEach((value, i) => {
+                //    let length = settings.length
+                //    let mainSetting = settings[i]
+                //    let htmlSetting
+
+                //    if (mainSetting.type === "select") {
+                //        htmlSetting = new Button({ x: 450, y: splitPoints(length, canvas.height, 35, i), w: 500, h: 35, selectButton: true, text: mainSetting.title, textSize: c.getFontSize(mainSetting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting, () => sendPlayers(this.peer))
+                //        htmlSetting.selected = value
+                //    } else if (mainSetting.type === "slider") {
+                //        htmlSetting = new Slider({ x: 450, y: splitPoints(length, canvas.height, 35, i), w: 500, h: 35, from: mainSetting.from, to: mainSetting.to, unit: mainSetting.unit, steps: mainSetting.steps, beginningText: mainSetting.title }, () => sendPlayers(this.peer))
+                //        htmlSetting.percentage = value / (mainSetting.to - mainSetting.from)
+                //        htmlSetting.value = value
+                //    }
+                //    htmlSetting.disabled = true
+                //    this.settings.push(htmlSetting)
+                //})
             }
             if (type === "changeLobby") currentMenu = new OnlineJoinLobby(false, { id: hostId, client: peer })
         })
@@ -490,7 +347,7 @@ function connectToHost(hostId) {
 }
 
 window.onload = () => {
-    let id = new URLSearchParams(window.location.search).get("lobbyId")
+    let id = new URLSearchParams(window.location.search).get("LobbyId")
     if (id) currentMenu = new OnlineLobby(false, id)
 }
 
