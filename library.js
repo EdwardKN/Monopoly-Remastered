@@ -314,7 +314,7 @@ async function loadData() {
     await loadSpriteSheet();
     await loadImages();
 
-    soundEffects = new Sounds("/sounds/effects", soundEffects)
+    soundEffects = new Sounds("./sounds/effects", soundEffects)
 }
 
 var soundEffects = {
