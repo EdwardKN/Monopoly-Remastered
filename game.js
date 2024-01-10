@@ -268,7 +268,7 @@ class LoadGames {
                 self.gameButtons[index - 1].onClick();
             }
             if (JSON.parse(localStorage.getItem(self.key)).length == 0) {
-                currentMenu = new MainMenu();
+                currentMenu = online ? new PublicGames() : new MainMenu();
             }
         })
 
@@ -393,6 +393,7 @@ class OnlineLobby {
         setTimeout(() => {
             this.spectatorButton = createSpectatorButton(0)
             this.spectatorButton.selected = true
+            this.spectatorButton.disabled = !this.hosting
         }, 10)
     }
     initPlayers(amount) {
@@ -790,7 +791,7 @@ class ColorSelector {
                 })
 
                 if (currentMenu.hosting) sendMessageToAll("selectedColors", currentMenu.selectedColors)
-                else sendMessage(currentMenu.peer.connection, "colorChange", current)
+                else if (currentMenu.peer) sendMessage(currentMenu.peer.connection, "colorChange", current)
                 currentMenu.prev = current
             }))
             this.colorButtons[i].disabled = !this.colorButtons[i].selected && this.selectedColors?.length > 0 && (this.selectedColors?.indexOf(i) != -1) && i !== this.player.selectedColor

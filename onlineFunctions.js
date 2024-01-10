@@ -55,7 +55,7 @@ function sendPlayers(settings = {}) {
 
 function waitForOpenConnection(client, callback) {
     const checkConnection = () => {
-        if (client.connection.open) callback()
+        if (client.connection.open) callback(client.connection)
         else requestAnimationFrame(checkConnection)
     }
 

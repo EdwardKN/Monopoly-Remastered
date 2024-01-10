@@ -12,18 +12,15 @@ function createHost() {
             // Connnection
             peer.clients[id] = { connection: peer.connect(id) }
 
-            waitForOpenConnection(peer.clients[id], () => {
-                if (currentMenu instanceof OnlineJoinLobby) sendMessage(peer.clients[id].connection, "changeLobby")
-                else sendMessage(peer.clients[id].connection, "selectedColors", currentMenu.selectedColors)
+            waitForOpenConnection(peer.clients[id], (connection) => {
+                if (currentMenu instanceof OnlineJoinLobby) sendMessage(connection, "changeLobby")
+                else sendMessage(connection, "selectedColors", currentMenu.selectedColors)
+                sendMessage(connection, "connectionStarted")
                 sendPlayers()
             })
 
             if (currentMenu instanceof OnlineJoinLobby) return
 
-            //console.log("Id: ", id, " connected")
-            // HTML
-            const idx = Object.entries(peer.clients).length
-            const player = currentMenu.players[idx]
         })
 
         x.on('close', () => {
@@ -150,6 +147,7 @@ function createHost() {
 
 function connectToHost(hostId) {
     const peer = new Peer(generateId(6), { debug: 1 })
+    //currentMenu.spectatorButton.disabled = true
 
     peer.on("open", id => {
         peer.connection = peer.connect(hostId)
@@ -178,6 +176,7 @@ function connectToHost(hostId) {
             console.log(response)
 
             // General
+            if (type === "connectionStarted") currentMenu.spectatorButton.disabled = false
             if (type === "ready") board.ready = true
             if (type === "saveCardId") board.cardId = data
             if (type === "closeCard") currentMenu?.okayButton?.onClick(false)
