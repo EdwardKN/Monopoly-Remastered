@@ -417,7 +417,7 @@ class OnlineLobby {
                                     }
                                 } else {
                                     self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30 - 40, 82 + 48 * (i + 1), e, self.selectedColors) : undefined;
-                                    
+
                                     if (self.currentMenu) {
                                         if (self.players[index + 1]) self.players[index + 1].textInput.w = 230;
                                         if (self.players[index + 2]) self.players[index + 2].textInput.w = 230;
@@ -430,7 +430,7 @@ class OnlineLobby {
                 }
             );
             let player = this.players[i]
-            
+
             player.client = undefined
             player.textInput.htmlElement.disabled = true
             player.textInput.htmlElement.style.backgroundColor = ""
@@ -968,7 +968,7 @@ class Board {
         c.drawText("Just nu:" + players[turn].name, canvas.width / 2 + 170, canvas.height - 10, c.getFontSize("Just nu:" + players[turn].name, 220, 30), "center", players[turn].info.color)
 
         if (this.settings.giveAllTaxToParking) {
-            c.drawText(this.money + "kr", canvas.width / 2, 60, 20, "center", "gold")
+            c.drawText(this.money + "kr", canvas.width / 2, 220, 20, "center", "gold")
         }
 
         this.dices.draw();
@@ -976,7 +976,7 @@ class Board {
         this.nextPlayerButton.disabled = players[turn].money < 0;
 
 
-        if (this.dices.hidden && !currentMenu && (this.playerIsWalkingTo == false)) {
+        if (this.dices.hidden && !currentMenu && (this.playerIsWalkingTo === false)) {
             this.menuButton.update();
             this.muteButton.update();
             if (players[turn].playing && board.ready) {
@@ -1289,7 +1289,9 @@ class BuyableProperty extends BoardPiece {
                     cropW: 24,
                     cropH: 24,
                     cropX: this.houseType * 24,
-                    cropY: 0
+                    cropY: 0,
+                    offsetX: boardOffsetX,
+                    offsetY: boardOffsetY
                 });
             }
         } else {
@@ -1301,7 +1303,9 @@ class BuyableProperty extends BoardPiece {
                 cropW: 24,
                 cropH: 24,
                 cropX: (this.houseType % 2) * 24,
-                cropY: 0
+                cropY: 0,
+                offsetX: boardOffsetX,
+                offsetY: boardOffsetY
             });
         }
     }
@@ -1454,6 +1458,9 @@ class Auction {
         if ((this.playerlist[this.turn].money < this.auctionMoney + 2) || this.playerlist[this.turn].money < this.minimumPay) {
             this.leaveAuction();
         };
+
+        logger.log([{ text: "En auktion har startat i ", color: "black" }, { text: board.boardPieces[cardId].info.name, color: board.boardPieces[cardId].info.color }])
+
     }
 
     startAuction() {
@@ -1470,10 +1477,14 @@ class Auction {
         if (this.auctionMoney >= this.minimumPay) {
             this.playerlist[this.turn].hasLaidOver = true;
         }
+        logger.log([{ text: this.playerlist[this.turn].name, color: this.playerlist[this.turn].info.color }, { text: " la ett bud på " + this.auctionMoney + "kr", color: "black" }])
+
         this.nextPlayer();
     };
     leaveAuction(request = true) {
         if (requestAction("auctionLeave", undefined, request)) return;
+
+        logger.log([{ text: this.playerlist[this.turn].name, color: this.playerlist[this.turn].info.color }, { text: " har lämnat auktionen ", color: "black" }])
 
         this.playerlist.splice(this.turn, 1);
         if (this.playerlist.length == 1 && this.playerlist[0].hasLaidOver) {
@@ -1496,6 +1507,8 @@ class Auction {
     }
     winAuction(winner) {
         let playerIndex = players.indexOf(winner);
+
+        logger.log([{ text: winner.name, color: winner.info.color }, { text: " vann auktionen för " + this.auctionMoney + "kr", color: "black" }])
 
         if (this.auctionMoney >= this.minimumPay) {
             players[playerIndex].money -= this.auctionMoney;
@@ -1941,7 +1954,7 @@ class PropertyCard {
             this.sellButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 0), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj" }, images.buttons.sellbutton, function () { self.sellThis() })
             this.mortgageButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 1), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Inteckna" }, images.buttons.mortgage, function () { board.boardPieces[self.n].mortgage() })
             this.downgradeButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 2), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Sälj Hus" }, images.buttons.arrowdown, function (request = true) {
-                logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " sålde hus i" + board.boardPieces[e.n].info.name, color: "black" }])
+                logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " sålde hus i" + board.boardPieces[self.n].info.name, color: "black" }])
                 if (self.downgradeInfo?.index) {
                     if (requestAction("downgradeProperty", self.n, request)) return
                     board.boardPieces[self.downgradeInfo.index].downgrade()
@@ -1968,7 +1981,7 @@ class PropertyCard {
                 }
             })
             this.upgradeButton = new Button({ x: canvas.width / 2 - 128 + 11 + splitPoints(4, 234, 40, 3), y: canvas.height / 2 + 100, w: 40, h: 40, hoverText: "Köp Hus" }, images.buttons.arrowup, function (request = true) {
-                logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " köpte hus i" + board.boardPieces[e.n].info.name, color: "black" }])
+                logger.log([{ text: players[turn].name, color: players[turn].info.color }, { text: " köpte hus i" + board.boardPieces[self.n].info.name, color: "black" }])
                 if (self.upgradeInfo?.index) {
                     if (requestAction("upgradeProperty", self.n, request)) return
                     board.boardPieces[self.upgradeInfo.index].upgrade(board instanceof OnlineBoard)
@@ -2270,6 +2283,7 @@ class Player {
         let direction = Math.sign(newPos);
         newPos %= 40;
         let self = this;
+        board.playerIsWalkingTo = newPos;
 
         this.animateSteps(Math.abs(newPos), direction, function (steps) {
             if (board.boardPieces[self.pos]?.step) {
