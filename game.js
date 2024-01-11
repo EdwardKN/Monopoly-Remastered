@@ -33,7 +33,7 @@ function exitGame(online = false, client = false) {
 }
 
 function startGame(playersToStartGameWith, settings) {
-    if (currentMenu instanceof LobbyMenu) window.onbeforeunload = function() { saveGame() }
+    if (currentMenu instanceof LobbyMenu) window.onbeforeunload = function () { saveGame() }
     board = currentMenu instanceof LobbyMenu ? new Board() : new OnlineBoard(currentMenu.hosting, currentMenu.peer);
     board.settings = settings;
 
@@ -1537,8 +1537,9 @@ class Auction {
             if (this.playerlist[this.turn]?.info?.img) {
                 c.drawImageFromSpriteSheet(images.players[this.playerlist[this.turn].info.img], { x: canvas.width / 2 - 220, y: canvas.height / 2 - 90 })
             }
-
-            c.drawText(this.playerlist[this.turn].name, canvas.width / 2 - 190, canvas.height / 2 - 50, c.getFontSize(this.playerlist[this.turn].name, 180, 40), "left", this.playerlist[this.turn].info.color)
+            if (this.playerlist[this.turn]?.name) {
+                c.drawText(this.playerlist[this.turn].name, canvas.width / 2 - 190, canvas.height / 2 - 50, c.getFontSize(this.playerlist[this.turn].name, 180, 40), "left", this.playerlist[this.turn].info.color)
+            }
 
             c.drawText(this.auctionMoney + "kr", canvas.width / 2 - 118, canvas.height / 2, 30, "center", !this.started ? "black" : (this.auctionMoney < this.minimumPay) ? "red" : "green")
         }
