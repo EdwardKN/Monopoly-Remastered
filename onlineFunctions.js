@@ -43,6 +43,8 @@ function sendPlayers(settings = {}) {
     }
 
     for (let client of Object.values(peer.clients)) {
+        if (client === updatedClient) continue
+        
         let data = data_players.filter((_, j) => peer.clients[currentMenu.players[j].client] !== client)
         sendMessage(client.connection, currentMenu instanceof OnlineJoinLobby ? "existingPlayers" : "players", {
             players: data,
@@ -95,7 +97,6 @@ function createConfirmButton(i) {
         y: 82 + 48 * i,
         w: 40,
         h: 40,
-        disabled: true,
         disableDisabledTexture: true
     }, images.buttons.yes, (forced = false) => {
         if (currentMenu.currentMenu) {

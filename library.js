@@ -169,6 +169,8 @@ class TextInput {
         this.htmlElement.style.zIndex = 100;
         this.htmlElement.style.fontFamily = "Verdanai";
         this.htmlElement.placeholder = this.placeHolder != undefined ? this.placeHolder : "";
+        this.htmlElement.disabled = settings?.disabled ?? false
+        this.htmlElement.style.backgroundColor = settings?.disableDisabledTexture ? "white" : "" 
 
         textInputs.push(this);
     }
@@ -200,7 +202,7 @@ class Button {
         this.image = image;
         this.invertedHitbox = settings?.invertedHitbox;
         this.disableHover = settings?.disableHover;
-        this.disabled = false;
+        this.disabled = settings?.disabled ?? false;
         this.mirrored = settings?.mirrored;
         this.hoverText = (settings?.hoverText == undefined ? "" : settings.hoverText)
         this.disableDisabledTexture = settings?.disableDisabledTexture;

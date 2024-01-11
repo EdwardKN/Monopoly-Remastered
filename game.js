@@ -250,7 +250,7 @@ class LoadGames {
         this.startButton = new Button({ x: canvas.width / 4 - 194 / 2, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, function () {
             let game = self.games[self.gameButtons.indexOf(self.selected)]
             if (!online) loadGame(game)
-            else currentMenu = new OnlineJoinLobby(true, { game: game })
+            else currentMenu = new OnlineJoinLobby(true, game)
         })
 
         this.deleteButton = new Button({ x: canvas.width / 4 + 194 / 2 + 20, y: canvas.height - 60, w: 40, h: 40, hoverText: "Radera sparfil" }, images.buttons.sellbutton, function () {
@@ -494,45 +494,97 @@ class OnlineLobby {
 }
 
 class OnlineJoinLobby {
-    constructor(hosting) {
+    constructor(hosting, game) {
+        this.hosting = hosting
         this.players = []
         this.settings = []
         this.selectedPlayer = -1
 
-        this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, function () { currentMenu = new MainMenu() });
-        this.startButton = new Button({ x: 10 + 100, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, {})
+        this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, () => currentMenu = new PublicGames());
+
+        if (this.hosting) {
+            this.peer = createHost()
+            this.startButton = new Button({ x: 10, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, {})
+            this.initSettings(JSON.parse(game.board).settings)
+            this.initPlayers(game.players.map(p => JSON.parse(p)))            
+        } else this.peer = currentMenu.peer
+
+        this.playersPlaying = this.players.length
+    }
+
+    initSettings(_settings) {
+        Object.values(_settings).forEach((value, i) => {
+            let length = settings.length
+            let mainSetting = settings[i]
+            let htmlSetting
+
+            if (mainSetting.type === "select") {
+                htmlSetting = new Button({ x: 450, y: splitPoints(length, canvas.height, 35, i), w: 500, h: 35, selectButton: true, text: mainSetting.title, textSize: c.getFontSize(mainSetting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting)
+                htmlSetting.selected = value
+            } else if (mainSetting.type === "slider") {
+                htmlSetting = new Slider({ x: 450, y: splitPoints(length, canvas.height, 35, i), w: 500, h: 35, from: mainSetting.from, to: mainSetting.to, unit: mainSetting.unit, steps: mainSetting.steps, beginningText: mainSetting.title })
+                htmlSetting.percentage = value / (mainSetting.to - mainSetting.from)
+                htmlSetting.value = value
+            }
+            htmlSetting.disabled = true
+            this.settings.push(htmlSetting)
+        })
+    }
+
+    initPlayers(playersData) {
+        for (let i = 0; i < playersData.length; i++) {
+            let playerData = playersData[i]
+            
+            this.players.push({
+                textInput: new TextInput({ x: 10, y: 80 + 48 * i, w: 300, h: 45, maxLength: 15, textSize: 40, disabled: true, disableDisabledTexture: true }),
+                colorButton: new Button({ x: 320, y: 82 + 48 * i, w: 40, h: 40, disabled: true, disableDisabledTexture: true }, images.playercolorbuttons["playercolorbutton" + playerData.color]),
+                confirmButton: new Button({ x: 370, y: 82 + 48 * i, w: 40, h: 40, disableDisabledTexture: true }, playerData.selected ? images.buttons.no : images.buttons.yes, (forced = false) => {
+                    let state = player.confirmButton.image === images.buttons.yes
+                    if (!this.hosting && !forced) { sendMessage(this.peer.connection, "requestPlayer", { index: i, selected: state }); return }
+
+                    this.selectedPlayer = state ? i : -1
+                    player.confirmButton.image = state ? images.buttons.no : images.buttons.yes
+                    player.textInput.htmlElement.style.backgroundColor = state ? "" : "white"
+                    if (state) currentMenu.players.forEach((p, j) => p.confirmButton.disabled = j !== i)
+                    else currentMenu.players.forEach((p => p.confirmButton.disabled = p.confirmButton.image === images.buttons.no))
+
+                    if (this.hosting) sendPlayers({ selected: state })
+                }),
+                selectedColor: playerData.color
+            })
+            let player = this.players[i]
+
+            player.textInput.htmlElement.value = playerData.name
+            player.textInput.htmlElement.style.backgroundColor = playerData.selected ? "" : "white"
+            player.confirmButton.disabled = (playerData.selected || this.selectedPlayer !== -1) && (i !== this.selectedPlayer)
+        }
     }
 
     draw() {
-        let self = this;
         c.drawImageFromSpriteSheet(images.menus.lobbymenu);
-        this.backButton.update();
-        this.selectedColors = this.players.map(e => e.selectedColor).filter(e => e != -1);
+        this.backButton.update()
         this.players.forEach(player => {
-            player.textInput.draw();
-            player.colorButton.image = images.playercolorbuttons[(player.selectedColor == -1 ? "unselected" : "playercolorbutton" + (player.selectedColor == 0 ? "" : player.selectedColor + 1))]
-            if (self.currentMenu?.hover) {
-                player.colorButton.draw();
-                player.botButton.draw();
-
-            } else {
-                player.colorButton.update();
-                player.botButton.update();
-            }
+            player.textInput.draw()
+            player.colorButton.draw()
+            player.confirmButton.update()
         })
-        this.currentMenu?.draw();
+        this.settings?.forEach(setting => setting.update())
 
-        let readyPlayers = this.players.filter(e => e.textInput.value.length > 1);
+        if (!this.hosting) return
+
+        let readyPlayers = this.players.filter(e => e.textInput.value.length > 1)
         this.startButton.disabled = (readyPlayers.length < 2 || hasDuplicates(readyPlayers.map(e => e.textInput.value)))
-        this.startButton.update();
-        this.settings.forEach((setting, index) => {
-            if (settings[index].needed) {
-                setting.disabled = !this.settings[settings.map(e => e.variable).indexOf(settings[index].needed)].selected;
-                setting.selected = !this.settings[settings.map(e => e.variable).indexOf(settings[index].needed)].selected ? false : setting.selected
-            }
-            setting.update()
-        });
+        this.startButton.update()
 
+        c.drawText("Id: " + this.peer.id, 250, canvas.height - 30, 30)
+        if (detectCollision(240, canvas.height - 60, 180, 40, mouse.x, mouse.y, 1, 1)) {
+            c.drawText("Id: " + this.peer.id, 250, canvas.height - 30, 30, "left", "blue")
+            if (mouse.down) {
+                mouse.down = false
+                //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.peer.id}`)
+                navigator.clipboard.writeText(this.peer.id)
+            }
+        }
     }
 }
 

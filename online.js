@@ -118,21 +118,15 @@ function createHost() {
             }
 
             // Online Join Lobby
-            if (type === "choosePlayer") {
+            if (type === "requestPlayer") {
                 let player = currentMenu.players[data.index]
-                if (!data.selected) {
-                    player.confirmButton.image = images.buttons.yes
-                    player.textInput.htmlElement.style.backgroundColor = "white"
-                    player.confirmButton.disabled = currentMenu.selectedPlayer !== -1
-                    sendMessageToAll("selectPlayer", data, [client])
-                } else if (currentMenu.players[data.index].textInput.htmlElement.style.backgroundColor === "") {
-                    sendMessage(client.connection, "invalidPlayer", data.index)
-                } else {
-                    player.confirmButton.image = images.buttons.no
-                    player.textInput.htmlElement.style.backgroundColor = ""
-                    player.confirmButton.disabled = true
-                    sendMessageToAll("selectPlayer", data, [client])
-                }
+                if (data.selected && player.confirmButton.image === images.buttons.no) { sendMessage(client.connection, "invalidPlayer"); return }
+                
+                player.confirmButton.image = data.selected ? images.buttons.no : images.buttons.yes
+                player.textInput.htmlElement.style.backgroundColor = data.selected ? "" : "white"
+                player.confirmButton.disabled = data.selected || currentMenu.selectedPlayer !== -1
+                sendPlayers({ client: client })
+                sendMessage(client.connection, "selectPlayer", data.index)
             }
         })
     })
@@ -147,7 +141,6 @@ function createHost() {
 
 function connectToHost(hostId) {
     const peer = new Peer(generateId(6), { debug: 1 })
-    //currentMenu.spectatorButton.disabled = true
 
     peer.on("open", id => {
         peer.connection = peer.connect(hostId)
@@ -174,7 +167,7 @@ function connectToHost(hostId) {
             const type = response.type
             const data = response.data
             console.log(response)
-
+            
             // General
             if (type === "connectionStarted") if (currentMenu.spectatorButton) currentMenu.spectatorButton.disabled = false
             if (type === "ready") board.ready = true
@@ -299,43 +292,31 @@ function connectToHost(hostId) {
                 })
             }
 
-
-            if (type === "changeLobby") currentMenu = new OnlineJoinLobby(false, { id: hostId, client: peer })
-            return
-
-            if (type === "selectPlayer") {
-                let player = currentMenu.players[data.index]
-                if (!player) return // Needed if players has not loaded yet
-
-                player.confirmButton.image = data.selected ? images.buttons.no : images.buttons.yes
-                player.confirmButton.disabled = ((data.selected || currentMenu.selectedPlayer !== -1) && data.index !== currentMenu.selectedPlayer)
-                player.textInput.htmlElement.style.backgroundColor = data.selected ? "" : "white"
-            }
-            if (type === "invalidPlayer") {
-                currentMenu.players[data].confirmButton.onClick(true)
-            }
+            
+            if (type === "changeLobby") currentMenu = new OnlineJoinLobby(false)
             if (type === "existingPlayers") {
                 const players = data.players
                 currentMenu.players = []
                 currentMenu.initPlayers(players)
 
-                //Object.values(data.settings).forEach((value, i) => {
-                //    let length = settings.length
-                //    let mainSetting = settings[i]
-                //    let htmlSetting
+                Object.values(data.settings).forEach((value, i) => {
+                    let mainSetting = settings[i]
+                    let htmlSetting
 
-                //    if (mainSetting.type === "select") {
-                //        htmlSetting = new Button({ x: 450, y: splitPoints(length, canvas.height, 35, i), w: 500, h: 35, selectButton: true, text: mainSetting.title, textSize: c.getFontSize(mainSetting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting, () => sendPlayers(this.peer))
-                //        htmlSetting.selected = value
-                //    } else if (mainSetting.type === "slider") {
-                //        htmlSetting = new Slider({ x: 450, y: splitPoints(length, canvas.height, 35, i), w: 500, h: 35, from: mainSetting.from, to: mainSetting.to, unit: mainSetting.unit, steps: mainSetting.steps, beginningText: mainSetting.title }, () => sendPlayers(this.peer))
-                //        htmlSetting.percentage = value / (mainSetting.to - mainSetting.from)
-                //        htmlSetting.value = value
-                //    }
-                //    htmlSetting.disabled = true
-                //    this.settings.push(htmlSetting)
-                //})
+                    if (mainSetting.type === "select") {
+                        htmlSetting = new Button({ x: 450, y: splitPoints(settings.length, canvas.height, 35, i), w: 500, h: 35, selectButton: true, text: mainSetting.title, textSize: c.getFontSize(mainSetting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting)
+                        htmlSetting.selected = value
+                    } else if (mainSetting.type === "slider") {
+                        htmlSetting = new Slider({ x: 450, y: splitPoints(settings.length, canvas.height, 35, i), w: 500, h: 35, from: mainSetting.from, to: mainSetting.to, unit: mainSetting.unit, steps: mainSetting.steps, beginningText: mainSetting.title })
+                        htmlSetting.percentage = value.percentage
+                        htmlSetting.value = value.value
+                    }
+                    htmlSetting.disabled = true
+                    currentMenu.settings.push(htmlSetting)
+                })
             }
+            if (type === "selectPlayer") currentMenu.players[data].confirmButton.onClick(true)
+            if (type === "invalidPlayer") alert("Player is already taken")
         })
     })
 
