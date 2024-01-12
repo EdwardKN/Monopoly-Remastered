@@ -974,10 +974,13 @@ class OnlineBoard extends Board {
         this.readyPlayers = 0
         this.peer = peer
         this.cardId
-
-        if (this.hosting) window.onbeforeunload = function () {
+        console.log(currentMenu)
+        if (this.hosting) {
+            this.spectators = 1 + Object.entries(this.peer.clients).length - currentMenu.playersPlaying
+            window.onbeforeunload = function () {
             Object.values(board.peer.clients).forEach(client => client.connection.close())
             saveGame(true)
+            }
         }
 
         this.rollDiceButton = new Button({ x: canvas.width / 2 - 123 + boardOffsetX, y: canvas.height / 2 + boardOffsetY, w: 246, h: 60 }, images.buttons.rolldice, () => {
