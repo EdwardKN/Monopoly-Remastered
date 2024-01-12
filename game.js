@@ -29,7 +29,7 @@ function exitGame(online = false, client = false) {
         players = [];
         currentMenu = online ? new PublicGames() : new MainMenu();
         window.onbeforeunload = undefined;
-    }, 100)
+    }, 30)
 }
 
 function startGame(playersToStartGameWith, settings) {
@@ -98,8 +98,11 @@ function saveGame(online = false) {
     let games = JSON.parse(localStorage.getItem(key) ?? "[]")
 
     delete board.peer
+    let tmpBoard = JSON.parse(JSON.prune(board, 4));
+    tmpBoard.boardPieces = undefined;
     let game = {
-        board: JSON.prune(board),
+        board: JSON.prune(tmpBoard, 6),
+        boardPieces: JSON.prune(board.boardPieces),
         saveVersion: latestSaveVersion,
         players: players.map(e => JSON.prune(e, 6)),
         turn: turn,
@@ -127,6 +130,7 @@ function saveGame(online = false) {
 
 function loadGame(gameToLoad, index) {
     let boardToLoad = JSON.parse(gameToLoad.board)
+    let boardPiecesToLoad = JSON.parse(gameToLoad.boardPieces);
     let local = currentMenu instanceof LoadGames
     if (local) window.onbeforeunload = saveGame
 
@@ -160,7 +164,7 @@ function loadGame(gameToLoad, index) {
     }
     if (board.playerIsWalkingTo) players[turn].teleportTo(board.playerIsWalkingTo)
     board.boardPieces.forEach((e, i) => {
-        board.boardPieces[i].earned = boardToLoad.boardPieces[i].earned;
+        board.boardPieces[i].earned = boardPiecesToLoad[i].earned;
     })
 
     logger = new Logger();
@@ -245,7 +249,7 @@ class MainMenu {
     }
 }
 class LoadGames {
-    constructor(online = false) {
+    constructor(online = false, selectedId) {
         let self = this;
         this.key = online ? "monopolyOnlineGames" : "monopolyGames"
 
@@ -281,6 +285,7 @@ class LoadGames {
 
         this.image = new Image();
         this.selected = undefined;
+        this.selectedIdForStart = selectedId;
 
         this.init()
 
@@ -304,6 +309,16 @@ class LoadGames {
                 })
             }));
         })
+        if (this.selectedIdForStart !== undefined) {
+            this.games.forEach((e, i) => {
+                console.log(e.id)
+
+                if (e.id == this.selectedIdForStart) {
+                    this.gameButtons[i].onClick()
+                    this.gameButtons[i].selected = true;
+                }
+            })
+        }
     }
     draw() {
         c.drawImageFromSpriteSheet(images.menus.lobbymenu);
@@ -330,17 +345,19 @@ class StatMenu {
     constructor(game) {
         this.game = game;
         this.game.players = this.game.players.map(e => JSON.parse(e));
-        this.game.board = JSON.parse(this.game.board);
+        this.game.boardPieces = JSON.parse(this.game.boardPieces);
         this.game.players.forEach(player => {
             player.ownedPlaces.forEach(place => {
-                this.game.board.boardPieces[place.n].owner = player;
+                this.game.boardPieces[place.n].owner = player;
             })
         })
         this.stats = StatTypes;
         this.currentStat = 0;
         this.order = -1;
         this.scroll = 0;
-        this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, function () { currentMenu = new LoadGames() });
+        this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, () => {
+            currentMenu = new LoadGames(false, this.game.id);
+        });
 
         this.sortOrder = new Button({ x: canvas.width - 50, y: 20, w: 40, h: 40, rotation: 180 }, images.buttons.arrowup, () => {
             this.sortOrder.rotation += 180;
@@ -360,7 +377,6 @@ class StatMenu {
             this.currentStat = Math.abs(this.currentStat);
             this.scroll = 0;
         });
-        console.log(this.game);
     }
     draw() {
         c.drawImageFromSpriteSheet(images.menus.lobbymenu);
@@ -375,9 +391,9 @@ class StatMenu {
                 c.drawText(player[this.stats[this.currentStat].variable[1]] + this.stats[this.currentStat].unit, 10 + 340, 120 + index * 55 + this.scroll, 50, "left")
             })
         } else if (this.stats[this.currentStat].variable[0] == "boardpiece") {
-            let filteredboardpieces = this.game.board.boardPieces.filter((e) => e.info?.name && e.info?.name !== "Start" && e.info?.name !== "fängelse" && e.info?.name !== "Fri parkering" && e.info?.name !== "Gå till finkan" && e.info?.name !== "Chans" && e.info?.name !== "Allmänning")
+            let filteredboardpieces = this.game.boardPieces.filter((e) => e.info?.name && e.info?.name !== "Start" && e.info?.name !== "fängelse" && e.info?.name !== "Fri parkering" && e.info?.name !== "Gå till finkan" && e.info?.name !== "Chans" && e.info?.name !== "Allmänning")
             this.scroll = this.scroll.clamp(-((filteredboardpieces.length - 8) * 55 - 20), 0)
-            this.game.board.boardPieces.sort((a, b) => this.order * a[this.stats[this.currentStat].variable[1]] - this.order * b[this.stats[this.currentStat].variable[1]])
+            this.game.boardPieces.sort((a, b) => this.order * a[this.stats[this.currentStat].variable[1]] - this.order * b[this.stats[this.currentStat].variable[1]])
             filteredboardpieces.forEach((boardPiece, index) => {
                 c.drawText(boardPiece.info?.name, 10, 120 + index * 55 + this.scroll, c.getFontSize(boardPiece.info?.name, 325, 50), "left", boardPiece.info?.color || "black", { color: "black", blur: 10 })
 
@@ -898,10 +914,10 @@ class SmallMenu {
                 let games = (JSON.parse(localStorage.getItem("monopolyGames")) || []).map(e => JSON.parse(e))
                 games = games.sort((a, b) => b.currentTime - a.currentTime)
                 let game = games[0];
-                console.log(game)
                 currentMenu = new StatMenu(game);
 
-            }, 200);
+            }, 60);
+            currentMenu = undefined;
 
         });
         this.exitButton = new Button({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 3), y: canvas.height / 2 + 25, w: 40, h: 40, hoverText: "Återvänd till Huvudmenyn" }, images.buttons.yes, function () {
@@ -932,6 +948,7 @@ class SmallMenu {
     }
     draw() {
         c.drawImageFromSpriteSheet(images.menus.exitmenu, { x: canvas.width / 2 - 128, y: canvas.height / 2 - 128 })
+        this.statButton.disabled = (board instanceof OnlineBoard);
         this.leaveButton.update();
         this.statButton.update();
         this.exitButton.update();
@@ -1468,7 +1485,6 @@ class BuyableProperty extends BoardPiece {
         currentMenu = new Bankcheck(players.indexOf(this.owner), turn, this.info.rent[this.level] * ((colorGroup.length == colorGroup.filter(e => e.owner == this.owner).length && board.settings.doublePay) ? 2 : 1), "Hyra")
         players[turn].lastPayment = this.owner;
         this.earned += this.info.rent[this.level] * ((colorGroup.length == colorGroup.filter(e => e.owner == this.owner).length && board.settings.doublePay) ? 2 : 1);
-        console.log(this.earned, this)
     }
 }
 class Station extends BuyableProperty {
