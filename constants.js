@@ -1,4 +1,4 @@
-const latestSaveVersion = 3;
+const latestSaveVersion = 4;
 
 const StatTypes = [
     {
