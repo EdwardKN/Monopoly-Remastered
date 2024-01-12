@@ -377,9 +377,14 @@ class OnlineLobby {
                     this.settings[index].value = setting.start
                 }
             })
+            this.spectatorButton = createSpectatorButton(0)
+            this.spectatorButton.selected = true
         } else {
             if (createPeer) this.peer = connectToHost(id)
             this.initPlayers(1)
+            this.spectatorButton = createSpectatorButton(0)
+            this.spectatorButton.selected = true
+            this.spectatorButton.disabled = !this.hosting
         }
 
         this.selectedColors = []
@@ -389,12 +394,6 @@ class OnlineLobby {
             currentMenu = new PublicGames()
         })
         this.prev = -1
-
-        setTimeout(() => {
-            this.spectatorButton = createSpectatorButton(0)
-            this.spectatorButton.selected = true
-            this.spectatorButton.disabled = !this.hosting
-        }, 10)
     }
     initPlayers(amount) {
         let self = this;
@@ -485,9 +484,6 @@ class OnlineLobby {
                 mouse.down = false
                 //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.peer.id}`)
                 navigator.clipboard.writeText(this.peer.id)
-
-                //currentMenu.players[0].textInput.htmlElement.value = "Player 1" // TEMP
-                //setTimeout(() => { currentMenu.players[0].confirmButton.onClick() }, 100) // TEMP
             }
         }
     }
@@ -500,7 +496,11 @@ class OnlineJoinLobby {
         this.settings = []
         this.selectedPlayer = -1
 
-        this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, () => currentMenu = new PublicGames());
+        this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, () => {
+            if (this.hosting) Object.values(this.peer.clients).forEach(client => client.connection.close())
+            else this.peer.connection.close()
+            currentMenu = new PublicGames()
+        })
 
         if (this.hosting) {
             this.peer = createHost()
@@ -572,8 +572,7 @@ class OnlineJoinLobby {
 
         if (!this.hosting) return
 
-        let readyPlayers = this.players.filter(e => e.textInput.value.length > 1)
-        this.startButton.disabled = (readyPlayers.length < 2 || hasDuplicates(readyPlayers.map(e => e.textInput.value)))
+        this.startButton.disabled = currentMenu.players.every(p => p.confirmButton.image !== images.buttons.no)
         this.startButton.update()
 
         c.drawText("Id: " + this.peer.id, 250, canvas.height - 30, 30)
@@ -583,156 +582,6 @@ class OnlineJoinLobby {
                 mouse.down = false
                 //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.peer.id}`)
                 navigator.clipboard.writeText(this.peer.id)
-            }
-        }
-    }
-}
-
-class OnlineJoinLobby2 extends OnlineLobby {
-    constructor(hosting, options = {}) {
-        super(hosting, options.id, false)
-        this.players = []
-        this.settings = []
-        this.selectedPlayer = -1
-        this.peer = options.client
-
-        if (this.hosting) {
-            let game = options.game
-            this.peer = createHost() // Override this.peer if options.client is undefined
-            this.initPlayers(game.players.map(e => JSON.parse(e)))
-
-            Object.values(JSON.parse(game.board).settings).forEach((value, i) => {
-                let length = settings.length
-                let mainSetting = settings[i]
-                let htmlSetting
-
-                if (mainSetting.type === "select") {
-                    htmlSetting = new Button({ x: 450, y: splitPoints(length, canvas.height, 35, i), w: 500, h: 35, selectButton: true, text: mainSetting.title, textSize: c.getFontSize(mainSetting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting, () => sendPlayers(this.peer))
-                    htmlSetting.selected = value
-                } else if (mainSetting.type === "slider") {
-                    htmlSetting = new Slider({ x: 450, y: splitPoints(length, canvas.height, 35, i), w: 500, h: 35, from: mainSetting.from, to: mainSetting.to, unit: mainSetting.unit, steps: mainSetting.steps, beginningText: mainSetting.title }, () => sendPlayers(this.peer))
-                    htmlSetting.percentage = value / (mainSetting.to - mainSetting.from)
-                    htmlSetting.value = value
-                }
-                htmlSetting.disabled = true
-                this.settings.push(htmlSetting)
-            })
-
-            this.startButton = new Button({ x: 10, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, () => {
-                loadGame(game, this.selectedPlayer)
-                if (this.hosting) sendMessageToAll("startGame", game)
-            })
-        }
-    }
-    initPlayers(playersData) {
-        let self = this;
-        let off = this.players.length
-        for (let i = off; i < playersData.length + off; i++) {
-            this.players.push(
-                {
-                    textInput: new TextInput({ x: 10, y: 80 + 48 * i, w: 300, h: 45, maxLength: 15, textSize: 40 }),
-                    colorButton: new Button({ x: 320, y: 82 + 48 * i, w: 40, h: 40, selectButton: true, disableSelectTexture: true, disableDisabledTexture: true }, images.playercolorbuttons.unselected, function () {
-                        self.players.forEach((e, index) => {
-                            if (index != i) { e.colorButton.selected = false; } else {
-                                self.players.forEach((b) => {
-                                    b.textInput.w = 300;
-                                })
-                                if (index >= 4) {
-                                    self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30 - 40, -62 + 48 * (i + 1), e, self.selectedColors) : undefined;
-
-                                    if (self.currentMenu) {
-                                        self.players[index - 1].textInput.w = 230;
-                                        self.players[index - 2].textInput.w = 230;
-                                    }
-                                } else {
-                                    self.currentMenu = e.colorButton.selected ? new ColorSelector(320 - 30 - 40, 82 + 48 * (i + 1), e, self.selectedColors) : undefined;
-
-                                    if (self.currentMenu) {
-                                        if (self.players[index + 1]) self.players[index + 1].textInput.w = 230;
-                                        if (self.players[index + 2]) self.players[index + 2].textInput.w = 230;
-                                    }
-                                }
-                            }
-                        });
-                    }),
-                    selectedColor: -1
-                }
-            );
-
-            let playerData = playersData[i]
-            let player = this.players[i]
-
-            player.textInput.htmlElement.disabled = true
-            player.textInput.htmlElement.value = playerData.name
-            player.textInput.htmlElement.style.backgroundColor = playerData.selected ? "" : "white"
-
-            player.selectedColor = playerData.color
-            player.colorButton.disabled = true
-            player.colorButton.disableDisabledTexture = true
-
-            player.confirmButton = new Button({
-                x: 370,
-                y: 82 + 48 * i,
-                w: 40,
-                h: 40
-            }, playerData.selected ? images.buttons.no : images.buttons.yes, (invalid = false, client = undefined) => {
-                let state = player.confirmButton.image === images.buttons.yes ? true : false
-                if (!invalid) this.selectedPlayer = state ? i : -1
-
-                if (state) {
-                    player.confirmButton.image = images.buttons.no
-                    player.textInput.htmlElement.style.backgroundColor = ''
-                    currentMenu.players.forEach((e, j) => e.confirmButton.disabled = j !== i)
-                } else {
-                    player.confirmButton.image = images.buttons.yes
-                    player.textInput.htmlElement.style.backgroundColor = 'white'
-                    currentMenu.players.forEach(e => e.confirmButton.disabled = e.confirmButton.image === images.buttons.no)
-                }
-
-                if (this.hosting) sendPlayers({ selected: state })
-                else if (!invalid) sendMessage(this.peer.connection, "choosePlayer", { index: i, selected: state })
-            })
-            player.confirmButton.disabled = ((playerData.selected || this.selectedPlayer !== -1) && (i !== this.selectedPlayer))
-            player.confirmButton.disableDisabledTexture = true
-        }
-    }
-
-    draw() {
-        c.drawImageFromSpriteSheet(images.menus.lobbymenu);
-        this.backButton.update();
-        this.players.forEach(player => {
-            player.textInput.draw();
-            player.colorButton.image = images.playercolorbuttons[(player.selectedColor == -1 ? "unselected" : "playercolorbutton" + (player.selectedColor == 0 ? "" : player.selectedColor + 1))]
-            if (self.currentMenu?.hover) {
-                player.colorButton.draw();
-                player.confirmButton?.draw()
-            } else {
-                player.colorButton.update();
-                player.confirmButton?.update()
-            }
-            if (!(this.currentMenu instanceof ColorSelector)) player.kickButton?.update()
-            else player.kickButton?.draw()
-        })
-
-        this.currentMenu?.draw()
-        this.settings.forEach(setting => setting.update());
-
-        if (!this.hosting) return
-
-        this.startButton.disabled = Object.entries(this.peer.clients).length === 0 ||
-            !this.players.every(player => player.textInput.htmlElement.style.backgroundColor === "")
-        this.startButton.update();
-
-        c.drawText("Id: " + this.peer.id, 250, canvas.height - 30, 30)
-        if (detectCollision(240, canvas.height - 60, 180, 40, mouse.x, mouse.y, 1, 1)) {
-            c.drawText("Id: " + this.peer.id, 250, canvas.height - 30, 30, "left", "blue")
-            if (mouse.down) {
-                mouse.down = false
-                //navigator.clipboard.writeText(`${window.location.href}?lobbyId=${this.peer.id}`)
-                navigator.clipboard.writeText(this.peer.id)
-
-                //currentMenu.players[0].textInput.htmlElement.value = "Player 1" // TEMP
-                //setTimeout(() => { currentMenu.players[0].confirmButton.onClick() }, 100) // TEMP
             }
         }
     }
