@@ -12,12 +12,34 @@ const boardOffsetY = 64;
 async function init() {
     fixCanvas();
     await loadData();
-
+    await downScaleImagesForSaves("monopolyGames");
+    await downScaleImagesForSaves("monopolyOnlineGames");
     renderC.imageSmoothingEnabled = false;
 
     currentMenu = new MainMenu();
     update();
 };
+
+async function downScaleImagesForSaves(key) {
+    if (localStorage.getItem(key) == [] || !localStorage.getItem(key) || localStorage.getItem(key).length == 0 || localStorage.getItem(key) == "[]") { return; }
+    let local = JSON.parse(localStorage.getItem(key));
+
+    await new Promise((resolve) => local.forEach((game, index, array) => {
+        let parsedGame = JSON.parse(game)
+
+        if (!parsedGame?.compressedImage) {
+            parsedGame.compressedImage = true;
+            downscale(parsedGame.screenshot, canvas.width / 3, canvas.height / 3, { imageType: "png" }).then((e) => {
+                parsedGame.screenshot = e;
+                local[index] = JSON.prune(parsedGame);
+                if (index === array.length - 1) resolve();
+            })
+        } else {
+            if (index === array.length - 1) resolve();
+        }
+    }))
+    localStorage.setItem(key, JSON.prune(local))
+}
 
 function exitGame(online = false, client = false) {
     setTimeout(e => {
@@ -29,6 +51,7 @@ function exitGame(online = false, client = false) {
         players = [];
         currentMenu = online ? new PublicGames() : new MainMenu();
         window.onbeforeunload = undefined;
+        downScaleImagesForSaves(online ? "monopolyOnlineGames" : "monopolyGames")
     }, 30)
 }
 
@@ -109,7 +132,8 @@ function saveGame(online = false) {
         currentTime: new Date().getTime(),
         screenshot: canvas.toDataURL(),
         currentMenu: { class: currentMenu?.constructor.name, value: JSON.prune(currentMenu) },
-        logger: JSON.prune(logger.info)
+        logger: JSON.prune(logger.info),
+        compressedImage: false
     }
 
     if (board.id !== undefined) game.id = board.id
