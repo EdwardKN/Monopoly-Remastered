@@ -1,5 +1,18 @@
 const latestSaveVersion = 3;
 
+const StatTypes = [
+    {
+        name: "Nettoförmögenhet",
+        variable: ["player", "netWorth"],
+        unit: "kr"
+    },
+    {
+        name: "Bästa Gatan",
+        variable: ["boardpiece", "earned"],
+        unit: "kr"
+    }
+]
+
 const settings = [
     {
         title: "Ge alla skattepengar till fri parkering",

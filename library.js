@@ -210,7 +210,8 @@ class Button {
         this.text = settings?.text;
         this.textSize = settings?.textSize;
         this.color = settings?.color;
-        this.disabledSelectOnClick = settings?.disabledSelectOnClick
+        this.disabledSelectOnClick = settings?.disabledSelectOnClick;
+        this.rotation = settings?.rotation || 0;
 
         if (!this.onRightClick) {
             this.onRightClick = function () { }
@@ -257,7 +258,8 @@ class Button {
             h: this.h,
             cropX: cropAdder,
             cropW: this.w,
-            mirrored: this.mirrored
+            mirrored: this.mirrored,
+            rotation: this.rotation
         })
         if (this.hover && !this.disabled) {
             hoverList.push(this.hoverText);
@@ -696,6 +698,11 @@ function movingObjectToLineIntersect(from, to, x, y, w, h, oldX, oldY) {
 }
 
 var pressedKeys = [];
+
+
+window.addEventListener('wheel', function (e) {
+    currentMenu.scroll += e.deltaY;
+})
 
 window.addEventListener('keydown', function (e) {
     pressedKeys[e.code] = true;
