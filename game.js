@@ -29,13 +29,13 @@ async function downScaleImagesForSaves(key) {
 
         if (!parsedGame?.compressedImage) {
             parsedGame.compressedImage = true;
-            downscale(parsedGame.screenshot, canvas.width / 3, canvas.height / 3, { imageType: "png" }).then((e) => {
+            downscale(parsedGame.screenshot, canvas.width / 2, canvas.height / 2, { imageType: "png" }).then((e) => {
                 parsedGame.screenshot = e;
                 local[index] = JSON.prune(parsedGame);
                 if (index === array.length - 1) resolve();
             })
         } else {
-            if (index === array.length - 1) resolve();
+            if (index === array.length - 1) setTimeout(resolve, 1000);
         }
     }))
     localStorage.setItem(key, JSON.prune(local))
@@ -125,7 +125,7 @@ function saveGame(online = false) {
     tmpBoard.boardPieces = undefined;
     let game = {
         board: JSON.prune(tmpBoard, 6),
-        boardPieces: JSON.prune(board.boardPieces),
+        boardPieces: JSON.prune(board.boardPieces, 2),
         saveVersion: latestSaveVersion,
         players: players.map(e => JSON.prune(e, 6)),
         turn: turn,
@@ -415,11 +415,11 @@ class StatMenu {
                 c.drawText(player[this.stats[this.currentStat].variable[1]] + this.stats[this.currentStat].unit, 10 + 340, 120 + index * 55 + this.scroll, 50, "left")
             })
         } else if (this.stats[this.currentStat].variable[0] == "boardpiece") {
-            let filteredboardpieces = this.game.boardPieces.filter((e) => e.info?.name && e.info?.name !== "Start" && e.info?.name !== "fängelse" && e.info?.name !== "Fri parkering" && e.info?.name !== "Gå till finkan" && e.info?.name !== "Chans" && e.info?.name !== "Allmänning")
+            let filteredboardpieces = this.game.boardPieces.filter((e) => pieces[e.n]?.name && pieces[e.n]?.name !== "Start" && pieces[e.n]?.name !== "fängelse" && pieces[e.n]?.name !== "Fri parkering" && pieces[e.n]?.name !== "Gå till finkan" && pieces[e.n]?.name !== "Chans" && pieces[e.n]?.name !== "Allmänning")
             this.scroll = this.scroll.clamp(-((filteredboardpieces.length - 8) * 55 - 20), 0)
             this.game.boardPieces.sort((a, b) => this.order * a[this.stats[this.currentStat].variable[1]] - this.order * b[this.stats[this.currentStat].variable[1]])
             filteredboardpieces.forEach((boardPiece, index) => {
-                c.drawText(boardPiece.info?.name, 10, 120 + index * 55 + this.scroll, c.getFontSize(boardPiece.info?.name, 325, 50), "left", boardPiece.info?.color || "black", { color: "black", blur: 10 })
+                c.drawText(pieces[boardPiece.n]?.name, 10, 120 + index * 55 + this.scroll, c.getFontSize(pieces[boardPiece.n]?.name, 325, 50), "left", pieces[boardPiece.n]?.color || "black", { color: "black", blur: 10 })
 
                 c.drawText(boardPiece.owner?.name || "Banken", 10 + 340, 120 + index * 55 + this.scroll, c.getFontSize(boardPiece.owner?.name || "Banken", 250, 50), "left", boardPiece.owner?.info?.color || "black")
 
