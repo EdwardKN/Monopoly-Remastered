@@ -149,6 +149,12 @@ function saveGame(online = false) {
         }
     })
     if (!pushed) games.push(tmpGame)
+
+    if (JSON.stringify(localStorage).length / 1000000 > 9) {
+        games.splice(games.indexOf(games.sort((a, b) => JSON.parse(a).currentTime - JSON.parse(b).currentTime)[0]), 1);
+    };
+
+
     localStorage.setItem(key, JSON.prune(games))
 }
 
