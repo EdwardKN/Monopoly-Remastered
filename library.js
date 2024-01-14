@@ -969,3 +969,48 @@ function riggedShuffle(unshuffled, values) {
         .sort((a, b) => a.sort - b.sort)
         .map(({ value }) => value)
 }
+
+const localStorageSpace = (string, precision) => {
+    let allStrings = '';
+    for (const key of Object.keys(window.localStorage)) {
+        allStrings += window.localStorage[key];
+    }
+    return string ? formatBytes(JSON.stringify(localStorage).length, precision) : JSON.stringify(localStorage).length
+};
+function localStorageMaxSpace(string, precision) {
+    return string ? formatBytes(MAXSTORAGESIZE, precision) : MAXSTORAGESIZE;
+}
+
+function formatBytes(bytes, decimals = 2) {
+    if (!+bytes) return '0 Bytes'
+
+    const k = 1024
+    const dm = decimals < 0 ? 0 : decimals
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+}
+
+function getStorageTotalSize(upperLimit/*in bytes*/) {
+    var store = localStorage, testkey = "$_test"; // (NOTE: Test key is part of the storage!!! It should also be an even number of characters)
+    var test = function (_size) { try { store.removeItem(testkey); store.setItem(testkey, new Array(_size + 1).join('0')); } catch (_ex) { return false; } return true; }
+    var backup = {};
+    for (var i = 0, n = store.length; i < n; ++i) backup[store.key(i)] = store.getItem(store.key(i));
+    store.clear(); // (you could iterate over the items and backup first then restore later)
+    var low = 0, high = 1, _upperLimit = (upperLimit || 1024 * 1024 * 1024) / 2, upperTest = true;
+    while ((upperTest = test(high)) && high < _upperLimit) { low = high; high *= 2; }
+    if (!upperTest) {
+        var half = ~~((high - low + 1) / 2); // (~~ is a faster Math.floor())
+        high -= half;
+        while (half > 0) high += (half = ~~(half / 2)) * (test(high) ? 1 : -1);
+        high = testkey.length + high;
+    }
+    if (high > _upperLimit) high = _upperLimit;
+    store.removeItem(testkey);
+    for (var p in backup) store.setItem(p, backup[p]);
+    return high * 2; // (*2 because of Unicode storage)
+}
+
+const MAXSTORAGESIZE = getStorageTotalSize();

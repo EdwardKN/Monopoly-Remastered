@@ -20,6 +20,21 @@ async function init() {
     update();
 };
 
+async function checkLocalStorageSize() {
+    if (localStorage && !localStorage.getItem('size')) {
+        var i = 0;
+        try {
+            // Test up to 10 MB
+            for (i = 250; i <= 10000; i += 250) {
+                localStorage.setItem('test', new Array((i * 1024) + 1).join('a'));
+            }
+        } catch (e) {
+            localStorage.removeItem('test');
+            localStorage.setItem('size', i - 250);
+        }
+    }
+}
+
 async function downScaleImagesForSaves(key) {
     if (localStorage.getItem(key) == [] || !localStorage.getItem(key) || localStorage.getItem(key).length == 0 || localStorage.getItem(key) == "[]") { return; }
     let local = JSON.parse(localStorage.getItem(key));
@@ -150,8 +165,8 @@ function saveGame(online = false) {
     })
     if (!pushed) games.push(tmpGame)
 
-    if (JSON.stringify(localStorage).length / 1000000 > 9) {
-        games.splice(games.indexOf(games.sort((a, b) => JSON.parse(a).currentTime - JSON.parse(b).currentTime)[0]), 1);
+    if (localStorageSpace() > localStorageMaxSpace() - 50000) {
+        games.splice(games.indexOf(games.toSorted((a, b) => JSON.parse(a).currentTime - JSON.parse(b).currentTime)[0]), 1);
     };
 
 
@@ -341,8 +356,6 @@ class LoadGames {
         })
         if (this.selectedIdForStart !== undefined) {
             this.games.forEach((e, i) => {
-                console.log(e.id)
-
                 if (e.id == this.selectedIdForStart) {
                     this.gameButtons[i].onClick()
                     this.gameButtons[i].selected = true;
@@ -369,6 +382,9 @@ class LoadGames {
         this.startButton.update();
         this.deleteButton.update();
         this.statButton.update();
+
+        let text = localStorageSpace(true, 2) + "/" + localStorageMaxSpace(true, 2);
+        c.drawText(text, 420, 50, c.getFontSize(text, 150, 30), "center")
     }
 }
 class StatMenu {
