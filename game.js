@@ -53,7 +53,7 @@ async function downScaleImagesForSaves(key) {
             if (index === array.length - 1) setTimeout(resolve, 1000);
         }
     }))
-    localStorage.setItem(key, JSON.prune(local))
+    localStorage.setItem(key, JSON.prune(local));
 }
 
 function exitGame(online = false, client = false) {
@@ -163,9 +163,9 @@ function saveGame(online = false) {
             games[i] = tmpGame
         }
     })
-    if (!pushed) games.push(tmpGame)
+    if (!pushed) games.push(tmpGame);
 
-    if (localStorageSpace() > localStorageMaxSpace() - 50000) {
+    if (localStorageSpace() > localStorageMaxSpace() - JSON.stringify(tmpGame).length * 2) {
         games.splice(games.indexOf(games.toSorted((a, b) => JSON.parse(a).currentTime - JSON.parse(b).currentTime)[0]), 1);
     };
 

@@ -978,7 +978,7 @@ const localStorageSpace = (string, precision) => {
     return string ? formatBytes(JSON.stringify(localStorage).length, precision) : JSON.stringify(localStorage).length
 };
 function localStorageMaxSpace(string, precision) {
-    return string ? formatBytes(MAXSTORAGESIZE, precision) : MAXSTORAGESIZE;
+    return string ? formatBytes(maxstoragesize, precision) : maxstoragesize;
 }
 
 function formatBytes(bytes, decimals = 2) {
@@ -1013,4 +1013,4 @@ function getStorageTotalSize(upperLimit/*in bytes*/) {
     return high * 2; // (*2 because of Unicode storage)
 }
 
-const MAXSTORAGESIZE = getStorageTotalSize();
+let maxstoragesize = getStorageTotalSize();
