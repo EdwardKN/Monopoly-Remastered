@@ -8,9 +8,9 @@ renderCanvas.style.zIndex = 0
 
 var scale = 0;
 
-const standardX = 16;
-const standardY = 9;
-const renderScale = 60; // 120 för 1920 till 1080
+const STANDARDX = 16;
+const STANDARDY = 9;
+const RENDERSCALE = 60; // 120 för 1920 till 1080
 
 
 window.onload = fixCanvas;
@@ -49,15 +49,15 @@ renderCanvas.addEventListener("mouseup", function (e) {
 });
 
 function fixCanvas() {
-    canvas.width = renderScale * standardX;
-    canvas.height = renderScale * standardY;
-    if (window.innerWidth * standardY > window.innerHeight * standardX) {
-        renderCanvas.width = window.innerHeight * standardX / standardY;
+    canvas.width = RENDERSCALE * STANDARDX;
+    canvas.height = RENDERSCALE * STANDARDY;
+    if (window.innerWidth * STANDARDY > window.innerHeight * STANDARDX) {
+        renderCanvas.width = window.innerHeight * STANDARDX / STANDARDY;
         renderCanvas.height = window.innerHeight;
         scale = renderCanvas.width / canvas.width;
     } else {
         renderCanvas.width = window.innerWidth;
-        renderCanvas.height = window.innerWidth * standardY / standardX;
+        renderCanvas.height = window.innerWidth * STANDARDY / STANDARDX;
         scale = renderCanvas.height / canvas.height;
     };
 };
@@ -462,8 +462,8 @@ CanvasRenderingContext2D.prototype.drawIsometricImage = function (frame, setting
 }
 
 
-const toRad = Math.PI / 180
-const toDeg = 180 * Math.PI
+const TORAD = Math.PI / 180
+const TODEG = 180 * Math.PI
 
 function drawCircle(x, y, r, co) {
     c.beginPath();
@@ -501,10 +501,10 @@ function rectangleConverter(x, y, w, h) {
     return [x, y, w, h]
 }
 function distance(x1, y1, x2, y2) {
-    const xDist = x2 - x1;
-    const yDist = y2 - y1;
+    const XDIST = x2 - x1;
+    const YDIST = y2 - y1;
 
-    return Math.sqrt(Math.pow(xDist, 2) + Math.pow(yDist, 2));
+    return Math.sqrt(Math.pow(XDIST, 2) + Math.pow(YDIST, 2));
 };
 
 function drawLine(from, to, co) {
@@ -778,27 +778,27 @@ function to_screen_coordinate(x, y) {
 }
 
 function invert_matrix(a, b, c, d) {
-    const det = (1 / (a * d - b * c));
+    const DET = (1 / (a * d - b * c));
 
     return {
-        a: det * d,
-        b: det * -b,
-        c: det * -c,
-        d: det * a,
+        a: DET * d,
+        b: DET * -b,
+        c: DET * -c,
+        d: DET * a,
     }
 }
 
 function to_grid_coordinate(x, y) {
-    const a = 1 * 0.5;
-    const b = -1 * 0.5;
-    const c = 0.5 * 0.5;
-    const d = 0.5 * 0.5;
+    const A = 1 * 0.5;
+    const B = -1 * 0.5;
+    const C = 0.5 * 0.5;
+    const D = 0.5 * 0.5;
 
-    const inv = invert_matrix(a, b, c, d);
+    const INV = invert_matrix(A, B, C, D);
 
     return {
-        x: Math.floor(x * inv.a + y * inv.b),
-        y: Math.floor(x * inv.c + y * inv.d),
+        x: Math.floor(x * INV.a + y * INV.b),
+        y: Math.floor(x * INV.c + y * INV.d),
     }
 }
 
@@ -814,11 +814,11 @@ var updateDelta = false;
 
 function refreshLoop() {
     window.requestAnimationFrame(function () {
-        const now = performance.now();
-        while (times.length > 0 && times[0] <= now - 1000) {
+        const NOW = performance.now();
+        while (times.length > 0 && times[0] <= NOW - 1000) {
             times.shift();
         }
-        times.push(now);
+        times.push(NOW);
         fps = times.length;
         deltaTime = updateDelta ? 60 / fps : 1;
         refreshLoop();
@@ -939,8 +939,8 @@ function getIndexFromObject(obj, key) {
 }
 
 const divide = (num = 100, n = 4) => {
-    const f = Math.floor(num / n);
-    return [...Array(n)].map((_, i) => i - n + 1 ? f : num - i * f);
+    const F = Math.floor(num / n);
+    return [...Array(n)].map((_, i) => i - n + 1 ? F : num - i * F);
 }
 
 String.prototype.capitalize = function () {
@@ -977,8 +977,8 @@ function riggedShuffle(unshuffled, values) {
 
 const localStorageSpace = (string, precision) => {
     let allStrings = '';
-    for (const key of Object.keys(window.localStorage)) {
-        allStrings += window.localStorage[key];
+    for (const KEY of Object.keys(window.localStorage)) {
+        allStrings += window.localStorage[KEY];
     }
     return string ? formatBytes(JSON.stringify(localStorage).length, precision) : JSON.stringify(localStorage).length
 };
@@ -989,13 +989,13 @@ function localStorageMaxSpace(string, precision) {
 function formatBytes(bytes, decimals = 2) {
     if (!+bytes) return '0 Bytes'
 
-    const k = 1024
-    const dm = decimals < 0 ? 0 : decimals
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+    const K = 1024
+    const DM = decimals < 0 ? 0 : decimals
+    const SIZES = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
 
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    const I = Math.floor(Math.log(bytes) / Math.log(K))
 
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+    return `${parseFloat((bytes / Math.pow(K, I)).toFixed(DM))} ${SIZES[I]}`
 }
 
 function getStorageTotalSize(upperLimit/*in bytes*/) {
