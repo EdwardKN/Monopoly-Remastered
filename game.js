@@ -295,6 +295,7 @@ class MainMenu {
 }
 class LoadGames {
     constructor(online = false, selectedId) {
+        this.scroll = 0;
         let self = this;
         this.key = online ? "monopolyOnlineGames" : "monopolyGames"
 
@@ -385,6 +386,14 @@ class LoadGames {
 
         let text = localStorageSpace(true, 2) + "/" + localStorageMaxSpace(true, 2);
         c.drawText(text, 420, 50, c.getFontSize(text, 150, 30), "center")
+    }
+    scrollFunc() {
+        this.scroll = this.scroll.clamp(-((this.gameButtons.length - 10) * 50 - 10), 0);
+        for (let i = 0; i < this.gameButtons.length; i++) {
+
+            let button = this.gameButtons[i];
+            button.y = 10 + i * 50 + this.scroll;
+        }
     }
 }
 class StatMenu {
