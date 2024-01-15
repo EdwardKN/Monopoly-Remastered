@@ -165,7 +165,9 @@ function saveGame(online = false) {
     })
     if (!pushed) games.push(tmpGame);
 
-    if (localStorageSpace() > localStorageMaxSpace() - JSON.stringify(tmpGame).length * 5) {
+    const SAVEGAMEMARGIN = 500000;
+
+    if (localStorageSpace() > localStorageMaxSpace() - SAVEGAMEMARGIN) {
         games.splice(games.indexOf(games.toSorted((a, b) => JSON.parse(a).currentTime - JSON.parse(b).currentTime)[0]), 1);
     };
 
