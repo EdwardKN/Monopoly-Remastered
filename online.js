@@ -179,6 +179,7 @@ function connectToHost(hostId) {
                 } else {
                     startGame(data.players, data.settings)
                     if (data.index !== undefined) players[data.index].playing = true
+                    else board.spectating = true
                     turn = data.turn
                     players = riggedShuffle(players, data.riggedShuffle)
                     logger.log([{ color: players[turn].info.color, text: players[turn].name + "s" }, { color: "black", text: " tur" }]);

@@ -974,12 +974,12 @@ class OnlineBoard extends Board {
         this.readyPlayers = 0
         this.peer = peer
         this.cardId
-        console.log(currentMenu)
+
         if (this.hosting) {
-            this.spectators = 1 + Object.entries(this.peer.clients).length - currentMenu.playersPlaying
+            this.playersPlaying = currentMenu.playersPlaying
             window.onbeforeunload = function () {
-            Object.values(board.peer.clients).forEach(client => client.connection.close())
-            saveGame(true)
+                Object.values(board.peer.clients).forEach(client => client.connection.close())
+                saveGame(true)
             }
         }
 
@@ -1131,7 +1131,7 @@ class BoardPiece {
 
     draw() {
         let isometricMouse = { x: to_grid_coordinate(mouse.x - boardOffsetX, mouse.y - boardOffsetY).x, y: to_grid_coordinate(mouse.x - boardOffsetX, mouse.y - boardOffsetY).y }
-        this.hover = (players[turn].playing && this.info.price && !currentMenu && board.dices.hidden && ((Math.floor(this.n / 10) === 0 || Math.floor(this.n / 10) === 2) && isometricMouse.x > this.drawX + 64 && isometricMouse.x < this.drawX + 128 && isometricMouse.y > this.drawY - 64 && isometricMouse.y < this.drawY + 64 ||
+        this.hover = ((players[turn].playing || board.spectating) && this.info.price && !currentMenu && board.dices.hidden && ((Math.floor(this.n / 10) === 0 || Math.floor(this.n / 10) === 2) && isometricMouse.x > this.drawX + 64 && isometricMouse.x < this.drawX + 128 && isometricMouse.y > this.drawY - 64 && isometricMouse.y < this.drawY + 64 ||
             (Math.floor(this.n / 10) === 1 || Math.floor(this.n / 10) === 3) && isometricMouse.x > this.drawX + 32 && isometricMouse.x < this.drawX + 128 + 32 && isometricMouse.y > this.drawY - 32 && isometricMouse.y < this.drawY + 32
         ));
         if (this.hover && mouse.down) {
@@ -1458,7 +1458,7 @@ class Auction {
     draw() {
         c.drawImageFromSpriteSheet(images.cards[this.boardPiece.info.card], { x: canvas.width / 2 - 10, y: canvas.height / 2 - 162 })
         c.drawImageFromSpriteSheet(images.menus.auctionmenubackground, { x: canvas.width / 2 - 256 + 10, y: canvas.height / 2 - 162 })
-        if (!this.started) {
+        if (!this.started && !board.spectating) {
             this.startButton.update();
         } else if (board.ready && this.playerlist[this.turn].playing) {
             this.add100.disabled = (this.playerlist[this.turn].money < this.auctionMoney + 100)

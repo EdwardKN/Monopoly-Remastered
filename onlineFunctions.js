@@ -251,7 +251,7 @@ function addReady() {
     if (board.constructor.name === 'Board') return
 
     board.readyPlayers++
-    if (board.readyPlayers === (Object.entries(peer.clients).length + 1) - board.spectators) {
+    if (board.readyPlayers === board.playersPlaying) {
         board.ready = true
         sendMessageToAll("ready")
     }
