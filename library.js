@@ -701,8 +701,12 @@ var pressedKeys = [];
 
 
 window.addEventListener('wheel', function (e) {
-    currentMenu.scroll += e.deltaY;
-    currentMenu?.scrollFunc(e.deltaY);
+    if (currentMenu?.scroll) {
+        currentMenu.scroll -= e.deltaY;
+    }
+    if (currentMenu?.scrollFunc) {
+        currentMenu.scrollFunc(-e.deltaY);
+    }
 })
 
 window.addEventListener('keydown', function (e) {
