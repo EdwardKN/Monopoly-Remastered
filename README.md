@@ -13,10 +13,12 @@ Funktionalitet
 - [x] Fullscreen
 - [x] Bankcheckar
 - [x] Huvudmeny
-- [ ] Ljud
+- [x] Ljud
+- [ ] Fler Ljud
 - [x] Animationer
+- [ ] Fler animationer
 - [x] Custom games
-- [ ] Statistik
+- [x] Statistik
 - [x] OnlineLäge
 - [x] Sparning av Onlinespel
 - [ ] Bots

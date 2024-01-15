@@ -1,4 +1,17 @@
-const latestSaveVersion = 3;
+const latestSaveVersion = 5;
+
+const StatTypes = [
+    {
+        name: "Nettoförmögenhet",
+        variable: ["player", "netWorth"],
+        unit: "kr"
+    },
+    {
+        name: "Bästa Gatan",
+        variable: ["boardpiece", "earned"],
+        unit: "kr"
+    }
+]
 
 const settings = [
     {
