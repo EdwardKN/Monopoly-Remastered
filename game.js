@@ -139,7 +139,7 @@ function saveGame(online = false) {
     let game = {
         board: JSON.prune(tmpBoard, 6),
         boardPieces: JSON.prune(board.boardPieces, 2),
-        saveVersion: latestSaveVersion,
+        saveVersion: LATESTSAVEVERSION,
         players: players.map(e => JSON.prune(e, 6)),
         turn: turn,
         currentTime: new Date().getTime(),
@@ -372,12 +372,12 @@ class LoadGames {
             c.strokeStyle = "black";
             c.strokeRect(0, canvas.height / 4 - 2, canvas.width / 2 + 2, canvas.height / 2 + 4);
             c.drawImage(this.image, 0, canvas.height / 4);
-            c.drawText("Spelversion: " + latestSaveVersion, 10, 440, 20, "left", latestSaveVersion == this.games[this.gameButtons.indexOf(this.selected)].saveVersion ? "green" : "red")
-            c.drawText("Sparfilsversion: " + this.games[this.gameButtons.indexOf(this.selected)].saveVersion, 10, 460, 20, "left", latestSaveVersion == this.games[this.gameButtons.indexOf(this.selected)].saveVersion ? "green" : "red")
+            c.drawText("Spelversion: " + LATESTSAVEVERSION, 10, 440, 20, "left", LATESTSAVEVERSION == this.games[this.gameButtons.indexOf(this.selected)].saveVersion ? "green" : "red")
+            c.drawText("Sparfilsversion: " + this.games[this.gameButtons.indexOf(this.selected)].saveVersion, 10, 460, 20, "left", LATESTSAVEVERSION == this.games[this.gameButtons.indexOf(this.selected)].saveVersion ? "green" : "red")
         }
-        this.startButton.disabled = !this.selected || JSON.parse(this.games[this.gameButtons.indexOf(this.selected)].board).done || !(latestSaveVersion == this.games[this.gameButtons.indexOf(this.selected)].saveVersion)
+        this.startButton.disabled = !this.selected || JSON.parse(this.games[this.gameButtons.indexOf(this.selected)].board).done || !(LATESTSAVEVERSION == this.games[this.gameButtons.indexOf(this.selected)].saveVersion)
         this.deleteButton.disabled = !this.selected
-        this.statButton.disabled = !this.selected || !(latestSaveVersion == this.games[this.gameButtons.indexOf(this.selected)].saveVersion)
+        this.statButton.disabled = !this.selected || !(LATESTSAVEVERSION == this.games[this.gameButtons.indexOf(this.selected)].saveVersion)
         this.startButton.update();
         this.deleteButton.update();
         this.statButton.update();
@@ -404,7 +404,7 @@ class StatMenu {
                 this.game.boardPieces[place.n].owner = player;
             })
         })
-        this.stats = StatTypes;
+        this.stats = STATTYPES;
         this.currentStat = 0;
         this.order = -1;
         this.scroll = 0;
@@ -444,11 +444,11 @@ class StatMenu {
                 c.drawText(player[this.stats[this.currentStat].variable[1]] + this.stats[this.currentStat].unit, 10 + 340, 120 + index * 55 + this.scroll, 50, "left")
             })
         } else if (this.stats[this.currentStat].variable[0] == "boardpiece") {
-            let filteredboardpieces = this.game.boardPieces.filter((e) => pieces[e.n]?.name && pieces[e.n]?.name !== "Start" && pieces[e.n]?.name !== "fängelse" && pieces[e.n]?.name !== "Fri parkering" && pieces[e.n]?.name !== "Gå till finkan" && pieces[e.n]?.name !== "Chans" && pieces[e.n]?.name !== "Allmänning")
+            let filteredboardpieces = this.game.boardPieces.filter((e) => PIECES[e.n]?.name && PIECES[e.n]?.name !== "Start" && PIECES[e.n]?.name !== "fängelse" && PIECES[e.n]?.name !== "Fri parkering" && PIECES[e.n]?.name !== "Gå till finkan" && PIECES[e.n]?.name !== "Chans" && PIECES[e.n]?.name !== "Allmänning")
             this.scroll = this.scroll.clamp(-((filteredboardpieces.length - 8) * 55 - 20), 0)
             this.game.boardPieces.sort((a, b) => this.order * a[this.stats[this.currentStat].variable[1]] - this.order * b[this.stats[this.currentStat].variable[1]])
             filteredboardpieces.forEach((boardPiece, index) => {
-                c.drawText(pieces[boardPiece.n]?.name, 10, 120 + index * 55 + this.scroll, c.getFontSize(pieces[boardPiece.n]?.name, 325, 50), "left", pieces[boardPiece.n]?.color || "black", { color: "black", blur: 10 })
+                c.drawText(PIECES[boardPiece.n]?.name, 10, 120 + index * 55 + this.scroll, c.getFontSize(PIECES[boardPiece.n]?.name, 325, 50), "left", PIECES[boardPiece.n]?.color || "black", { color: "black", blur: 10 })
 
                 c.drawText(boardPiece.owner?.name || "Banken", 10 + 340, 120 + index * 55 + this.scroll, c.getFontSize(boardPiece.owner?.name || "Banken", 250, 50), "left", boardPiece.owner?.info?.color || "black")
 
@@ -508,13 +508,13 @@ class OnlineLobby {
 
 
                 let tmpSettings = {}
-                this.settings.forEach((setting, i) => tmpSettings[settings[i].variable] = setting instanceof Button ? setting.selected : setting.value)
+                this.settings.forEach((setting, i) => tmpSettings[SETTINGS[i].variable] = setting instanceof Button ? setting.selected : setting.value)
                 startGame(tmpPlayers, tmpSettings)
                 currentMenu = undefined
             })
 
-            settings.forEach((setting, index,) => {
-                let length = settings.length;
+            SETTINGS.forEach((setting, index,) => {
+                let length = SETTINGS.length;
                 if (setting.type == "select") {
                     this.settings.push(new Button({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, selectButton: true, text: setting.title, textSize: c.getFontSize(setting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting, () => sendPlayers(this.peer)));
                     this.settings[index].selected = setting.start;
@@ -613,9 +613,9 @@ class OnlineLobby {
         this.currentMenu?.draw()
 
         this.settings.forEach((setting, index) => {
-            if (this.hosting && settings[index].needed) {
-                setting.disabled = !this.settings[settings.map(e => e.variable).indexOf(settings[index].needed)].selected;
-                setting.selected = !this.settings[settings.map(e => e.variable).indexOf(settings[index].needed)].selected ? false : setting.selected
+            if (this.hosting && SETTINGS[index].needed) {
+                setting.disabled = !this.settings[SETTINGS.map(e => e.variable).indexOf(SETTINGS[index].needed)].selected;
+                setting.selected = !this.settings[SETTINGS.map(e => e.variable).indexOf(SETTINGS[index].needed)].selected ? false : setting.selected
             }
             setting.update()
         });
@@ -661,8 +661,8 @@ class OnlineJoinLobby {
 
     initSettings(_settings) {
         Object.values(_settings).forEach((value, i) => {
-            let length = settings.length
-            let mainSetting = settings[i]
+            let length = SETTINGS.length
+            let mainSetting = SETTINGS[i]
             let htmlSetting
 
             if (mainSetting.type === "select") {
@@ -749,14 +749,14 @@ class LobbyMenu {
             })
             let tmpSettings = {};
             self.settings.forEach((setting, index) => {
-                tmpSettings[settings[index].variable] = setting instanceof Button ? setting.selected : setting.value
+                tmpSettings[SETTINGS[index].variable] = setting instanceof Button ? setting.selected : setting.value
             })
             startGame(tmp, tmpSettings);
             currentMenu = undefined;
         });
         this.settings = [];
-        settings.forEach((setting, index,) => {
-            let length = settings.length;
+        SETTINGS.forEach((setting, index,) => {
+            let length = SETTINGS.length;
             if (setting.type == "select") {
                 this.settings.push(new Button({ x: 450, y: splitPoints(length, canvas.height, 35, index), w: 500, h: 35, selectButton: true, text: setting.title, textSize: c.getFontSize(setting.title, 470, 32), color: "black", disableDisabledTexture: true }, images.buttons.setting));
                 this.settings[index].selected = setting.start;
@@ -832,9 +832,9 @@ class LobbyMenu {
         this.startButton.disabled = (readyPlayers.length < 2 || hasDuplicates(readyPlayers.map(e => e.textInput.value)))
         this.startButton.update();
         this.settings.forEach((setting, index) => {
-            if (settings[index].needed) {
-                setting.disabled = !this.settings[settings.map(e => e.variable).indexOf(settings[index].needed)].selected;
-                setting.selected = !this.settings[settings.map(e => e.variable).indexOf(settings[index].needed)].selected ? false : setting.selected
+            if (SETTINGS[index].needed) {
+                setting.disabled = !this.settings[SETTINGS.map(e => e.variable).indexOf(SETTINGS[index].needed)].selected;
+                setting.selected = !this.settings[SETTINGS.map(e => e.variable).indexOf(SETTINGS[index].needed)].selected ? false : setting.selected
             }
             setting.update()
         });
@@ -1033,22 +1033,22 @@ class Board {
             if (n % 10 === 0) {
                 this.boardPieces.push(new Corner(n))
             } else {
-                if (pieces[n].price) {
-                    if (pieces[n].type == "utility") {
+                if (PIECES[n].price) {
+                    if (PIECES[n].type == "utility") {
                         this.boardPieces.push(new Utility(n))
-                    } else if (pieces[n].type == "station") {
+                    } else if (PIECES[n].type == "station") {
                         this.boardPieces.push(new Station(n))
                     } else {
                         this.boardPieces.push(new BuyableProperty(n))
                     }
                 } else {
-                    if (pieces[n].type == "community chest") {
+                    if (PIECES[n].type == "community chest") {
                         this.boardPieces.push(new Community(n))
-                    } else if (pieces[n].type == "chance") {
+                    } else if (PIECES[n].type == "chance") {
                         this.boardPieces.push(new Chance(n))
-                    } else if (pieces[n].type == "income tax") {
+                    } else if (PIECES[n].type == "income tax") {
                         this.boardPieces.push(new IncomeTax(n))
-                    } else if (pieces[n].type == "supertax") {
+                    } else if (PIECES[n].type == "supertax") {
                         this.boardPieces.push(new SuperTax(n))
                     } else {
                         this.boardPieces.push(new BoardPiece(n))
@@ -1245,7 +1245,7 @@ class Prison {
 class BoardPiece {
     constructor(n) {
         this.n = n;
-        this.info = pieces[n];
+        this.info = PIECES[n];
         this.playersOnBoardPiece = [];
         this.earned = 0;
 
@@ -1873,10 +1873,10 @@ class CardDraw {
         if (this.type !== "special" && this.type !== "textSpecial") {
             this.cardId = board.cardId == undefined ? randomIntFromRange(0, (this.type == "community") ? 12 : 13) : (board.cardId % ((this.type == "community") ? 12 : 13));
 
-            this.card = ((this.type == "community") ? communitycards[this.cardId] : chanceCards[this.cardId])
+            this.card = ((this.type == "community") ? COMMUNITYCARDS[this.cardId] : CHANCECARDS[this.cardId])
         } else if (this.type !== "textSpecial") {
             this.cardId = cardId;
-            this.card = specialCards[this.cardId];
+            this.card = SPECIALCARDS[this.cardId];
         } else {
             this.card = { img: "specialempty" }
             this.text = cardId;
@@ -2245,7 +2245,7 @@ class PropertyCard {
         }
     }
     draw() {
-        c.drawRotatedImageFromSpriteSheet(images.cards[pieces[this.n].card], {
+        c.drawRotatedImageFromSpriteSheet(images.cards[PIECES[this.n].card], {
             x: canvas.width / 2 - 128 * this.animationFactor,
             y: canvas.height / 2 - 162 * this.animationFactor,
             w: this.animationFactor * 256,
@@ -2315,7 +2315,7 @@ class Player {
         this.ownedPlaces = [];
         this.name = name;
         this.prisonCards = 0;
-        this.info = playerInfo[this.color];
+        this.info = PLAYERINFO[this.color];
         this.inPrison = false;
         this.rolls = 0;
         this.rollsInPrison = 0;

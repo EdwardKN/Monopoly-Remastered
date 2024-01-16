@@ -1,6 +1,6 @@
-const latestSaveVersion = 6;
+const LATESTSAVEVERSION = 6;
 const LOCALSTORAGEKEY = "monopolyGames"
-const StatTypes = [
+const STATTYPES = [
     {
         name: "Nettoförmögenhet",
         variable: ["player", "netWorth"],
@@ -13,7 +13,7 @@ const StatTypes = [
     }
 ]
 
-const settings = [
+const SETTINGS = [
     {
         title: "Ge alla skattepengar till fri parkering",
         type: "select",
@@ -119,7 +119,7 @@ const settings = [
     }
 ]
 
-const playerInfo = [
+const PLAYERINFO = [
     {
         color: "red",
         img: "player",
@@ -162,7 +162,7 @@ const playerInfo = [
     }
 ]
 
-const specialCards = [
+const SPECIALCARDS = [
     {
         img: "gatillfinkanS"
     },
@@ -177,7 +177,7 @@ const specialCards = [
     }
 ]
 
-const communitycards = [
+const COMMUNITYCARDS = [
     {
         teleport: 0,
         img: "gatillstartc"
@@ -234,7 +234,7 @@ const communitycards = [
         img: "forlora50krc"
     }
 ]
-const chanceCards = [
+const CHANCECARDS = [
     {
         properyPrice: {
             house: 25,
@@ -295,7 +295,7 @@ const chanceCards = [
         img: "lamnafinkangratis"
     }
 ]
-const pieces = [
+const PIECES = [
     {
         name: "Start",
         img: "go"
