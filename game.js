@@ -6,8 +6,8 @@ var hoverList = [];
 var logger;
 
 
-const boardOffsetX = 0;
-const boardOffsetY = 64;
+const BOARDOFFSETX = 0;
+const BOARDOFFSETY = 64;
 
 async function init() {
     fixCanvas();
@@ -970,8 +970,8 @@ class Board {
         this.money = 0;
         this.ready = true
 
-        this.rollDiceButton = new Button({ x: canvas.width / 2 - 123 + boardOffsetX, y: canvas.height / 2 + boardOffsetY, w: 246, h: 60 }, images.buttons.rolldice, this.rollDice)
-        this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123 + boardOffsetX, y: canvas.height / 2 + boardOffsetY, w: 246, h: 60 }, images.buttons.nextplayer, this.nextPlayer);
+        this.rollDiceButton = new Button({ x: canvas.width / 2 - 123 + BOARDOFFSETX, y: canvas.height / 2 + BOARDOFFSETY, w: 246, h: 60 }, images.buttons.rolldice, this.rollDice)
+        this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123 + BOARDOFFSETX, y: canvas.height / 2 + BOARDOFFSETY, w: 246, h: 60 }, images.buttons.nextplayer, this.nextPlayer);
 
         this.menuButton = new Button({ x: 0, y: canvas.height - 40, w: 80, h: 40 }, images.buttons.menu, function () { currentMenu = new SmallMenu() })
         this.muteButton = new Button({ x: 80, y: canvas.height - 40, w: 40, h: 40, hoverText: "Tysta ljudet" }, images.buttons.music);
@@ -1121,7 +1121,7 @@ class Board {
                 c.drawImageFromSpriteSheet(images.static.realbackground, { x: canvas.width / 2 + 832 * coords.x - 416, y: canvas.height / 2 + 832 * coords.y - 208 })
             }
         }
-        c.drawImageFromSpriteSheet(images.static.insideboard, { x: canvas.width / 2 - 286 + boardOffsetX, y: canvas.height / 2 - 143 + boardOffsetY })
+        c.drawImageFromSpriteSheet(images.static.insideboard, { x: canvas.width / 2 - 286 + BOARDOFFSETX, y: canvas.height / 2 - 143 + BOARDOFFSETY })
     }
 }
 
@@ -1142,7 +1142,7 @@ class OnlineBoard extends Board {
             }
         }
 
-        this.rollDiceButton = new Button({ x: canvas.width / 2 - 123 + boardOffsetX, y: canvas.height / 2 + boardOffsetY, w: 246, h: 60 }, images.buttons.rolldice, () => {
+        this.rollDiceButton = new Button({ x: canvas.width / 2 - 123 + BOARDOFFSETX, y: canvas.height / 2 + BOARDOFFSETY, w: 246, h: 60 }, images.buttons.rolldice, () => {
             let dice1 = randomIntFromRange(1, 6)
             let dice2 = randomIntFromRange(1, 6)
             if (this.hosting) {
@@ -1153,7 +1153,7 @@ class OnlineBoard extends Board {
                 sendMessageToAll("saveCardId", board.cardId);
             } else sendMessage(this.peer.connection, "requestDiceRoll")
         })
-        this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123 + boardOffsetX, y: canvas.height / 2 + boardOffsetY, w: 246, h: 60 }, images.buttons.nextplayer, () => {
+        this.nextPlayerButton = new Button({ x: canvas.width / 2 - 123 + BOARDOFFSETX, y: canvas.height / 2 + BOARDOFFSETY, w: 246, h: 60 }, images.buttons.nextplayer, () => {
             if (this.hosting) {
                 resetReady()
                 sendMessageToAll("nextPlayer")
@@ -1290,7 +1290,7 @@ class BoardPiece {
     }
 
     draw() {
-        let isometricMouse = { x: to_grid_coordinate(mouse.x - boardOffsetX, mouse.y - boardOffsetY).x, y: to_grid_coordinate(mouse.x - boardOffsetX, mouse.y - boardOffsetY).y }
+        let isometricMouse = { x: to_grid_coordinate(mouse.x - BOARDOFFSETX, mouse.y - BOARDOFFSETY).x, y: to_grid_coordinate(mouse.x - BOARDOFFSETX, mouse.y - BOARDOFFSETY).y }
         this.hover = ((players[turn].playing || board.spectating) && this.info.price && !currentMenu && board.dices.hidden && ((Math.floor(this.n / 10) === 0 || Math.floor(this.n / 10) === 2) && isometricMouse.x > this.drawX + 64 && isometricMouse.x < this.drawX + 128 && isometricMouse.y > this.drawY - 64 && isometricMouse.y < this.drawY + 64 ||
             (Math.floor(this.n / 10) === 1 || Math.floor(this.n / 10) === 3) && isometricMouse.x > this.drawX + 32 && isometricMouse.x < this.drawX + 128 + 32 && isometricMouse.y > this.drawY - 32 && isometricMouse.y < this.drawY + 32
         ));
@@ -1306,8 +1306,8 @@ class BoardPiece {
             w: 96,
             cropW: 96,
             cropX: this.textureStart,
-            offsetY: (this.hover ? 1 : 0) + boardOffsetY,
-            offsetX: boardOffsetX
+            offsetY: (this.hover ? 1 : 0) + BOARDOFFSETY,
+            offsetX: BOARDOFFSETX
         })
         if (this.owner !== undefined) {
             c.drawIsometricImage(images.players[this.owner.info.ownedImg], {
@@ -1316,8 +1316,8 @@ class BoardPiece {
                 w: 96,
                 cropW: 96,
                 cropX: this.textureStart,
-                offsetY: (this.hover ? 1 : 0) + boardOffsetY,
-                offsetX: boardOffsetX
+                offsetY: (this.hover ? 1 : 0) + BOARDOFFSETY,
+                offsetX: BOARDOFFSETX
             })
         }
     }
@@ -1331,8 +1331,8 @@ class Corner extends BoardPiece {
             w: 128,
             cropW: 128,
             cropX: 0,
-            offsetY: (this.hover ? 1 : 0) + boardOffsetY,
-            offsetX: boardOffsetX
+            offsetY: (this.hover ? 1 : 0) + BOARDOFFSETY,
+            offsetX: BOARDOFFSETX
         })
     }
     step() {
@@ -1398,8 +1398,8 @@ class BuyableProperty extends BoardPiece {
                     cropH: 24,
                     cropX: this.houseType * 24,
                     cropY: 0,
-                    offsetX: boardOffsetX,
-                    offsetY: boardOffsetY
+                    offsetX: BOARDOFFSETX,
+                    offsetY: BOARDOFFSETY
                 });
             }
         } else {
@@ -1412,8 +1412,8 @@ class BuyableProperty extends BoardPiece {
                 cropH: 24,
                 cropX: (this.houseType % 2) * 24,
                 cropY: 0,
-                offsetX: boardOffsetX,
-                offsetY: boardOffsetY
+                offsetX: BOARDOFFSETX,
+                offsetY: BOARDOFFSETY
             });
         }
     }
@@ -2365,7 +2365,7 @@ class Player {
         if (players[turn].laps < board.settings.roundsBeforePurchase) this.hasBought = true
         this.calculateDrawPos();
         let coord = to_screen_coordinate(this.drawX, this.drawY);
-        this.hover = players[turn].playing && (detectCollision(coord.x + boardOffsetX, coord.y + boardOffsetY, 24, 48, mouse.x, mouse.y, 1, 1) && !currentMenu && board.dices.hidden && (board.playerIsWalkingTo == false));
+        this.hover = players[turn].playing && (detectCollision(coord.x + BOARDOFFSETX, coord.y + BOARDOFFSETY, 24, 48, mouse.x, mouse.y, 1, 1) && !currentMenu && board.dices.hidden && (board.playerIsWalkingTo == false));
         if (this.hover) { hoverList.push(this.name + ((players[turn] !== this) ? "(Föreslå bytesförslag)" : "(Du)")) }
         if (this.hover && mouse.down && (players[turn] !== this)) {
             this.moneyShowerThing.button.onClick();
@@ -2375,8 +2375,8 @@ class Player {
         c.drawIsometricImage(images.players[this.info.img], {
             x: this.drawX,
             y: this.drawY,
-            offsetY: (this.hover ? 1 : 0) + boardOffsetY,
-            offsetX: boardOffsetX
+            offsetY: (this.hover ? 1 : 0) + BOARDOFFSETY,
+            offsetX: BOARDOFFSETX
         })
         this.moneyShowerThing.update();
         this.netWorth = this.money;
@@ -2570,8 +2570,8 @@ class Dice {
                 cropH: 64,
                 w: 64,
                 h: 64,
-                offsetX: boardOffsetX,
-                offsetY: boardOffsetY
+                offsetX: BOARDOFFSETX,
+                offsetY: BOARDOFFSETY
             })
             c.drawIsometricImage(images.dices.dices, {
                 x: 1050,
@@ -2582,8 +2582,8 @@ class Dice {
                 cropH: 64,
                 w: 64,
                 h: 64,
-                offsetX: boardOffsetX,
-                offsetY: boardOffsetY
+                offsetX: BOARDOFFSETX,
+                offsetY: BOARDOFFSETY
             })
         }
     }
