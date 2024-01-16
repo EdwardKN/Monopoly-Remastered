@@ -318,7 +318,7 @@ class LoadGames {
                 self.gameButtons[index - 1].selected = true;
                 self.gameButtons[index - 1].onClick();
             }
-            if (JSON.parse(localStorage.getItem(self.key)).length == 0) {
+            if (JSON.parse(localStorage.getItem(LOCALSTORAGEKEY)).length == 0) {
                 currentMenu = new MainMenu();
             }
         })
