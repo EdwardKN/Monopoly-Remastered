@@ -12,8 +12,7 @@ const boardOffsetY = 64;
 async function init() {
     fixCanvas();
     await loadData();
-    await downScaleImagesForSaves("monopolyGames");
-    await downScaleImagesForSaves("monopolyOnlineGames");
+    await downScaleImagesForSaves(LOCALSTORAGEKEY);
     renderC.imageSmoothingEnabled = false;
 
     currentMenu = new MainMenu();
@@ -36,8 +35,8 @@ async function checkLocalStorageSize() {
 }
 
 async function downScaleImagesForSaves(key) {
-    if (localStorage.getItem(key) == [] || !localStorage.getItem(key) || localStorage.getItem(key).length == 0 || localStorage.getItem(key) == "[]") { return; }
-    let local = JSON.parse(localStorage.getItem(key));
+    let local = JSON.parse(localStorage.getItem(key) || "[]");
+    if (local.length === 0) return
 
     await new Promise((resolve) => local.forEach((game, index, array) => {
         let parsedGame = JSON.parse(game)
@@ -66,7 +65,7 @@ function exitGame(online = false, client = false) {
         players = [];
         currentMenu = online ? new PublicGames() : new MainMenu();
         window.onbeforeunload = undefined;
-        downScaleImagesForSaves(online ? "monopolyOnlineGames" : "monopolyGames")
+        if (!client) downScaleImagesForSaves(LOCALSTORAGEKEY)
     }, 30)
 }
 
@@ -132,8 +131,7 @@ function startGame(playersToStartGameWith, settings) {
 // game.id = generateId(13) Can replace if necessary
 function saveGame(online = false) {
     if (!board || !players) return
-    let key = online ? "monopolyOnlineGames" : "monopolyGames"
-    let games = JSON.parse(localStorage.getItem(key) ?? "[]")
+    let games = JSON.parse(localStorage.getItem(LOCALSTORAGEKEY) ?? "[]")
 
     delete board.peer
     let tmpBoard = JSON.parse(JSON.prune(board, 4));
@@ -148,7 +146,8 @@ function saveGame(online = false) {
         screenshot: canvas.toDataURL(),
         currentMenu: { class: currentMenu?.constructor.name, value: JSON.prune(currentMenu) },
         logger: JSON.prune(logger.info),
-        compressedImage: false
+        compressedImage: false,
+        online: online
     }
 
     if (board.id !== undefined) game.id = board.id
@@ -164,15 +163,13 @@ function saveGame(online = false) {
         }
     })
     if (!pushed) games.push(tmpGame);
-
     const SAVEGAMEMARGIN = 500000;
 
     if (localStorageSpace() > localStorageMaxSpace() - SAVEGAMEMARGIN) {
         games.splice(games.indexOf(games.toSorted((a, b) => JSON.parse(a).currentTime - JSON.parse(b).currentTime)[0]), 1);
     };
 
-
-    localStorage.setItem(key, JSON.prune(games))
+    localStorage.setItem(LOCALSTORAGEKEY, JSON.prune(games))
 }
 
 function loadGame(gameToLoad, index) {
@@ -283,7 +280,7 @@ class MainMenu {
     }
     draw() {
         c.drawImageFromSpriteSheet(images.menus.mainmenu)
-        this.loadButton.disabled = (JSON.parse(localStorage.getItem("monopolyGames")) == undefined || JSON.parse(localStorage.getItem("monopolyGames")).length == 0);
+        this.loadButton.disabled = (JSON.parse(localStorage.getItem(LOCALSTORAGEKEY)) || []).filter(game => !JSON.parse(game).online).length === 0
 
         this.localButton.update();
         this.loadButton.update();
@@ -299,8 +296,7 @@ class LoadGames {
     constructor(online = false, selectedId) {
         this.scroll = 0;
         let self = this;
-        this.key = online ? "monopolyOnlineGames" : "monopolyGames"
-
+        this.online = online
         this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, function () { currentMenu = online ? new PublicGames() : new MainMenu() });
         this.startButton = new Button({ x: canvas.width / 4 - 194 / 2, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, function () {
             let game = self.games[self.gameButtons.indexOf(self.selected)]
@@ -313,7 +309,7 @@ class LoadGames {
             self.games.splice(index, 1);
 
             let tmpGames = self.games.map(e => JSON.prune(e));
-            localStorage.setItem(self.key, JSON.prune(tmpGames));
+            localStorage.setItem(LOCALSTORAGEKEY, JSON.prune(tmpGames));
             self.init();
             if (self.games[index]) {
                 self.gameButtons[index].selected = true;
@@ -341,7 +337,7 @@ class LoadGames {
     }
     init() {
         let self = this;
-        this.games = (JSON.parse(localStorage.getItem(this.key)) || []).map(e => JSON.parse(e))
+        this.games = (JSON.parse(localStorage.getItem(LOCALSTORAGEKEY)) || []).map(e => JSON.parse(e)).filter(game => game.online === this.online)
         this.games = this.games.sort((a, b) => b.currentTime - a.currentTime)
         this.gameButtons = [];
         this.games.forEach((game, i) => {
@@ -483,7 +479,7 @@ class PublicGames {
         this.joinID.draw();
         this.joinButton.update();
         this.hostButton.update();
-        this.loadButton.disabled = (JSON.parse(localStorage.getItem("monopolyOnlineGames")) == undefined || JSON.parse(localStorage.getItem("monopolyOnlineGames")).length == 0);
+        this.loadButton.disabled = (JSON.parse(localStorage.getItem(LOCALSTORAGEKEY)) || []).filter(game => JSON.parse(game).online).length === 0
         this.loadButton.update()
     }
 }
@@ -913,7 +909,7 @@ class SmallMenu {
         this.statButton = new Button({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 2), y: canvas.height / 2 + 25, w: 40, h: 40, hoverText: "Visa Statistik" }, images.buttons.statbutton, function () {
             exitGame();
             setTimeout(() => {
-                let games = (JSON.parse(localStorage.getItem("monopolyGames")) || []).map(e => JSON.parse(e))
+                let games = (JSON.parse(localStorage.getItem(LOCALSTORAGEKEY)) || []).map(e => JSON.parse(e))
                 games = games.sort((a, b) => b.currentTime - a.currentTime)
                 let game = games[0];
                 currentMenu = new StatMenu(game);

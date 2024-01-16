@@ -1,5 +1,5 @@
-const latestSaveVersion = 5;
-
+const latestSaveVersion = 6;
+const LOCALSTORAGEKEY = "monopolyGames"
 const StatTypes = [
     {
         name: "Nettoförmögenhet",
