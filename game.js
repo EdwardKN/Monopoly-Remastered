@@ -386,7 +386,11 @@ class LoadGames {
         c.drawText(text, 420, 50, c.getFontSize(text, 150, 30), "center")
     }
     scrollFunc() {
+
         this.scroll = this.scroll.clamp(-((this.gameButtons.length - 10) * 50 - 10), 0);
+        if (this.gameButtons.length < 11) {
+            this.scroll = 0;
+        }
         for (let i = 0; i < this.gameButtons.length; i++) {
 
             let button = this.gameButtons[i];
@@ -653,7 +657,7 @@ class OnlineJoinLobby {
             this.peer = createHost()
             this.startButton = new Button({ x: 10, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, {})
             this.initSettings(JSON.parse(game.board).settings)
-            this.initPlayers(game.players.map(p => JSON.parse(p)))            
+            this.initPlayers(game.players.map(p => JSON.parse(p)))
         } else this.peer = currentMenu.peer
 
         this.playersPlaying = this.players.length
@@ -681,7 +685,7 @@ class OnlineJoinLobby {
     initPlayers(playersData) {
         for (let i = 0; i < playersData.length; i++) {
             let playerData = playersData[i]
-            
+
             this.players.push({
                 textInput: new TextInput({ x: 10, y: 80 + 48 * i, w: 300, h: 45, maxLength: 15, textSize: 40, disabled: true, disableDisabledTexture: true }),
                 colorButton: new Button({ x: 320, y: 82 + 48 * i, w: 40, h: 40, disabled: true, disableDisabledTexture: true }, images.playercolorbuttons["playercolorbutton" + playerData.color]),
