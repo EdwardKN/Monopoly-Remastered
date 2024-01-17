@@ -175,7 +175,7 @@ function saveGame(online = false) {
 function loadGame(gameToLoad, index) {
     let boardToLoad = JSON.parse(gameToLoad.board)
     let boardPiecesToLoad = JSON.parse(gameToLoad.boardPieces);
-    let local = currentMenu instanceof LoadGames
+    let local = currentMenu instanceof LoadGames || currentMenu instanceof StatMenu;
     if (local) window.onbeforeunload = saveGame
 
     // Board (settings)
@@ -300,6 +300,8 @@ class LoadGames {
         this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, function () { currentMenu = online ? new PublicGames() : new MainMenu() });
         this.startButton = new Button({ x: canvas.width / 4 - 194 / 2, y: canvas.height - 70, w: 194, h: 60 }, images.buttons.start, function () {
             let game = self.games[self.gameButtons.indexOf(self.selected)]
+            console.log(game)
+
             if (!online) loadGame(game)
             else currentMenu = new OnlineJoinLobby(true, game)
         })
@@ -399,8 +401,11 @@ class LoadGames {
     }
 }
 class StatMenu {
-    constructor(game) {
+    constructor(game, cameFromGame) {
+        this.realGame = game;
         this.game = game;
+        this.cameFromGame = cameFromGame;
+
         this.game.players = this.game.players.map(e => JSON.parse(e));
         this.game.boardPieces = JSON.parse(this.game.boardPieces);
         this.game.players.forEach(player => {
@@ -413,7 +418,13 @@ class StatMenu {
         this.order = -1;
         this.scroll = 0;
         this.backButton = new Button({ x: 10, y: 10, w: 325, h: 60 }, images.buttons.back, () => {
-            currentMenu = new LoadGames(false, this.game.id);
+            if (this.cameFromGame) {
+                this.realGame.players = this.realGame.players.map(e => JSON.prune(e));
+                this.realGame.boardPieces = JSON.prune(this.realGame.boardPieces);
+                loadGame(this.realGame)
+            } else {
+                currentMenu = new LoadGames(false, this.game.id);
+            }
         });
 
         this.sortOrder = new Button({ x: canvas.width - 50, y: 20, w: 40, h: 40, rotation: 180 }, images.buttons.arrowup, () => {
@@ -907,20 +918,33 @@ class ColorSelector {
     }
 }
 
+class DebugMenu {
+    constructor() {
+
+    }
+    draw() {
+
+    }
+}
+
 class SmallMenu {
     constructor() {
+        let games = (JSON.parse(localStorage.getItem(LOCALSTORAGEKEY)) || []).map(e => JSON.parse(e))
+        games = games.sort((a, b) => b.currentTime - a.currentTime)
+        let game = games[0];
+        this.time = new Date(game.currentTime).today() + " " + new Date(game.currentTime).timeNow();
+
         this.leaveButton = new Button({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 1), y: canvas.height / 2 + 25, w: 40, h: 40, hoverText: "Stäng ruta", invertedHitbox: { x: canvas.width / 2 - 128, y: canvas.height / 2 - 128, w: 256, h: 256 } }, images.buttons.no, function () { currentMenu = undefined });
         this.statButton = new Button({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 2), y: canvas.height / 2 + 25, w: 40, h: 40, hoverText: "Visa Statistik" }, images.buttons.statbutton, function () {
             exitGame();
             setTimeout(() => {
-                let games = (JSON.parse(localStorage.getItem(LOCALSTORAGEKEY)) || []).map(e => JSON.parse(e))
-                games = games.sort((a, b) => b.currentTime - a.currentTime)
-                let game = games[0];
-                currentMenu = new StatMenu(game);
-
+                currentMenu = new StatMenu(game, true);
             }, 60);
             currentMenu = undefined;
 
+        });
+        this.debugMenu = new Button({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 2), y: canvas.height / 2 + 25, w: 40, h: 40, hoverText: "Debug" }, images.buttons.statbutton, function () {
+            currentMenu = new DebugMenu();
         });
         this.exitButton = new Button({ x: canvas.width / 2 - 120 + splitPoints(5, 240, 40, 3), y: canvas.height / 2 + 25, w: 40, h: 40, hoverText: "Återvänd till Huvudmenyn" }, images.buttons.yes, function () {
             if (currentMenu.constructor.name == "SmallMenu") currentMenu = undefined;
@@ -950,9 +974,13 @@ class SmallMenu {
     }
     draw() {
         c.drawImageFromSpriteSheet(images.menus.exitmenu, { x: canvas.width / 2 - 128, y: canvas.height / 2 - 128 })
-        this.statButton.disabled = (board instanceof OnlineBoard);
         this.leaveButton.update();
-        this.statButton.update();
+        if (board instanceof OnlineBoard) {
+            this.debugMenu.update();
+            this.debugMenu.disabled = !board.hosting;
+        } else {
+            this.statButton.update();
+        }
         this.exitButton.update();
         this.antiAliasingButton.update();
         this.fullScreenButton.update();
@@ -960,6 +988,8 @@ class SmallMenu {
         this.volumeSlider.update();
         this.fullScreenButton.selected = document.fullscreenElement != null;
         this.antiAliasingButton.selected = renderC.imageSmoothingEnabled;
+
+        c.drawText("Senast sparad: " + this.time, canvas.width / 2, canvas.height / 2 + 15, 10, "center")
 
     }
 }
