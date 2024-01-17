@@ -230,6 +230,11 @@ function connectToHost(hostId) {
                 delete p
             }
 
+            if (type === "statMenu") {
+                exitGame(true, true)
+                setTimeout(() => currentMenu = new StatMenu(JSON.parse(data)), 60)
+            }
+
             // Lobby
             if (type === "spectatorValidation") {
                 if (data) return

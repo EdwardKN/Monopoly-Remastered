@@ -133,9 +133,9 @@ function saveGame(online = false) {
     if (!board || !players) return
     let games = JSON.parse(localStorage.getItem(LOCALSTORAGEKEY) ?? "[]")
 
-    delete board.peer
     let tmpBoard = JSON.parse(JSON.prune(board, 4));
     tmpBoard.boardPieces = undefined;
+    tmpBoard.peer = undefined;
     let game = {
         board: JSON.prune(tmpBoard, 6),
         boardPieces: JSON.prune(board.boardPieces, 2),
@@ -1065,7 +1065,21 @@ class Board {
     update() {
         if (players.filter(e => !e.dead).length == 1) {
             this.done = true;
-            exitGame();
+            if (this.hosting) {
+                let peer = this.peer
+
+                exitGame(board instanceof OnlineBoard);
+                setTimeout(() => {
+                    let games = (JSON.parse(localStorage.getItem(LOCALSTORAGEKEY)) || []).map(e => JSON.parse(e))
+                    games = games.sort((a, b) => b.currentTime - a.currentTime)
+                    let game = games[0];
+                    currentMenu = new StatMenu(game);
+
+                    sendMessageToAll("statMenu", JSON.stringify(game))
+                    for (let client of Object.values(peer.clients)) client.connection.close()
+                }, 60);
+            }
+            currentMenu = undefined;
         }
         this.drawBack();
         this.boardPieces.forEach(e => e.draw());
